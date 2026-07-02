@@ -136,6 +136,32 @@ export interface Metric {
   delta?: number; // variación porcentual, positiva o negativa
 }
 
+// --- Plantillas de WhatsApp (Meta message templates) ---
+export type TemplateCategory = "MARKETING" | "UTILITY" | "AUTHENTICATION";
+export type TemplateStatus =
+  | "APPROVED"
+  | "PENDING"
+  | "REJECTED"
+  | "PAUSED"
+  | "DISABLED";
+
+export interface TemplateComponent {
+  type: "HEADER" | "BODY" | "FOOTER" | "BUTTONS";
+  format?: "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
+  text?: string;
+  buttons?: Array<{ type: string; text: string; url?: string; phone_number?: string }>;
+  example?: { header_text?: string[]; body_text?: string[][] };
+}
+
+export interface WaTemplate {
+  id?: string;
+  name: string;
+  language: string;
+  category: TemplateCategory;
+  status: TemplateStatus;
+  components: TemplateComponent[];
+}
+
 // --- Llamadas (Vapi) ---
 // Modelo de lectura, equivalente a lo que devuelve la API de Vapi (GET /call).
 export type CallDirection = "inbound" | "outbound" | "web";

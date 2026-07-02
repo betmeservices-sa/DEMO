@@ -101,5 +101,35 @@ export const hospitalTenant: TenantConfig = {
     { label: "Resueltas", icon: "CheckCircle2", kind: "resolucionPct" },
     { label: "Sin asignar", icon: "Inbox", kind: "sinAsignar" },
   ],
+  waTemplates: [
+    {
+      name: "recordatorio_cita",
+      language: "es",
+      category: "UTILITY",
+      status: "APPROVED",
+      components: [
+        {
+          type: "BODY",
+          text: "Hola {{1}}, le recordamos su cita en el Centro Ginecológico el {{2}} a las {{3}}. Responda CONFIRMAR o REAGENDAR.",
+          example: { body_text: [["Ana", "12 de julio", "10:00 am"]] },
+        },
+        { type: "FOOTER", text: "Centro Ginecológico" },
+      ],
+    },
+    {
+      name: "bienvenida",
+      language: "es",
+      category: "MARKETING",
+      status: "APPROVED",
+      components: [
+        { type: "HEADER", format: "TEXT", text: "Centro Ginecológico" },
+        {
+          type: "BODY",
+          text: "Hola {{1}}, gracias por escribirnos. Somos parte de tu vida. ¿En qué especialidad le podemos ayudar?",
+          example: { body_text: [["María"]] },
+        },
+      ],
+    },
+  ],
   whatsapp: {},
 };

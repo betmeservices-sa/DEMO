@@ -131,5 +131,35 @@ export const grupoqTenant: TenantConfig = {
     { label: "Atendidas por IA", icon: "Bot", kind: "metric", metricLabel: "Atendidas por IA", fallback: "0%" },
     { label: "Sin asignar", icon: "Inbox", kind: "sinAsignar" },
   ],
+  waTemplates: [
+    {
+      name: "recordatorio_cita",
+      language: "es",
+      category: "UTILITY",
+      status: "APPROVED",
+      components: [
+        {
+          type: "BODY",
+          text: "Hola {{1}}, le recordamos su cita de servicio en Grupo Q el {{2}} a las {{3}}. Responda CONFIRMAR o REAGENDAR.",
+          example: { body_text: [["Ana", "12 de julio", "10:00 am"]] },
+        },
+        { type: "FOOTER", text: "Grupo Q · Vas a llegar" },
+      ],
+    },
+    {
+      name: "bienvenida",
+      language: "es",
+      category: "MARKETING",
+      status: "APPROVED",
+      components: [
+        { type: "HEADER", format: "TEXT", text: "Grupo Q" },
+        {
+          type: "BODY",
+          text: "Hola {{1}}, gracias por escribir a Grupo Q. ¿En qué le podemos ayudar hoy?",
+          example: { body_text: [["María"]] },
+        },
+      ],
+    },
+  ],
   whatsapp: {},
 };

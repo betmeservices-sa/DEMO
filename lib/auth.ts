@@ -28,6 +28,8 @@ export function useAuth() {
     // El demo abre con acceso total (perfil Dirección).
     window.localStorage.setItem(ROL_KEY, "admin");
     setActiveTenant(tenant);
+    // Cookie para que el servidor (p. ej. plantillas de WhatsApp) sepa el tenant.
+    document.cookie = `ccg_tenant=${tenant};path=/;max-age=31536000;samesite=lax`;
     // Recarga para que el tenant activo aplique en toda la app.
     window.location.assign("/");
     return true;
@@ -37,6 +39,7 @@ export function useAuth() {
     window.localStorage.removeItem(SESION_KEY);
     window.localStorage.removeItem(ROL_KEY);
     clearActiveTenant();
+    document.cookie = "ccg_tenant=;path=/;max-age=0";
     window.location.assign("/");
   }
 

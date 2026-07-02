@@ -16,6 +16,7 @@ import type {
   SocialPost,
   SocialStats,
   StaffUser,
+  WaTemplate,
 } from "@/lib/data/types";
 
 export type TenantId = "hospital" | "grupoq";
@@ -85,5 +86,8 @@ export interface TenantConfig {
   seed: TenantSeed;
   ai: { systemPrompt: string };
   dashboard: DashboardCard[];
+  // Plantillas de WhatsApp demo (modo FAKE, sin credenciales). En modo real se
+  // listan desde la WABA del cliente.
+  waTemplates: WaTemplate[];
   whatsapp?: TenantWhatsApp;
 }

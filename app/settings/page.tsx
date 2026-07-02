@@ -12,6 +12,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { activeTenant } from "@/lib/tenants/active";
 
 type TemplateCategory = "MARKETING" | "UTILITY" | "AUTHENTICATION";
 type TemplateStatus = "APPROVED" | "PENDING" | "REJECTED" | "PAUSED" | "DISABLED";
@@ -287,7 +288,7 @@ export default function SettingsPage() {
               <input
                 value={header}
                 onChange={(e) => setHeader(e.target.value)}
-                placeholder="Grupo Q"
+                placeholder={activeTenant().brand.nombreCorto}
                 className={INPUT}
               />
             </div>
@@ -342,7 +343,7 @@ export default function SettingsPage() {
               <input
                 value={footer}
                 onChange={(e) => setFooter(e.target.value)}
-                placeholder="Grupo Q"
+                placeholder={activeTenant().brand.nombreCorto}
                 className={INPUT}
               />
             </div>
