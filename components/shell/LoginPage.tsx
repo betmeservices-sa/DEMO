@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Lock, Mail, MessagesSquare } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, MessagesSquare } from "lucide-react";
 
 // Login NEUTRO: una sola puerta para todos los clientes. No muestra marca de
 // ningún cliente; al validar, el correo decide a qué dashboard (tenant) entra.
@@ -12,6 +12,7 @@ export function LoginPage({
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [verPass, setVerPass] = useState(false);
   const [error, setError] = useState(false);
 
   function handleSubmit(e: FormEvent) {
@@ -59,6 +60,9 @@ export function LoginPage({
                     }}
                     placeholder="nombre@empresa.com"
                     autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     required
                     className="w-full bg-transparent text-sm text-[#0f1b2d] outline-none placeholder:text-[#94a3b4]"
                   />
@@ -72,7 +76,7 @@ export function LoginPage({
                 <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 focus-within:border-brand">
                   <Lock size={16} className="shrink-0 text-[#94a3b4]" />
                   <input
-                    type="password"
+                    type={verPass ? "text" : "password"}
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -80,9 +84,20 @@ export function LoginPage({
                     }}
                     placeholder="••••••"
                     autoComplete="current-password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     required
                     className="w-full bg-transparent text-sm text-[#0f1b2d] outline-none placeholder:text-[#94a3b4]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setVerPass((v) => !v)}
+                    aria-label={verPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    className="shrink-0 text-[#94a3b4] transition hover:text-[#5b6b80]"
+                  >
+                    {verPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </label>
 
