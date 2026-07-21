@@ -2,7 +2,7 @@
 // de la API de Vapi (GET /call). Si no, devuelve un seed de demo para que el
 // dashboard funcione sin llaves. Este módulo SOLO se importa desde el server
 // (el route handler), nunca desde el cliente: la key jamás llega al browser.
-import type { CallDirection, CallMetrics, CallRecord } from "./data/types";
+import type { CallDirection, CallRecord } from "./data/types";
 
 const VAPI_BASE = "https://api.vapi.ai";
 
@@ -73,17 +73,5 @@ export async function fetchVapiCalls(limit = 100): Promise<CallRecord[]> {
   return arr.map(normalizar);
 }
 
-export function resumirLlamadas(calls: CallRecord[]): CallMetrics {
-  const conDuracion = calls.filter((c) => c.duracionSeg > 0);
-  const totalSeg = conDuracion.reduce((s, c) => s + c.duracionSeg, 0);
-  const costoTotal = calls.reduce((s, c) => s + c.costo, 0);
-  return {
-    total: calls.length,
-    entrantes: calls.filter((c) => c.direccion === "inbound").length,
-    salientes: calls.filter((c) => c.direccion === "outbound").length,
-    conectadas: conDuracion.length,
-    minutosTotales: Math.round((totalSeg / 60) * 10) / 10,
-    duracionPromedioSeg: conDuracion.length ? Math.round(totalSeg / conDuracion.length) : 0,
-    costoTotal: Math.round(costoTotal * 100) / 100,
-  };
-}
+// El resumen de metricas vive ahora en lib/calls-metrics.ts (funciones puras,
+// testeables y compartidas por el dashboard y la pestana de llamadas).

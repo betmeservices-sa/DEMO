@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { fetchVapiCalls, hayLlaveVapi, resumirLlamadas } from "@/lib/vapi";
+import { fetchVapiCalls, hayLlaveVapi } from "@/lib/vapi";
+import { resumirLlamadas } from "@/lib/calls-metrics";
 
 // Jala el estado actual de las llamadas en cada request (datos en vivo).
 export const dynamic = "force-dynamic";
