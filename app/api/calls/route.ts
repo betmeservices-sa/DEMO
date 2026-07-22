@@ -24,24 +24,27 @@ async function armarRespuesta() {
   let error: string | undefined;
   let persistido = false;
 
+  // 1) Traer de Vapi. Si falla, seguimos: puede haber historial en la base.
+  let frescas: CallRecord[] = [];
   try {
-    const frescas = await fetchVapiCalls();
-    if (haySupabase()) {
-      await guardarLlamadas(frescas);
-      calls = await leerLlamadas();
-      persistido = true;
-    } else {
-      calls = frescas;
-    }
+    frescas = await fetchVapiCalls();
+    calls = frescas;
   } catch (err) {
     error = err instanceof Error ? err.message : "Error desconocido";
-    if (haySupabase()) {
-      try {
-        calls = await leerLlamadas();
-        persistido = true;
-      } catch {
-        // Si tambien falla la base, se devuelve la lista vacia con el error.
-      }
+  }
+
+  // 2) Persistir y leer el historial. Si la base falla (tipico: la migracion
+  // todavia no se corrio en ese entorno), NO perdemos lo que ya trajimos de
+  // Vapi: mostrar datos frescos sin historial es mejor que una pantalla vacia.
+  if (haySupabase()) {
+    try {
+      if (frescas.length > 0) await guardarLlamadas(frescas);
+      calls = await leerLlamadas();
+      persistido = true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      error = error ? `${error}. ${msg}` : msg;
+      calls = frescas;
     }
   }
 
