@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { validarCredenciales } from "@/lib/auth-server";
 import { cookieDeSesion, crearSesion } from "@/lib/session";
+import { tenantRequiere2FA, verificarTotp } from "@/lib/totp";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +10,16 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   let usuario = "";
   let password = "";
+  let token = "";
   try {
-    const body = (await req.json()) as { usuario?: string; password?: string };
+    const body = (await req.json()) as {
+      usuario?: string;
+      password?: string;
+      token?: string;
+    };
     usuario = body.usuario ?? "";
     password = body.password ?? "";
+    token = body.token ?? "";
   } catch {
     return NextResponse.json({ ok: false, error: "Cuerpo invalido" }, { status: 400 });
   }
@@ -21,6 +28,23 @@ export async function POST(req: Request) {
   if (!tenant) {
     // Mensaje generico a proposito: no revelamos si el usuario existe.
     return NextResponse.json({ ok: false, error: "Credenciales invalidas" }, { status: 401 });
+  }
+
+  // Segundo factor (2FA por app de autenticador). Solo si el tenant lo tiene
+  // configurado. El flujo es stateless: la UI reenvia usuario+password+token,
+  // no guardamos un "login a medias" en el servidor.
+  if (tenantRequiere2FA(tenant)) {
+    if (!token) {
+      // Contraseña correcta pero falta el codigo: la UI muestra el paso del codigo.
+      return NextResponse.json({ ok: false, need2fa: true });
+    }
+    const codigoValido = await verificarTotp(tenant, token);
+    if (!codigoValido) {
+      return NextResponse.json(
+        { ok: false, need2fa: true, error: "Código de verificación inválido" },
+        { status: 401 },
+      );
+    }
   }
 
   const sesion = await crearSesion(tenant);
