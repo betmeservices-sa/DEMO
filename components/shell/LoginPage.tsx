@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Eye, EyeOff, Lock, User, MessagesSquare, ShieldCheck, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Lock, User, ShieldCheck, ArrowLeft, Bot } from "lucide-react";
 import type { LoginResult } from "@/lib/auth";
 
 // Login NEUTRO: una sola puerta para todos los clientes. No muestra marca de
@@ -84,18 +84,19 @@ export function LoginPage({
 
           <div className="px-7 pb-7 pt-8">
             <div className="flex flex-col items-center">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand text-white shadow-sm">
-                {paso === "codigo" ? (
-                  <ShieldCheck size={24} strokeWidth={2.2} />
-                ) : (
-                  <MessagesSquare size={24} strokeWidth={2.2} />
-                )}
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#22d3ee] via-[#8b5cf6] to-[#e879f9] text-white shadow-sm">
+                <Bot size={28} strokeWidth={2.2} />
               </span>
             </div>
-            <h1 className="mt-5 text-center text-[19px] font-extrabold tracking-tight text-brand">
-              Centro de Comunicación
+            <h1 className="mt-4 text-center text-[22px] font-extrabold tracking-tight">
+              <span className="bg-gradient-to-r from-[#22d3ee] via-[#8b5cf6] to-[#e879f9] bg-clip-text text-transparent">
+                MiAgentIA
+              </span>
             </h1>
-            <p className="mt-1 text-center text-[13px] text-[#5b6b80]">
+            <p className="mt-0.5 text-center text-[13px] font-semibold text-[#5b6b80]">
+              Centro de Comunicación
+            </p>
+            <p className="mt-2 text-center text-[12.5px] text-[#94a3b4]">
               {paso === "codigo"
                 ? enrolar
                   ? "Configura tu verificación en dos pasos"
