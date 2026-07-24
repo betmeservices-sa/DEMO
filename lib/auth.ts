@@ -17,9 +17,15 @@ const ROL_KEY = "ccg.rol";
 
 // Resultado del intento de login. "necesita2fa" = la contraseña es correcta pero
 // falta (o falló) el código del segundo factor; la UI muestra el paso del código.
+// Si trae `enrolar`, es la PRIMERA vez del usuario: la UI muestra el QR para que
+// configure su app de autenticación antes de ingresar el código.
+export interface Enrolamiento2FA {
+  qr: string; // data URL de la imagen del QR
+  secret: string; // clave Base32, por si no puede escanear
+}
 export type LoginResult =
   | { tipo: "ok" }
-  | { tipo: "necesita2fa"; codigoInvalido?: boolean }
+  | { tipo: "necesita2fa"; enrolar?: Enrolamiento2FA; codigoInvalido?: boolean }
   | { tipo: "error" };
 
 export function useAuth() {
@@ -69,10 +75,15 @@ export function useAuth() {
         tenant?: string;
         need2fa?: boolean;
         error?: string;
+        enrolar?: { qr: string; secret: string };
       };
-      // Contraseña correcta pero el tenant exige 2FA (falta o falló el código).
+      // Contraseña correcta pero falta el segundo factor (o falló el código).
       if (data.need2fa) {
-        return { tipo: "necesita2fa", codigoInvalido: Boolean(data.error) };
+        return {
+          tipo: "necesita2fa",
+          enrolar: data.enrolar,
+          codigoInvalido: Boolean(data.error),
+        };
       }
       if (!res.ok || !data.ok || !data.tenant) return { tipo: "error" };
       tenant = data.tenant;

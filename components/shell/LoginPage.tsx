@@ -19,6 +19,8 @@ export function LoginPage({
   const [password, setPassword] = useState("");
   const [verPass, setVerPass] = useState(false);
   const [token, setToken] = useState("");
+  // Si no es null, es la primera vez del usuario: mostramos el QR de enrolamiento.
+  const [enrolar, setEnrolar] = useState<{ qr: string; secret: string } | null>(null);
   const [error, setError] = useState(false); // error de usuario/contraseña
   const [errorCodigo, setErrorCodigo] = useState(false); // código 2FA inválido
   const [enviando, setEnviando] = useState(false);
@@ -32,6 +34,7 @@ export function LoginPage({
       if (r.tipo === "necesita2fa") {
         setToken("");
         setErrorCodigo(false);
+        setEnrolar(r.enrolar ?? null);
         setPaso("codigo");
       } else if (r.tipo === "error") {
         setError(true);
@@ -49,6 +52,7 @@ export function LoginPage({
     try {
       const r = await onLogin(email, password, token);
       if (r.tipo === "necesita2fa") {
+        if (r.enrolar) setEnrolar(r.enrolar); // sigue enrolando
         setErrorCodigo(true); // código incorrecto o vencido
       } else if (r.tipo === "error") {
         // La contraseña dejó de ser válida: volver al primer paso.
@@ -65,6 +69,7 @@ export function LoginPage({
     setPaso("credenciales");
     setToken("");
     setErrorCodigo(false);
+    setEnrolar(null);
   }
 
   return (
@@ -92,7 +97,9 @@ export function LoginPage({
             </h1>
             <p className="mt-1 text-center text-[13px] text-[#5b6b80]">
               {paso === "codigo"
-                ? "Ingresa el código de tu app de autenticación"
+                ? enrolar
+                  ? "Configura tu verificación en dos pasos"
+                  : "Ingresa el código de tu app de autenticación"
                 : "Ingresa con tu cuenta para continuar"}
             </p>
 
@@ -171,6 +178,28 @@ export function LoginPage({
             ) : (
               <>
               <form onSubmit={enviarCodigo} className="mt-6 space-y-4">
+                {enrolar && (
+                  <div className="rounded-xl border border-line bg-surface p-3 text-center">
+                    <p className="mb-2 text-[12px] leading-snug text-[#5b6b80]">
+                      Primera vez: escaneá este código con Google Authenticator o
+                      Authy, y luego ingresá el código de 6 dígitos que te muestre.
+                    </p>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={enrolar.qr}
+                      alt="Código QR para configurar la verificación en dos pasos"
+                      width={180}
+                      height={180}
+                      className="mx-auto rounded-lg"
+                    />
+                    <p className="mt-2 text-[11px] text-[#94a3b4]">
+                      ¿No podés escanear? Clave:{" "}
+                      <span className="font-mono font-semibold text-[#5b6b80]">
+                        {enrolar.secret}
+                      </span>
+                    </p>
+                  </div>
+                )}
                 <label className="block">
                   <span className="mb-1.5 block text-[12.5px] font-semibold text-[#0f1b2d]">
                     Código de verificación

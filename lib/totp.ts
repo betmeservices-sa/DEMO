@@ -1,64 +1,64 @@
-// TOTP (2FA por aplicación de autenticador) del lado del SERVIDOR.
+// TOTP (2FA por aplicación de autenticador) — verificación + utilidades de
+// enrolamiento. SOLO servidor. Usa Web Crypto (crypto.subtle), sin depender de
+// node:crypto, para correr en cualquier runtime.
 //
-// Segundo factor del login: además de la contraseña (que decide el tenant), se
-// pide un código de 6 dígitos de una app tipo Google Authenticator o Authy.
-//
-// El secreto vive en variables de entorno (nunca en el repo, que es público):
-//   TOTP_SECRETS="hospital:BASE32,grupoq:BASE32"   por tenant (tiene prioridad)
-//   TOTP_SECRET="BASE32"                            global: aplica a todos
-// Si un tenant no tiene secreto configurado, NO se le pide 2FA (opt-in): el
-// login por contraseña sigue protegiendo, y el segundo factor se enciende con
-// solo poner la variable. Así se puede activar por cliente sin tocar código.
-//
-// Usa Web Crypto (crypto.subtle), igual que session.ts, para no depender de
-// node:crypto y correr en cualquier runtime.
-
-import type { TenantId } from "./tenants/types";
+// Modelo POR USUARIO: cada usuario tiene su propio secreto (ver lib/totp-store).
+// La primera vez que entra se le muestra un QR para enrolar su app; después solo
+// se le pide el código de 6 dígitos.
 
 const PASO_SEG = 30; // ventana TOTP estándar (RFC 6238)
 const DIGITOS = 6;
 const TOLERANCIA = 1; // acepta la ventana anterior/siguiente (desfase de reloj)
+const ALFABETO_B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
-function secretosPorTenant(): Map<string, string> | null {
-  const raw = process.env.TOTP_SECRETS;
-  if (!raw) return null;
-  const mapa = new Map<string, string>();
-  for (const par of raw.split(",")) {
-    const i = par.indexOf(":");
-    if (i <= 0) continue;
-    const tenant = par.slice(0, i).trim();
-    const secreto = par
-      .slice(i + 1)
-      .trim()
-      .replace(/\s/g, "")
-      .toUpperCase();
-    if (tenant && secreto) mapa.set(tenant, secreto);
+// Interruptor global del 2FA. Sin la variable, el login sigue solo con
+// contraseña (compatible hacia atrás). Se enciende con TOTP_2FA=on.
+export function dosFactorHabilitado(): boolean {
+  const v = (process.env.TOTP_2FA || "").trim().toLowerCase();
+  return v === "on" || v === "1" || v === "true" || v === "si";
+}
+
+// Genera un secreto Base32 nuevo (160 bits), único por usuario.
+export function generarSecreto(): string {
+  const bytes = new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  return base32Encode(bytes);
+}
+
+// otpauth:// que la app de autenticador agrega (por QR o clave manual).
+export function otpauthUri(cuenta: string, secretB32: string): string {
+  const emisor = "Centro de Comunicacion";
+  const label = `${emisor}:${cuenta}`;
+  return (
+    `otpauth://totp/${encodeURIComponent(label)}` +
+    `?secret=${secretB32}&issuer=${encodeURIComponent(emisor)}` +
+    `&algorithm=SHA1&digits=6&period=30`
+  );
+}
+
+function base32Encode(buf: Uint8Array): string {
+  let bits = 0;
+  let valor = 0;
+  let out = "";
+  for (const b of buf) {
+    valor = (valor << 8) | b;
+    bits += 8;
+    while (bits >= 5) {
+      bits -= 5;
+      out += ALFABETO_B32[(valor >>> bits) & 31];
+    }
   }
-  return mapa.size > 0 ? mapa : null;
+  if (bits > 0) out += ALFABETO_B32[(valor << (5 - bits)) & 31];
+  return out;
 }
 
-// Secreto Base32 del tenant, o null si ese tenant no usa 2FA.
-function secretoDe(tenant: TenantId): string | null {
-  const porTenant = secretosPorTenant();
-  if (porTenant && porTenant.has(tenant)) return porTenant.get(tenant) ?? null;
-  const global = process.env.TOTP_SECRET?.replace(/\s/g, "").toUpperCase();
-  return global && global.length > 0 ? global : null;
-}
-
-/** true si el tenant tiene 2FA configurado (y por lo tanto hay que pedir código). */
-export function tenantRequiere2FA(tenant: TenantId): boolean {
-  return secretoDe(tenant) !== null;
-}
-
-// Base32 (RFC 4648) -> bytes. Devuelve null si hay un carácter inválido.
 function base32Decode(s: string): Uint8Array<ArrayBuffer> | null {
-  const alfa = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const limpio = s.replace(/=+$/, "").toUpperCase();
   let bits = 0;
   let valor = 0;
   const out: number[] = [];
   for (const ch of limpio) {
-    const idx = alfa.indexOf(ch);
+    const idx = ALFABETO_B32.indexOf(ch);
     if (idx === -1) return null;
     valor = (valor << 5) | idx;
     bits += 5;
@@ -74,8 +74,6 @@ function base32Decode(s: string): Uint8Array<ArrayBuffer> | null {
 async function hotp(secreto: Uint8Array<ArrayBuffer>, contador: number): Promise<string> {
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);
-  // Contador de 8 bytes big-endian, partido en dos 32-bit (JS no maneja bien
-  // enteros de 64 bits; para fechas realistas el valor cabe en 53 bits).
   view.setUint32(0, Math.floor(contador / 2 ** 32));
   view.setUint32(4, contador >>> 0);
   const key = await crypto.subtle.importKey(
@@ -103,21 +101,17 @@ function igualesEnTiempoConstante(a: string, b: string): boolean {
 }
 
 /**
- * Verifica un código de 6 dígitos contra el secreto del tenant, con tolerancia
- * de una ventana para el desfase de reloj. Devuelve false si el tenant no usa
- * 2FA, si el formato es inválido, o si no coincide.
+ * Verifica un código de 6 dígitos contra un secreto Base32, con tolerancia de
+ * una ventana para el desfase de reloj.
  */
-export async function verificarTotp(tenant: TenantId, token: string): Promise<boolean> {
-  const secretoB32 = secretoDe(tenant);
-  if (!secretoB32) return false;
+export async function verificarTotp(secretB32: string, token: string): Promise<boolean> {
   const limpio = (token || "").replace(/\s/g, "");
   if (!/^\d{6}$/.test(limpio)) return false;
-  const secreto = base32Decode(secretoB32);
+  const secreto = base32Decode(secretB32);
   if (!secreto || secreto.length === 0) return false;
   const contador = Math.floor(Date.now() / 1000 / PASO_SEG);
   for (let d = -TOLERANCIA; d <= TOLERANCIA; d++) {
-    const codigo = await hotp(secreto, contador + d);
-    if (igualesEnTiempoConstante(codigo, limpio)) return true;
+    if (igualesEnTiempoConstante(await hotp(secreto, contador + d), limpio)) return true;
   }
   return false;
 }

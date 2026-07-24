@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
+import QRCode from "qrcode";
 import { validarCredenciales } from "@/lib/auth-server";
 import { cookieDeSesion, crearSesion } from "@/lib/session";
-import { tenantRequiere2FA, verificarTotp } from "@/lib/totp";
+import { dosFactorHabilitado, verificarTotp, otpauthUri } from "@/lib/totp";
+import { obtenerOCrear2FA, marcarEnrolado2FA } from "@/lib/totp-store";
 
 export const dynamic = "force-dynamic";
 
+async function qrDataUrl(usuario: string, secret: string): Promise<string> {
+  return QRCode.toDataURL(otpauthUri(usuario, secret), { width: 240, margin: 1 });
+}
+
 // Login REAL: las credenciales se validan en el servidor y la sesion sale como
-// cookie HttpOnly firmada. El navegador nunca decide si esta autenticado.
+// cookie HttpOnly firmada. Con 2FA por app (TOTP_2FA=on), la primera vez de cada
+// usuario se le devuelve un QR para enrolar su app; despues solo se le pide el
+// codigo. El flujo es stateless: la UI reenvia usuario+password+token.
 export async function POST(req: Request) {
   let usuario = "";
   let password = "";
@@ -30,21 +38,38 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Credenciales invalidas" }, { status: 401 });
   }
 
-  // Segundo factor (2FA por app de autenticador). Solo si el tenant lo tiene
-  // configurado. El flujo es stateless: la UI reenvia usuario+password+token,
-  // no guardamos un "login a medias" en el servidor.
-  if (tenantRequiere2FA(tenant)) {
+  if (dosFactorHabilitado()) {
+    const reg = obtenerOCrear2FA(usuario);
+
     if (!token) {
-      // Contraseña correcta pero falta el codigo: la UI muestra el paso del codigo.
+      if (!reg.enrolado) {
+        // Primera vez: mostrar el QR para que el usuario enrole su app.
+        return NextResponse.json({
+          ok: false,
+          need2fa: true,
+          enrolar: { qr: await qrDataUrl(usuario, reg.secret), secret: reg.secret },
+        });
+      }
+      // Ya enrolado: solo pedir el codigo.
       return NextResponse.json({ ok: false, need2fa: true });
     }
-    const codigoValido = await verificarTotp(tenant, token);
+
+    const codigoValido = await verificarTotp(reg.secret, token);
     if (!codigoValido) {
-      return NextResponse.json(
-        { ok: false, need2fa: true, error: "Código de verificación inválido" },
-        { status: 401 },
-      );
+      const cuerpo: Record<string, unknown> = {
+        ok: false,
+        need2fa: true,
+        error: "Código de verificación inválido",
+      };
+      // Si todavia estaba enrolando, seguir mostrando el QR.
+      if (!reg.enrolado) {
+        cuerpo.enrolar = { qr: await qrDataUrl(usuario, reg.secret), secret: reg.secret };
+      }
+      return NextResponse.json(cuerpo, { status: 401 });
     }
+
+    // Codigo correcto: si era la primera vez, queda enrolado.
+    if (!reg.enrolado) marcarEnrolado2FA(usuario);
   }
 
   const sesion = await crearSesion(tenant);
