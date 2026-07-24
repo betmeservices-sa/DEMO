@@ -169,6 +169,7 @@ export function LoginPage({
                 </button>
               </form>
             ) : (
+              <>
               <form onSubmit={enviarCodigo} className="mt-6 space-y-4">
                 <label className="block">
                   <span className="mb-1.5 block text-[12.5px] font-semibold text-[#0f1b2d]">
@@ -209,14 +210,15 @@ export function LoginPage({
                   {enviando ? "Verificando..." : "Verificar y entrar"}
                 </button>
 
+              </form>
                 <button
                   type="button"
                   onClick={volver}
-                  className="flex w-full items-center justify-center gap-1.5 text-[12.5px] font-semibold text-[#5b6b80] transition hover:text-brand"
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 text-[12.5px] font-semibold text-[#5b6b80] transition hover:text-brand"
                 >
                   <ArrowLeft size={14} /> Volver
                 </button>
-              </form>
+              </>
             )}
           </div>
         </div>
