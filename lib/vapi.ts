@@ -322,6 +322,62 @@ export async function fetchVapiAgentes(): Promise<AgenteRecord[]> {
 // DISPARAR UNA LLAMADA
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// EDITAR EL SCRIPT
+// ---------------------------------------------------------------------------
+
+// El `model` de un assistant NO es parcheable por partes: Vapi lo reemplaza
+// completo. Varios assistants llevan toolIds (transferencia, reservar cita,
+// callback...) y temperature ahi dentro, asi que mandar un model armado a mano
+// los borraria en silencio. Por eso se lee el actual, se cambia SOLO el
+// contenido del mensaje system, y se devuelve el objeto entero tal como vino.
+export async function actualizarScriptVapi(
+  assistantId: string,
+  script: string,
+): Promise<{ script: string }> {
+  const key = process.env.VAPI_PRIVATE_KEY;
+  if (!key) throw new Error("Falta VAPI_PRIVATE_KEY: no se puede editar en modo demostración.");
+
+  const actual = await pedir<{ model?: Record<string, unknown> }>(`/assistant/${assistantId}`, key);
+  const model = actual.model;
+  if (!model) throw new Error("Ese agente no tiene un modelo configurado en Vapi.");
+
+  const previos = Array.isArray(model.messages)
+    ? (model.messages as Array<{ role?: string; content?: string }>)
+    : [];
+  const messages = [...previos];
+  const i = messages.findIndex((m) => m.role === "system");
+  if (i >= 0) messages[i] = { ...messages[i], content: script };
+  else messages.unshift({ role: "system", content: script });
+
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 20000);
+  try {
+    const res = await fetch(`${VAPI_BASE}/assistant/${assistantId}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      // Solo se toca `model`, y con todas sus llaves originales intactas.
+      body: JSON.stringify({ model: { ...model, messages } }),
+      cache: "no-store",
+      signal: ac.signal,
+    });
+    const cuerpo = (await res.json().catch(() => null)) as
+      | { model?: { messages?: Array<{ role?: string; content?: string }> }; message?: string | string[] }
+      | null;
+    if (!res.ok) {
+      const m = cuerpo?.message;
+      const detalle = Array.isArray(m) ? m.join("; ") : m;
+      throw new Error(detalle || `Vapi respondio ${res.status} al guardar el script`);
+    }
+    // Se devuelve lo que Vapi dejo guardado, no lo que creemos que mandamos.
+    const guardado =
+      cuerpo?.model?.messages?.find((m) => m.role === "system")?.content ?? script;
+    return { script: guardado };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export interface LlamadaLanzada {
   id: string;
   status?: string;
