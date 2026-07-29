@@ -199,3 +199,167 @@ export async function fetchVapiCalls(limit = 200): Promise<CallRecord[]> {
   const arr = Array.isArray(data) ? (data as VapiCall[]) : [];
   return arr.map((c) => normalizarCall(c, dir));
 }
+
+// ---------------------------------------------------------------------------
+// AGENTES (assistants de Vapi + el numero que tienen asignado)
+// ---------------------------------------------------------------------------
+
+export interface VapiAssistant {
+  id: string;
+  name?: string;
+  firstMessage?: string;
+  model?: {
+    model?: string;
+    provider?: string;
+    messages?: Array<{ role?: string; content?: string }>;
+  };
+  voice?: { provider?: string; voiceId?: string };
+}
+
+export interface VapiPhoneNumber {
+  id: string;
+  number?: string;
+  name?: string;
+  assistantId?: string;
+}
+
+export interface NumeroAsignado {
+  id: string;
+  numero: string;
+  nombre: string;
+}
+
+export interface AgenteRecord {
+  id: string;
+  nombre: string;
+  modelo?: string;
+  voz?: string;
+  primerMensaje?: string;
+  // El "script": el system prompt con el que corre el agente.
+  script: string;
+  // Un assistant puede tener 0, 1 o varios numeros apuntandole. Sin numero
+  // asignado NO se puede llamar desde el (Vapi exige phoneNumberId).
+  numeros: NumeroAsignado[];
+}
+
+// El script vive en el primer mensaje de rol "system" del modelo.
+export function extraerScript(a: VapiAssistant): string {
+  const msgs = a.model?.messages ?? [];
+  return msgs.find((m) => m.role === "system")?.content ?? "";
+}
+
+function nombreVoz(a: VapiAssistant): string | undefined {
+  const v = a.voice;
+  if (!v?.provider) return undefined;
+  return v.voiceId ? `${v.provider} / ${v.voiceId}` : v.provider;
+}
+
+// Pura a proposito: la prueba la ejerce sin tocar la red.
+export function normalizarAgentes(
+  assistants: VapiAssistant[],
+  numeros: VapiPhoneNumber[],
+): AgenteRecord[] {
+  return assistants.map((a) => ({
+    id: a.id,
+    nombre: a.name?.trim() || "(sin nombre)",
+    modelo: a.model?.model,
+    voz: nombreVoz(a),
+    primerMensaje: a.firstMessage,
+    script: extraerScript(a),
+    numeros: numeros
+      .filter((n) => n.assistantId === a.id)
+      .map((n) => ({ id: n.id, numero: n.number ?? "", nombre: n.name ?? "" })),
+  }));
+}
+
+const SEED_AGENTES: AgenteRecord[] = [
+  {
+    id: "demo-assistant-1",
+    nombre: "Sofía - Banco BetMe (Demo Outbound)",
+    modelo: "gpt-5.4",
+    voz: "11labs / qO4CSH9mbCZnV8sWQTpn",
+    primerMensaje: "Buenas, le saluda Sofía, de Banco BetMe. ¿Hablo con {{nombre}}?",
+    script:
+      "IDENTIDAD\nEres Sofía, asistente de voz de Banco BetMe...\n\n(Script de demostración: conectá VAPI_PRIVATE_KEY para ver el real.)",
+    numeros: [{ id: "demo-num-1", numero: "+50325054600", nombre: "BetMe Services" }],
+  },
+  {
+    id: "demo-assistant-2",
+    nombre: "Hospital",
+    modelo: "gpt-5.4",
+    voz: "11labs / qO4CSH9mbCZnV8sWQTpn",
+    primerMensaje: "Hospital Ginecológico, les saluda Sofía. ¿En qué le puedo ayudar?",
+    script:
+      "IDENTIDAD\nEres Sofía, asistente de voz del Hospital Centro Ginecológico...\n\n(Script de demostración: conectá VAPI_PRIVATE_KEY para ver el real.)",
+    numeros: [{ id: "demo-num-2", numero: "+50325054602", nombre: "Hospital gineco" }],
+  },
+  {
+    id: "demo-assistant-3",
+    nombre: "Sofia (Copy)",
+    modelo: "gpt-5.4",
+    voz: "11labs / qO4CSH9mbCZnV8sWQTpn",
+    primerMensaje: "Buenas, le saluda Sofía. ¿Con quién tengo el gusto?",
+    script: "(Script de demostración: conectá VAPI_PRIVATE_KEY para ver el real.)",
+    numeros: [{ id: "demo-num-3", numero: "+50325054601", nombre: "Miagentia" }],
+  },
+];
+
+export async function fetchVapiAgentes(): Promise<AgenteRecord[]> {
+  const key = process.env.VAPI_PRIVATE_KEY;
+  if (!key) return SEED_AGENTES;
+
+  const [assistants, numeros] = await Promise.all([
+    pedir<unknown>("/assistant?limit=100", key),
+    pedir<unknown>("/phone-number?limit=100", key),
+  ]);
+  return normalizarAgentes(
+    Array.isArray(assistants) ? (assistants as VapiAssistant[]) : [],
+    Array.isArray(numeros) ? (numeros as VapiPhoneNumber[]) : [],
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DISPARAR UNA LLAMADA
+// ---------------------------------------------------------------------------
+
+export interface LlamadaLanzada {
+  id: string;
+  status?: string;
+}
+
+export async function lanzarLlamadaVapi(params: {
+  assistantId: string;
+  phoneNumberId: string;
+  numero: string;
+}): Promise<LlamadaLanzada> {
+  const key = process.env.VAPI_PRIVATE_KEY;
+  if (!key) throw new Error("Falta VAPI_PRIVATE_KEY: no se puede llamar en modo demostración.");
+
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 15000);
+  try {
+    const res = await fetch(`${VAPI_BASE}/call`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        assistantId: params.assistantId,
+        phoneNumberId: params.phoneNumberId,
+        customer: { number: params.numero },
+      }),
+      cache: "no-store",
+      signal: ac.signal,
+    });
+    const cuerpo = (await res.json().catch(() => null)) as
+      | (LlamadaLanzada & { message?: string | string[] })
+      | null;
+    if (!res.ok) {
+      // Vapi manda el detalle util en message (a veces array de validaciones).
+      const m = cuerpo?.message;
+      const detalle = Array.isArray(m) ? m.join("; ") : m;
+      throw new Error(detalle || `Vapi respondio ${res.status} al crear la llamada`);
+    }
+    return { id: cuerpo?.id ?? "", status: cuerpo?.status };
+  } finally {
+    clearTimeout(timer);
+  }
+}
