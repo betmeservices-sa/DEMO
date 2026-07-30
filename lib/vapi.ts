@@ -419,3 +419,81 @@ export async function lanzarLlamadaVapi(params: {
     clearTimeout(timer);
   }
 }
+
+// ---------------------------------------------------------------------------
+// NUMEROS: listado completo y (des)asignacion a un agente
+// ---------------------------------------------------------------------------
+
+export interface NumeroRecord {
+  id: string;
+  numero: string;
+  nombre: string;
+  // null = libre, sin agente atendiendolo.
+  assistantId: string | null;
+  nombreAssistant?: string;
+}
+
+/** Todos los numeros de la cuenta, con el agente que los atiende (si hay). */
+export async function fetchVapiNumeros(): Promise<NumeroRecord[]> {
+  const key = process.env.VAPI_PRIVATE_KEY;
+  if (!key) {
+    return [
+      { id: "demo-n1", numero: "+50325054600", nombre: "BetMe Services", assistantId: "demo-a1", nombreAssistant: "Sofía - Banco BetMe" },
+      { id: "demo-n2", numero: "+50325054601", nombre: "Miagentia", assistantId: null },
+      { id: "demo-n3", numero: "+50325054602", nombre: "Hospital gineco", assistantId: "demo-a2", nombreAssistant: "Hospital" },
+    ];
+  }
+  const [numeros, assistants] = await Promise.all([
+    pedir<VapiPhoneNumber[]>("/phone-number", key),
+    pedir<VapiAssistant[]>("/assistant", key).catch(() => [] as VapiAssistant[]),
+  ]);
+  const nombres = new Map((Array.isArray(assistants) ? assistants : []).map((a) => [a.id, a.name ?? ""]));
+  return (Array.isArray(numeros) ? numeros : []).map((n) => ({
+    id: n.id,
+    numero: n.number ?? "",
+    nombre: n.name ?? "",
+    assistantId: n.assistantId ?? null,
+    nombreAssistant: n.assistantId ? nombres.get(n.assistantId) : undefined,
+  }));
+}
+
+/**
+ * Asigna un numero a un agente, o lo libera con assistantId = null.
+ * Vapi permite UN agente por numero: asignar a otro reemplaza al anterior, que
+ * es justo lo que se necesita para "intercambiar" sin pasos intermedios.
+ */
+export async function asignarNumeroVapi(
+  phoneNumberId: string,
+  assistantId: string | null,
+): Promise<NumeroRecord> {
+  const key = process.env.VAPI_PRIVATE_KEY;
+  if (!key) throw new Error("Falta VAPI_PRIVATE_KEY: no se puede cambiar la asignación en modo demostración.");
+
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 15000);
+  try {
+    const res = await fetch(`${VAPI_BASE}/phone-number/${phoneNumberId}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ assistantId }),
+      cache: "no-store",
+      signal: ac.signal,
+    });
+    const cuerpo = (await res.json().catch(() => null)) as
+      | (VapiPhoneNumber & { message?: string | string[] })
+      | null;
+    if (!res.ok) {
+      const m = cuerpo?.message;
+      const detalle = Array.isArray(m) ? m.join("; ") : m;
+      throw new Error(detalle || `Vapi respondio ${res.status} al asignar el numero`);
+    }
+    return {
+      id: cuerpo?.id ?? phoneNumberId,
+      numero: cuerpo?.number ?? "",
+      nombre: cuerpo?.name ?? "",
+      assistantId: cuerpo?.assistantId ?? null,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}

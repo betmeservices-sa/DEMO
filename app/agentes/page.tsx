@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Bot, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bot, PhoneOff, RefreshCw } from "lucide-react";
 import { AgenteCard } from "@/components/agentes/AgenteCard";
+import { PanelAgente } from "@/components/agentes/PanelAgente";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { AgenteRecord } from "@/lib/vapi";
+import type { AgenteRecord, NumeroRecord } from "@/lib/vapi";
 
 interface Respuesta {
   source: "vapi" | "demo";
@@ -13,15 +14,29 @@ interface Respuesta {
   error?: string;
 }
 
+type Seccion = "script" | "numeros" | "llamar";
+
 export default function AgentesPage() {
   const [data, setData] = useState<Respuesta | null>(null);
+  const [numeros, setNumeros] = useState<NumeroRecord[]>([]);
   const [cargando, setCargando] = useState(true);
+  // Panel abierto: que agente y en que seccion. null = cerrado.
+  const [panel, setPanel] = useState<{ id: string; seccion: Seccion } | null>(null);
 
   const sincronizar = useCallback(async () => {
     setCargando(true);
     try {
-      const res = await fetch("/api/agentes");
-      setData((await res.json()) as Respuesta);
+      // Agentes y numeros van juntos: el panel necesita los dos para poder
+      // ofrecer reasignaciones, y pedirlos por separado deja la UI a medias.
+      const [rAg, rNum] = await Promise.all([
+        fetch("/api/agentes"),
+        fetch("/api/numeros").catch(() => null),
+      ]);
+      setData((await rAg.json()) as Respuesta);
+      if (rNum?.ok) {
+        const d = (await rNum.json()) as { numeros?: NumeroRecord[] };
+        setNumeros(d.numeros ?? []);
+      }
     } catch (err) {
       setData({
         source: "vapi",
@@ -37,6 +52,14 @@ export default function AgentesPage() {
     void sincronizar();
   }, [sincronizar]);
 
+  const agentes = data?.agentes ?? [];
+  const abierto = useMemo(
+    () => (panel ? agentes.find((a) => a.id === panel.id) : undefined),
+    [panel, agentes],
+  );
+  const sinNumero = agentes.filter((a) => a.numeros.length === 0).length;
+  const libres = numeros.filter((n) => !n.assistantId).length;
+
   return (
     // Mismo patron que /llamadas: el <main> del AppShell es overflow-hidden, asi
     // que la pagina scrollea por su cuenta con el header fijo arriba.
@@ -47,7 +70,7 @@ export default function AgentesPage() {
           <p className="text-[12.5px] text-[var(--text-3)]">
             {!data
               ? "Cargando..."
-              : `${data.agentes.length} agente${data.agentes.length === 1 ? "" : "s"} de voz ${
+              : `${agentes.length} agente${agentes.length === 1 ? "" : "s"} de voz ${
                   data.source === "demo" ? "(datos de demostración)" : "en Vapi"
                 }`}
           </p>
@@ -63,7 +86,7 @@ export default function AgentesPage() {
         </button>
       </header>
 
-      <div className="flex-1 space-y-5 overflow-y-auto p-5">
+      <div className="flex-1 space-y-4 overflow-y-auto p-5">
         {data?.error && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-900">
             <strong>No se pudo conectar con Vapi:</strong> {data.error}
@@ -73,24 +96,55 @@ export default function AgentesPage() {
         {data?.source === "demo" && (
           <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900">
             <strong>Estás viendo agentes de ejemplo, no los reales.</strong> Falta la variable{" "}
-            <code>VAPI_PRIVATE_KEY</code> en este entorno. El botón de llamar queda deshabilitado.
+            <code>VAPI_PRIVATE_KEY</code> en este entorno. Llamar y reasignar quedan deshabilitados.
           </div>
         )}
 
-        {data && data.agentes.length === 0 && !data.error ? (
+        {/* Aviso accionable: un agente sin numero no sirve, y un numero libre es
+            capacidad ociosa. Se dice arriba para no tener que abrir cada
+            tarjeta para descubrirlo. */}
+        {sinNumero > 0 && (
+          <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[12.5px] text-amber-900">
+            <PhoneOff size={15} className="shrink-0" />
+            <span>
+              <strong>
+                {sinNumero} agente{sinNumero === 1 ? "" : "s"} sin número
+              </strong>{" "}
+              {sinNumero === 1 ? "no puede" : "no pueden"} recibir ni hacer llamadas.
+              {libres > 0 &&
+                ` Hay ${libres} número${libres === 1 ? "" : "s"} libre${libres === 1 ? "" : "s"} para asignar.`}
+            </span>
+          </div>
+        )}
+
+        {data && agentes.length === 0 && !data.error ? (
           <EmptyState
             titulo="Sin agentes"
             descripcion="No hay assistants configurados en esta cuenta de Vapi."
             Icon={Bot}
           />
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-            {data?.agentes.map((a) => (
-              <AgenteCard key={a.id} agente={a} />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {agentes.map((a) => (
+              <AgenteCard
+                key={a.id}
+                agente={a}
+                onAbrir={(seccion) => setPanel({ id: a.id, seccion })}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {abierto && panel && (
+        <PanelAgente
+          agente={abierto}
+          numeros={numeros}
+          seccionInicial={panel.seccion}
+          onCerrar={() => setPanel(null)}
+          onCambio={() => void sincronizar()}
+        />
+      )}
     </div>
   );
 }
