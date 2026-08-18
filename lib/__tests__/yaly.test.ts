@@ -148,12 +148,26 @@ describe("configuración del agente", () => {
     expect(LIMITE_MENSAJES_IA_DEFAULT).toBe(10);
   });
 
-  it("es el único cliente que hoy ve imágenes", () => {
+  // Lista cerrada a propósito: prender la visión en un cliente nuevo obliga a
+  // pasar por acá, y por la prueba de abajo que revisa su guion.
+  it("solo yaly y miagentia ven imágenes", () => {
     expect(TENANTS.yaly.ai.imagenes).toBe(true);
+    expect(TENANTS.miagentia.ai.imagenes).toBe(true);
     const conVision = Object.values(TENANTS)
       .filter((t) => t.ai.imagenes === true)
-      .map((t) => t.id);
-    expect(conVision).toEqual(["yaly"]);
+      .map((t) => t.id)
+      .sort();
+    expect(conVision).toEqual(["miagentia", "yaly"]);
+  });
+
+  // La otra mitad del guardarraíl: el guion de quien SÍ ve tiene que decirlo, o
+  // el agente contesta "no puedo abrir archivos" mirando la foto.
+  it("los clientes con visión dicen en su guion que sí ven las fotos", () => {
+    for (const t of Object.values(TENANTS)) {
+      if (t.ai.imagenes !== true) continue;
+      expect(t.ai.systemPrompt, t.id).toMatch(/S[ÍI] ves las im[áa]genes/i);
+      expect(t.ai.systemPrompt, t.id).not.toMatch(/\[imagen\]".*NO puedes abrir/i);
+    }
   });
 
   // Los guiones de los otros clientes dicen que no pueden abrir archivos: si
