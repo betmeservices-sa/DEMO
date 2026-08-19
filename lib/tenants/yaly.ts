@@ -12,8 +12,10 @@
 //      Los nombres viven en lib/tenants/yaly-sucursales.ts.
 //   2. TOPE DURO de 10 mensajes por conversación. Al llegar, el chat pasa a una
 //      persona; la IA no sigue.
-//   3. VE LAS IMÁGENES que le mandan por WhatsApp (ai.imagenes), y por eso su
-//      guion habla de fotos en vez de decir que no puede abrirlas.
+//   3. VE LAS IMÁGENES y ESCUCHA LAS NOTAS DE VOZ (ai.imagenes y ai.audios).
+//      Las fotos van al modelo; los audios se pasan a texto antes, con Gemini
+//      (lib/transcribir.ts). Por eso su guion habla de fotos y de notas de voz
+//      en vez de decir que no puede abrir archivos.
 //   4. COTIZA Y RESERVA con el inventario real de las tres sedes
 //      (lib/yali-inventario.ts, herramientas en lib/yali-agente.ts). Solo chat:
 //      este cliente no tiene voz contratada, así que no ve Llamadas ni Agentes.
@@ -78,7 +80,13 @@ Tú SÍ ves las imágenes que te envían por WhatsApp. Cuando llegue una:
 2. Responde a lo que la foto pide. Si es la foto de una habitación, dile si ese tipo existe en su sede y ofrécele revisar fechas. Si es un comprobante de pago o un documento, confirma que lo recibiste y dile que el equipo lo valida (tú no confirmas pagos). Si es un lugar o un evento, úsalo para entender qué necesita.
 3. Si la imagen no se entiende o no tiene que ver con el hotel, dilo con amabilidad y pide que la describa.
 4. NUNCA inventes lo que no se ve en la foto, ni leas datos que no están claros.
-Si en cambio ves marcas como "[documento: ...]", "[audio]" o "[sticker]", eso NO lo puedes abrir: ofrece que alguien del equipo lo revise.
+Si en cambio ves marcas como "[documento: ...]" o "[sticker]", eso NO lo puedes abrir: ofrece que alguien del equipo lo revise.
+
+NOTAS DE VOZ
+Las notas de voz te llegan ya pasadas a texto, con la marca "[audio]" adelante y la transcripción detrás. Trátalas como cualquier mensaje escrito: responde a lo que dice, sin mencionar que fue un audio ni que lo transcribiste.
+Dos cuidados:
+1. La transcripción puede traer errores, sobre todo en nombres, fechas y cantidades. Antes de reservar, repite esos datos en tu respuesta para que el huésped los confirme ("perfecto, del viernes 22 al domingo 24, dos adultos, ¿está bien?").
+2. Si ves "[audio]" SOLO, sin texto detrás, es que no se entendió. No adivines: dile con amabilidad que no se escuchó bien y pídele que lo repita o lo escriba.
 
 LO QUE NO PROMETES
 - No confirmes pagos, cobros, anticipos ni facturas: eso lo coordina el equipo.
@@ -148,6 +156,10 @@ export const yalyTenant: TenantConfig = {
     // prenderlo en otro cliente hay que actualizar antes su guion, porque los
     // demás dicen que no pueden abrir archivos.
     imagenes: true,
+    // Las notas de voz se transcriben antes de llegarle (lib/transcribir.ts).
+    // En un hotel de playa media conversación entra por audio, así que sin esto
+    // el agente se queda mudo justo cuando el huésped está más apurado.
+    audios: true,
   },
   sucursales: yalySucursales,
   dashboard: [
