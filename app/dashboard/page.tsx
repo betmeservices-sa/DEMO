@@ -25,6 +25,7 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { DeptBreakdown } from "@/components/dashboard/DeptBreakdown";
 import { CallsPanel } from "@/components/dashboard/CallsPanel";
 import { HotelOcupacion } from "@/components/dashboard/HotelOcupacion";
+import { YaliPanel } from "@/components/dashboard/YaliPanel";
 import { OrigenCanales } from "@/components/dashboard/OrigenCanales";
 import { ConsumoIA } from "@/components/dashboard/ConsumoIA";
 
@@ -61,6 +62,9 @@ export default function DashboardPage() {
   // El hotel es el único tenant con sistema de reservas conectado: su dashboard
   // suma la ocupación y las tarifas leídas en vivo.
   const esHotel = activeTenantId() === "hotel";
+  // Yali Hospitality tiene tres sedes y su propio libro de ocupación: su panel
+  // arma la foto de los tres hoteles juntos.
+  const esYali = activeTenantId() === "yaly";
 
   const stats = useMemo(() => {
     const total = state.conversations.length;
@@ -108,6 +112,7 @@ export default function DashboardPage() {
         <ConsumoIA />
 
         {esHotel && <HotelOcupacion />}
+        {esYali && <YaliPanel />}
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <DeptBreakdown conversations={state.conversations} />
@@ -147,7 +152,7 @@ export default function DashboardPage() {
 
         {/* El panel de llamadas lee una central de voz que no es del hotel: en su
             dashboard no va, para no mostrarle actividad de otra cuenta. */}
-        {!esHotel && <CallsPanel />}
+        {!esHotel && !esYali && <CallsPanel />}
       </div>
     </div>
   );

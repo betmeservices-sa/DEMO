@@ -59,7 +59,7 @@ export interface TenantBrand {
   // Logo dibujado en SVG dentro del componente, para marcas cuyo logotipo no
   // sobrevive a un <img> (fondo blanco quemado, baja resolución) y que además
   // necesitan la tipografía de la app. Gana sobre logoSrc y wordmark.
-  logoComponent?: "promerica";
+  logoComponent?: "promerica" | "yali";
   wordmark?: {
     icon: "HeartPulse" | "CarFront" | "Bot" | "Hotel" | "Building2";
     titulo: string;

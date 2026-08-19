@@ -1,4 +1,4 @@
-// Datos semilla del tenant "yaly" (Hotel Yaly, cadena de 3 sucursales).
+// Datos semilla del tenant "yaly" (Yali Hospitality, tres hoteles de playa).
 // Son conversaciones y equipo de DEMOSTRACIÓN, como en el resto de clientes.
 // Timestamps fijos (sin Date.now) para un demo estable.
 //
@@ -61,7 +61,7 @@ export const yalySeed: TenantSeed = {
   internalChannels: [
     { id: "ic1", nombre: "general", tipo: "canal", miembros: [ME, "s2", "s3", "s4", "s5", "s6"] },
     { id: "ic2", nombre: "reservas", tipo: "canal", miembros: [ME, "s2", "s4"] },
-    { id: "ic3", nombre: "sucursales", tipo: "canal", miembros: [ME, "s3", "s4", "s6"] },
+    { id: "ic3", nombre: "hoteles", tipo: "canal", miembros: [ME, "s3", "s4", "s6"] },
     { id: "ic4", nombre: "eventos", tipo: "canal", miembros: [ME, "s4", "s5"] },
     { id: "dm1", nombre: "Claudia Bonilla", tipo: "dm", miembros: [ME, "s4"] },
     { id: "dm2", nombre: "Óscar Menjívar", tipo: "dm", miembros: [ME, "s3"] },
@@ -70,23 +70,23 @@ export const yalySeed: TenantSeed = {
     { id: "im1", channelId: "ic1", staffId: "s4", texto: "Recuerden confirmar la sucursal antes de cotizar. Ayer se mandaron dos tarifas cruzadas.", ts: "2026-08-14T07:20:00" },
     { id: "im2", channelId: "ic1", staffId: "s6", texto: "Anotado. El agente ya pregunta la sucursal en el primer mensaje.", ts: "2026-08-14T07:35:00" },
     { id: "im3", channelId: "ic3", staffId: "s3", texto: `En ${SUC_B} quedan 4 habitaciones libres para el sábado.`, ts: "2026-08-14T08:10:00" },
-    { id: "im4", channelId: "ic3", staffId: "s6", texto: `En ${SUC_C} está full desde el jueves por el congreso.`, ts: "2026-08-14T08:22:00" },
+    { id: "im4", channelId: "ic3", staffId: "s6", texto: `En ${SUC_C} está full desde el jueves por el torneo de surf.`, ts: "2026-08-14T08:22:00" },
     { id: "im5", channelId: "ic2", staffId: "s2", texto: "Subo las tarifas de temporada alta al mediodía.", ts: "2026-08-14T09:05:00" },
     { id: "im6", channelId: "ic4", staffId: "s5", texto: "El salón grande necesita montaje nuevo. Lo veo con mantenimiento.", ts: "2026-08-13T16:40:00" },
     { id: "im7", channelId: "dm1", staffId: "s4", texto: "¿Me pasas el consumo del agente de esta semana?", ts: "2026-08-14T09:30:00" },
     { id: "im8", channelId: "dm1", staffId: ME, texto: "Va en el dashboard, con el desglose de texto e imágenes.", ts: "2026-08-14T09:34:00" },
   ],
   socialPosts: [
-    { id: "sp1", red: "instagram", estado: "publicado", texto: "Tres sucursales, una sola forma de recibirte. Escríbenos y te decimos cuál te queda mejor.", fecha: "2026-08-12T08:00:00", engagement: { alcance: 11200, meGusta: 604, comentarios: 41, compartidos: 63, guardados: 188 } },
-    { id: "sp2", red: "facebook", estado: "publicado", texto: "Salones para eventos en nuestras tres sedes. Cotiza por mensaje y te respondemos hoy.", fecha: "2026-08-10T17:30:00", engagement: { alcance: 8400, meGusta: 311, comentarios: 29, compartidos: 44 } },
-    { id: "sp3", red: "instagram", estado: "programado", texto: "Desayuno incluido en todas las sedes. Sí, en todas.", fecha: "2026-08-16T09:00:00" },
+    { id: "sp1", red: "instagram", estado: "publicado", texto: "Tres hoteles frente al mar, una sola forma de recibirte. Escríbenos y te decimos cuál te queda mejor.", fecha: "2026-08-12T08:00:00", engagement: { alcance: 11200, meGusta: 604, comentarios: 41, compartidos: 63, guardados: 188 } },
+    { id: "sp2", red: "facebook", estado: "publicado", texto: "Piscina, restaurante y el Pacífico enfrente. Escríbenos y te decimos qué hay libre este fin de semana.", fecha: "2026-08-10T17:30:00", engagement: { alcance: 8400, meGusta: 311, comentarios: 29, compartidos: 44 } },
+    { id: "sp3", red: "instagram", estado: "programado", texto: "Check in desde las 3:00 p.m. Llegas, dejas el equipaje y te bajas a la playa.", fecha: "2026-08-16T09:00:00" },
     { id: "sp4", red: "facebook", estado: "programado", texto: "Tarifa corporativa para estadías de dos noches o más. Consulta por mensaje.", fecha: "2026-08-18T10:00:00" },
-    { id: "sp5", red: "instagram", estado: "borrador", texto: "Cómo elegir sucursal según a qué vienes a la ciudad.", fecha: "2026-08-17T12:00:00" },
+    { id: "sp5", red: "instagram", estado: "borrador", texto: "Cómo elegir entre El Sunzal, Las Flores y el Litoral según el plan.", fecha: "2026-08-17T12:00:00" },
   ],
   socialStats: [
-    { red: "instagram", handle: "@hotelyaly", seguidores: 14300, nuevosSeguidores: 820, crecimientoPct: 6.1, alcance30d: 96400, vistas30d: 178000, interacciones30d: 9120 },
-    { red: "facebook", handle: "Hotel Yaly", seguidores: 21700, nuevosSeguidores: 640, crecimientoPct: 3.0, alcance30d: 64100, vistas30d: 88300, interacciones30d: 4380 },
-    { red: "tiktok", handle: "@hotelyaly", seguidores: 9800, nuevosSeguidores: 2100, crecimientoPct: 27.3, vistas30d: 264000, meGusta30d: 15400, comentarios30d: 980, compartidos30d: 1740 },
+    { red: "instagram", handle: "@yalihospitality", seguidores: 14300, nuevosSeguidores: 820, crecimientoPct: 6.1, alcance30d: 96400, vistas30d: 178000, interacciones30d: 9120 },
+    { red: "facebook", handle: "Yali Hospitality", seguidores: 21700, nuevosSeguidores: 640, crecimientoPct: 3.0, alcance30d: 64100, vistas30d: 88300, interacciones30d: 4380 },
+    { red: "tiktok", handle: "@yalihospitality", seguidores: 9800, nuevosSeguidores: 2100, crecimientoPct: 27.3, vistas30d: 264000, meGusta30d: 15400, comentarios30d: 980, compartidos30d: 1740 },
   ],
   metrics: [
     { label: "Conversaciones hoy", valor: 38, delta: 22 },

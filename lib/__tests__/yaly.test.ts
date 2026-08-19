@@ -1,4 +1,4 @@
-// Tenant "yaly" (Hotel Yaly, 3 sucursales). Lo que cuidan estas pruebas:
+// Tenant "yaly" (Yali Hospitality, 3 hoteles de playa). Lo que cuidan estas pruebas:
 //   - que quede registrado como cliente sin pisarle la contraseña a nadie;
 //   - que los nombres de sucursal salgan de UN solo archivo;
 //   - que el guion no contradiga las barandas (pregunta de sucursal, tope de
@@ -6,6 +6,7 @@
 //   - que NO se haya tocado el tenant "hotel", que es un cliente real.
 import { describe, it, expect } from "vitest";
 import { DEMO_LOGINS, TENANTS, isTenantId, resolveTenantByLogin } from "@/lib/tenants";
+import { herramientasDeTenant } from "@/lib/ai";
 import {
   MARCA_PLACEHOLDER,
   tienePlaceholders,
@@ -86,13 +87,19 @@ describe("las tres sucursales viven en un solo archivo", () => {
     }
   });
 
-  // Este es el recordatorio: mientras el dueño no dé los nombres reales, la
-  // prueba avisa. Cuando los ponga, hay que borrar este bloque.
-  it("AVISO: los nombres siguen siendo placeholders y hay que reemplazarlos", () => {
-    expect(tienePlaceholders()).toBe(true);
+  // Los tres nombres ya son los reales, sacados del sitio del cliente. Si
+  // alguien vuelve a dejar uno a medias, esta prueba lo caza antes de que
+  // llegue a un huésped.
+  it("los nombres son los reales, sin placeholders", () => {
+    expect(tienePlaceholders()).toBe(false);
     for (const o of yalySucursales.opciones) {
-      expect(o.nombre).toContain(MARCA_PLACEHOLDER);
+      expect(o.nombre).not.toContain(MARCA_PLACEHOLDER);
     }
+    expect(yalySucursales.opciones.map((o) => o.nombre)).toEqual([
+      "Yalí, Playa El Sunzal",
+      "Costa del Surf, Playa Las Flores",
+      "Playa Linda, Carretera Litoral",
+    ]);
   });
 
   it("el guion de la IA lista las tres sedes tal como están declaradas", () => {
@@ -102,7 +109,7 @@ describe("las tres sucursales viven en un solo archivo", () => {
   });
 });
 
-describe("el guion de Renata no contradice las barandas", () => {
+describe("el guion de Sofía no contradice las barandas", () => {
   const p = TENANTS.yaly.ai.systemPrompt;
 
   it("le prohíbe volver a preguntar la sucursal cuando ya la tiene", () => {
@@ -128,12 +135,32 @@ describe("el guion de Renata no contradice las barandas", () => {
   });
 
   it("nombra solo herramientas que están cableadas", () => {
-    for (const t of ["guardar_datos_contacto", "consultar_disponibilidad", "confirmar_cita", "reaccionar"]) {
+    for (const t of [
+      "guardar_datos_contacto",
+      "consultar_habitaciones",
+      "reservar_estadia",
+      "reaccionar",
+    ]) {
       expect(p).toContain(t);
     }
+    expect(herramientasDeTenant("yaly").sort()).toEqual([
+      "consultar_habitaciones",
+      "guardar_datos_contacto",
+      "reaccionar",
+      "reservar_estadia",
+    ]);
     // Las del PMS son del otro hotel: aquí no existen.
     expect(p).not.toContain("consultar_disponibilidad_hotel");
     expect(p).not.toContain("reservar_habitacion");
+  });
+
+  it("manda cotizar con la herramienta antes de hablar de precios", () => {
+    expect(p).toMatch(/NUNCA hables de disponibilidad ni de precios sin haber llamado/);
+  });
+
+  it("deja las promociones fuera del guion: vienen del panel del hotel", () => {
+    expect(p).toMatch(/En este guion no hay ninguna promoción escrita/);
+    expect(p).toContain("PROMOCIONES ACTIVAS");
   });
 
   it("no promete pagos ni tarifas inventadas", () => {
@@ -191,7 +218,7 @@ describe("no se tocó el hotel real (El Descanso Antigua)", () => {
 
   it("yaly no comparte semilla ni marca con el hotel", () => {
     expect(TENANTS.yaly.seed).not.toBe(TENANTS.hotel.seed);
-    expect(TENANTS.yaly.brand.nombre).toBe("Hotel Yaly");
+    expect(TENANTS.yaly.brand.nombre).toBe("YALÍ Hotel & Resort");
     expect(TENANTS.yaly.ai.systemPrompt).not.toContain("El Descanso");
   });
 });

@@ -18,6 +18,8 @@ export type ModuleId =
   | "campanas"
   | "interno"
   | "redes"
+  | "promociones"
+  | "perfil"
   | "dashboard"
   | "llamadas"
   | "agentes"
@@ -41,13 +43,16 @@ export interface RoleDef {
 // inmobiliaria: el pipeline y las visitas son de quien vende (marketing no ve
 // los leads ni la agenda), y la publicación la arman tanto el asesor como
 // marketing, porque los dos suben anuncios.
-const TODO: ModuleId[] = ["bandeja", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "visitas", "cartera", "publicacion", "cobros", "campanas", "interno", "redes", "dashboard", "llamadas", "agentes", "settings"];
+// "promociones" y "perfil" solo existen en Yali Hospitality. Las promociones
+// alimentan en vivo lo que el agente puede ofrecer, así que las ve también
+// marketing; el perfil del agente lo tocan solo dirección y jefatura.
+const TODO: ModuleId[] = ["bandeja", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "visitas", "cartera", "publicacion", "cobros", "campanas", "interno", "redes", "promociones", "perfil", "dashboard", "llamadas", "agentes", "settings"];
 const VE: Record<RoleId, ModuleId[]> = {
   recepcion: ["bandeja", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "visitas", "cartera", "interno"],
-  marketing: ["bandeja", "contactos", "cartera", "publicacion", "cobros", "redes"],
+  marketing: ["bandeja", "contactos", "cartera", "publicacion", "cobros", "redes", "promociones"],
   gerente_marketing: TODO,
   medico: ["bandeja", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "visitas", "cartera", "publicacion", "cobros", "campanas", "interno"],
-  jefe: ["bandeja", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "visitas", "cartera", "publicacion", "cobros", "interno", "dashboard"],
+  jefe: ["bandeja", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "visitas", "cartera", "publicacion", "cobros", "interno", "promociones", "perfil", "dashboard"],
   admin: TODO,
 };
 
@@ -79,6 +84,8 @@ export const MODULO_RUTA: Record<ModuleId, string> = {
   campanas: "/campanas",
   interno: "/interno",
   redes: "/redes",
+  promociones: "/promociones",
+  perfil: "/perfil",
   dashboard: "/dashboard",
   llamadas: "/llamadas",
   agentes: "/agentes",
@@ -100,6 +107,8 @@ export function moduloDeRuta(pathname: string): ModuleId | null {
   if (pathname.startsWith("/campanas")) return "campanas";
   if (pathname.startsWith("/interno")) return "interno";
   if (pathname.startsWith("/redes")) return "redes";
+  if (pathname.startsWith("/promociones")) return "promociones";
+  if (pathname.startsWith("/perfil")) return "perfil";
   if (pathname.startsWith("/dashboard")) return "dashboard";
   if (pathname.startsWith("/llamadas")) return "llamadas";
   if (pathname.startsWith("/agentes")) return "agentes";
