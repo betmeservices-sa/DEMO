@@ -71,6 +71,9 @@ export interface MessageMedia {
   tipo: string; // image | document | audio | sticker | video
   mime?: string;
   filename?: string;
+  // Archivo servido por nosotros en vez de bajado de Meta. Solo lo usan las
+  // piezas de DEMOSTRACIÓN de las semillas, que no tienen media_id real.
+  url?: string;
 }
 
 export interface Message {

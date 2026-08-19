@@ -7,6 +7,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { hayTranscripcion, textoDeAudio } from "@/lib/transcribir";
 import { TENANTS } from "@/lib/tenants";
+import { captionDeMedia } from "@/lib/format";
 
 const LLAVE = process.env.GEMINI_API_KEY;
 afterEach(() => {
@@ -25,6 +26,18 @@ describe("cómo se guarda una nota de voz transcrita", () => {
 
   it("la marca va primero, no envuelve el texto", () => {
     expect(textoDeAudio("hola").startsWith("[audio] ")).toBe(true);
+  });
+
+  // La burbuja del chat pinta el reproductor y debajo lo que devuelve
+  // captionDeMedia. Si la marca dejara de calzar, la transcripción se vería con
+  // el "[audio]" pegado adelante, o directamente no se vería.
+  it("en el chat, la transcripción queda como pie del reproductor", () => {
+    const guardado = textoDeAudio("quiero reservar para el viernes");
+    expect(captionDeMedia(guardado)).toBe("quiero reservar para el viernes");
+  });
+
+  it("un audio que no se pudo transcribir no deja pie", () => {
+    expect(captionDeMedia("[audio]")).toBeNull();
   });
 });
 

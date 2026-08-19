@@ -35,7 +35,7 @@ export const yalySeed: TenantSeed = {
     { id: "c5", nombre: "Rodrigo Cáceres", telefono: "50372558814", canal: "whatsapp", notas: "Corporativo, se hospeda dos noches al mes.", tags: ["Corporativo"] },
   ],
   conversations: [
-    { id: "v1", canal: "whatsapp", contactId: "c1", departamento: "reservas", estado: "en_progreso", asignadoA: "s2", noLeidos: 0, ultimoMensajeTs: "2026-08-14T10:12:00", sucursalId: "a" },
+    { id: "v1", canal: "whatsapp", contactId: "c1", departamento: "reservas", estado: "en_progreso", asignadoA: "s2", noLeidos: 0, ultimoMensajeTs: "2026-08-14T10:15:00", sucursalId: "a" },
     { id: "v2", canal: "whatsapp", contactId: "c2", departamento: "reservas", estado: "en_progreso", asignadoA: ME, noLeidos: 2, ultimoMensajeTs: "2026-08-14T09:48:00", sucursalId: "b" },
     { id: "v3", canal: "instagram", contactId: "c3", departamento: "recepcion", estado: "nuevo", noLeidos: 1, ultimoMensajeTs: "2026-08-14T10:31:00", sucursalId: "c" },
     { id: "v4", canal: "facebook", contactId: "c4", departamento: "conserjeria", estado: "en_progreso", asignadoA: "s5", noLeidos: 0, ultimoMensajeTs: "2026-08-14T08:55:00", sucursalId: "a" },
@@ -46,6 +46,19 @@ export const yalySeed: TenantSeed = {
     { id: "m1", conversationId: "v1", autor: "cliente", texto: "Buenos días, ¿tienen dos habitaciones para el sábado?", ts: "2026-08-14T09:55:00" },
     { id: "m2", conversationId: "v1", autor: "staff", staffId: "s2", texto: `Buenos días. Le confirmo para ${SUC_A}: ¿serían dos habitaciones dobles?`, ts: "2026-08-14T10:04:00" },
     { id: "m3", conversationId: "v1", autor: "cliente", texto: "Sí, dobles. ¿Cuánto sale la noche?", ts: "2026-08-14T10:12:00" },
+    // Nota de voz YA TRANSCRITA, tal como la guarda el webhook: la marca
+    // "[audio]" adelante y la transcripción detrás (ver lib/transcribir.ts). El
+    // archivo es de demostración y lo servimos nosotros desde /public, porque no
+    // tiene media_id de Meta.
+    {
+      id: "m11",
+      conversationId: "v1",
+      autor: "cliente",
+      texto:
+        "[audio] Hola, buenas tardes. Quiero reservar una habitación para el viernes y el sábado, somos dos adultos y un niño. Me interesa la que tiene vista al mar. Gracias.",
+      ts: "2026-08-14T10:15:00",
+      media: { id: "demo-nota-voz", tipo: "audio", mime: "audio/ogg", url: "/demo/nota-voz-yali.ogg" },
+    },
     // v2 - evento
     { id: "m4", conversationId: "v2", autor: "cliente", texto: "Buenas, necesito salón para 60 personas.", ts: "2026-08-14T09:40:00" },
     { id: "m5", conversationId: "v2", autor: "cliente", texto: "Sería el último viernes del mes, por la noche.", ts: "2026-08-14T09:48:00" },
