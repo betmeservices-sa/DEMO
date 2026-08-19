@@ -14,3 +14,4 @@ dev.err.log
 dev.pid
 dev.log
 medicion/
+.medicion-tmp/

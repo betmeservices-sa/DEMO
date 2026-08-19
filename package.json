@@ -10,7 +10,8 @@
     "test": "vitest run",
     "costo:imagenes": "tsx scripts/costo-imagenes.ts",
     "costo:medir": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/medir-costo-tokens.ts",
-    "costo:simular": "tsx scripts/simular-conversacion.ts"
+    "costo:simular": "tsx scripts/simular-conversacion.ts",
+    "costo:live": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/correr-conversacion-live.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
