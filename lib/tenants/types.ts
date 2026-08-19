@@ -86,6 +86,10 @@ export interface DashboardCard {
 // enruta por phone_number_id → tenant. En modo demo/FAKE queda vacío.
 export interface TenantWhatsApp {
   phoneNumberId?: string;
+  // Número tal como lo marca un cliente, con código de país. Es el que se usa
+  // para armar los links `wa.me` que el negocio pone en la bio de cada perfil
+  // (ver lib/origen-sede.ts). No es el phoneNumberId, que es un id interno.
+  numeroPublico?: string;
 }
 
 // Agente de voz del tenant. La cuenta de voz es UNA sola y tiene agentes de

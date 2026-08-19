@@ -193,6 +193,24 @@ describe("panel del dueño", () => {
     expect(suma).toBe(panel.kpis.reservasVentana);
   });
 
+  // La pestaña de cada hotel muestra SUS cifras: si se colara una reserva de
+  // otra sede, el dueño estaría mirando el negocio equivocado.
+  it("cada sede trae su propio corte, y lo que suma cuadra con el total", () => {
+    for (const s of panel.sedes) {
+      expect(s.porCanal.reduce((n, c) => n + c.reservas, 0)).toBe(s.reservasVentana);
+      for (const l of s.llegadas) {
+        expect(l.sedeId).toBe(s.id);
+        expect(l.desde >= panel.hoy).toBe(true);
+      }
+      expect(s.tarifaMedia).toBe(
+        s.nochesVendidas === 0 ? 0 : Math.round(s.ingresoVentana / s.nochesVendidas),
+      );
+    }
+    expect(panel.sedes.reduce((n, s) => n + s.reservasVentana, 0)).toBe(panel.kpis.reservasVentana);
+    expect(panel.sedes.reduce((n, s) => n + s.ingresoVentana, 0)).toBe(panel.kpis.ingresoVentana);
+    expect(panel.sedes.reduce((n, s) => n + s.huespedesEnCasa, 0)).toBe(panel.kpis.huespedesEnCasa);
+  });
+
   // REGRESIÓN: quien se va hoy entró antes y ya no ocupa ninguna noche de la
   // ventana. Contándolo solo dentro de la ventana, recepción veía siempre cero
   // salidas y el panel parecía roto.

@@ -165,8 +165,9 @@ export default function PerfilPage() {
         )}
 
         <p className="rounded-xl bg-surface/70 px-4 py-3 text-[12px] leading-relaxed text-[var(--text-2)]">
-          Los cambios no se aplican solos: quedan registrados con su número de gestión y el equipo
-          los pasa al agente. Así ningún ajuste rompe las reglas de seguridad ni el manejo de
+          En cada tarjeta puede pedir un cambio contando con sus palabras qué quiere distinto.
+          Queda registrado con su número de gestión y el equipo lo pasa al agente. No se aplica
+          solo a propósito: así ningún ajuste rompe las reglas de seguridad ni el manejo de
           reservas que ya están probados.
         </p>
       </div>
@@ -190,7 +191,7 @@ function Tarjeta({
   onGuardar: (texto: string) => Promise<boolean>;
 }) {
   const Icon = ICONOS[campo.icono] ?? Sparkles;
-  const [texto, setTexto] = useState(campo.texto);
+  const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
 
   async function guardar() {
@@ -218,22 +219,27 @@ function Tarjeta({
           <button
             type="button"
             onClick={() => {
-              setTexto(pendiente?.texto ?? campo.texto);
+              setTexto("");
               onEditar();
             }}
             className="shrink-0 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[12px] font-semibold text-[var(--text-2)] transition hover:bg-surface"
           >
-            Editar
+            Pedir un cambio
           </button>
         )}
       </div>
 
       {editando ? (
         <div className="mt-3">
+          <p className="mb-2 rounded-xl bg-surface/70 px-3 py-2.5 text-[12.5px] leading-relaxed text-[var(--text-2)]">
+            {campo.texto}
+          </p>
           <textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            rows={5}
+            rows={4}
+            autoFocus
+            placeholder="Explique qué quiere cambiar. Por ejemplo: que salude en inglés cuando le escriban en inglés, o que no ofrezca la Planta Baja."
             className="w-full resize-y rounded-xl border border-line bg-surface px-3 py-2 text-[13px] leading-relaxed text-[var(--text)] outline-none transition focus:border-brand focus:bg-card"
           />
           <div className="mt-3 flex items-center gap-2">
@@ -251,7 +257,7 @@ function Tarjeta({
               className="ml-auto inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-[13px] font-bold text-white shadow-sm shadow-brand/25 transition hover:brightness-110 disabled:opacity-60"
             >
               {enviando ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              Guardar cambio
+              Enviar solicitud
             </button>
           </div>
         </div>
@@ -261,7 +267,7 @@ function Tarjeta({
           {pendiente && (
             <div className="mt-3 rounded-xl border border-[var(--brand-accent)]/45 bg-[var(--brand-accent)]/10 p-3">
               <p className="text-[11.5px] font-bold text-[var(--brand-accent)]">
-                Cambio pendiente · {pendiente.numero}
+                Cambio pedido · {pendiente.numero}
               </p>
               <p className="mt-1 text-[12.5px] leading-relaxed text-[var(--text-2)]">
                 {pendiente.texto}

@@ -5,6 +5,8 @@ import { addAdjunto } from "@/lib/contacts-store";
 import { programarRespuestaIA } from "@/lib/ai-reply";
 import { getWaTenant } from "@/lib/wa-routing";
 import { TENANTS } from "@/lib/tenants";
+import { sedeDeOrigen, type ReferralWa } from "@/lib/origen-sede";
+import { getEstadoSucursal, guardarSucursal } from "@/lib/sucursal-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +53,10 @@ interface WaMessage {
   audio?: WaMedia;
   sticker?: WaMedia;
   video?: WaMedia;
+  // Solo llega cuando el clic vino de un anuncio de click to WhatsApp: trae el
+  // id del anuncio, su titular y su cuerpo. Con eso se sabe de qué hotel viene
+  // sin preguntárselo (ver lib/origen-sede.ts).
+  referral?: ReferralWa;
 }
 
 // 2) Recepción: Meta hace POST con los mensajes entrantes.
@@ -150,6 +156,19 @@ export async function POST(req: Request) {
               caption: adjunto.media?.caption,
               ts,
             });
+          }
+
+          // De dónde viene: si el mensaje trae el referral de un anuncio, o si
+          // el texto prellenado del link de la bio nombra un hotel, la sede se
+          // guarda ACÁ y el agente ya no la pregunta. Solo la primera vez: si el
+          // contacto ya eligió sede, no se le pisa por un anuncio nuevo.
+          const sucursalesTenant = TENANTS[tenantActivo].sucursales;
+          if (sucursalesTenant && texto) {
+            const yaTiene = (await getEstadoSucursal(m.from)).sucursalId;
+            if (!yaTiene) {
+              const sede = sedeDeOrigen({ texto, referral: m.referral }, sucursalesTenant);
+              if (sede) await guardarSucursal(m.from, tenantActivo, sede.id, sede.nombre);
+            }
           }
 
           // Qué dispara a la IA: el TEXTO siempre, y la IMAGEN cuando el

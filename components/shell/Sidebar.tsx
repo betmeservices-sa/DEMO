@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, BarChart3, BedDouble, Bot, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, HandCoins, IdCard, Inbox, LogOut, Megaphone, MessagesSquare, PhoneCall, PhoneOutgoing, Settings, Share2, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, BarChart3, BedDouble, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, HandCoins, IdCard, Inbox, LogOut, Megaphone, MessagesSquare, PhoneCall, PhoneOutgoing, Settings, Share2, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { activeTenantId } from "@/lib/tenants/active";
@@ -22,6 +22,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { id: "bandeja", href: "/", label: "Bandeja", Icon: Inbox },
+  { id: "mis-chats", href: "/mis-chats", label: "Mis chats", Icon: BotOff },
   { id: "hoy", href: "/hoy", label: "Hoy", Icon: ConciergeBell },
   { id: "contactos", href: "/contactos", label: "Contactos", Icon: Contact },
   { id: "habitaciones", href: "/habitaciones", label: "Habitaciones", Icon: BedDouble },
@@ -92,6 +93,7 @@ export function Sidebar({
       (item.id !== "cobros" || veCobros) &&
       (item.id !== "campanas" || veCobros) &&
       (item.id !== "redes" || veRedes) &&
+      (item.id !== "mis-chats" || veYali) &&
       (item.id !== "promociones" || veYali) &&
       (item.id !== "perfil" || veYali),
   );

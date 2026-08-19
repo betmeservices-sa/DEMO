@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { bloquePromociones, promocionesVigentes, type Promocion, type PromocionNueva } from "@/lib/promos";
+import { promocionesVigentes, type Promocion, type PromocionNueva } from "@/lib/promos";
 
 const VACIA: PromocionNueva = {
   nombre: "",
@@ -180,8 +180,6 @@ export default function PromocionesPage() {
             )}
           </div>
         )}
-
-        <ComoLoLee promos={promos} hoy={hoy} />
       </div>
     </div>
   );
@@ -424,26 +422,5 @@ function Formulario({
         </button>
       </div>
     </form>
-  );
-}
-
-// El dueño ve el texto EXACTO que recibe el agente. Es la forma más corta de
-// explicarle que la pestaña no es decorativa: lo que enciende aquí es lo que
-// dice el agente, palabra por palabra.
-function ComoLoLee({ promos, hoy }: { promos: Promocion[]; hoy: string }) {
-  const texto = bloquePromociones(promos, hoy).trim();
-  return (
-    <details className="rounded-2xl border border-line bg-card p-5 shadow-sm">
-      <summary className="cursor-pointer text-sm font-bold text-[var(--text)]">
-        Cómo lo lee el agente
-      </summary>
-      <p className="mt-2 text-[12px] leading-relaxed text-[var(--text-3)]">
-        Esto se le entrega a Sofía en cada respuesta, con lo que esté encendido en ese momento.
-        Apagar una promoción la saca de la conversación al instante.
-      </p>
-      <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-surface p-4 text-[12px] leading-relaxed text-[var(--text-2)]">
-        {texto}
-      </pre>
-    </details>
   );
 }

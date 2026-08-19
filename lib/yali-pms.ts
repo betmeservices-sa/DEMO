@@ -268,6 +268,13 @@ export interface FilaOcupacion {
   ocupadasPorNoche: number[];
 }
 
+export interface RepartoCanal {
+  canal: CanalReserva;
+  reservas: number;
+  ingreso: number;
+  pct: number;
+}
+
 export interface PanelSede {
   id: string;
   nombre: string;
@@ -277,8 +284,16 @@ export interface PanelSede {
   ocupacionHoyPct: number;
   llegadasHoy: number;
   salidasHoy: number;
+  huespedesEnCasa: number;
   ingresoVentana: number;
+  reservasVentana: number;
+  nochesVendidas: number;
+  tarifaMedia: number;
   filas: FilaOcupacion[];
+  // Los mismos cortes que la vista general, pero de esta sede: es lo que se
+  // mira al entrar a la pestaña de un hotel.
+  porCanal: RepartoCanal[];
+  llegadas: ReservaYali[];
 }
 
 export interface PanelYali {
@@ -302,7 +317,7 @@ export interface PanelYali {
     nochesVendidas: number;
     nochesVendibles: number;
   };
-  porCanal: { canal: CanalReserva; reservas: number; ingreso: number; pct: number }[];
+  porCanal: RepartoCanal[];
   llegadas: ReservaYali[]; // próximas entradas, ordenadas por fecha
   consultado: string; // ISO 8601
 }
@@ -313,6 +328,31 @@ export interface EntradaPanel {
   hoy: string;
   dias: number;
   ahora: string; // ISO, se inyecta para que la función siga siendo pura
+}
+
+/** Reparto por canal de un conjunto de reservas, sin los canales en cero. */
+function repartoPorCanal(reservas: ReservaYali[]): RepartoCanal[] {
+  return CANALES.map((canal) => {
+    const dela = reservas.filter((r) => r.canal === canal);
+    return {
+      canal,
+      reservas: dela.length,
+      ingreso: dela.reduce((s, r) => s + r.total, 0),
+      pct: reservas.length === 0 ? 0 : Math.round((dela.length / reservas.length) * 100),
+    };
+  })
+    .filter((c) => c.reservas > 0)
+    .sort((a, b) => b.reservas - a.reservas);
+}
+
+/** Entradas de hoy en adelante, en orden, recortadas a las primeras `tope`. */
+function proximasLlegadas(reservas: ReservaYali[], hoy: string, tope: number): ReservaYali[] {
+  return reservas
+    .filter((r) => r.desde >= hoy)
+    .sort((a, b) =>
+      a.desde === b.desde ? a.sedeId.localeCompare(b.sedeId) : a.desde < b.desde ? -1 : 1,
+    )
+    .slice(0, tope);
 }
 
 export function construirPanelYali(e: EntradaPanel): PanelYali {
@@ -338,6 +378,8 @@ export function construirPanelYali(e: EntradaPanel): PanelYali {
     }));
     const unidades = unidadesDeSede(sede);
     const ocupadasHoy = filas.reduce((n, f) => n + f.ocupadasPorNoche[0], 0);
+    const ingreso = dela.reduce((s, r) => s + r.total, 0);
+    const noches = filas.reduce((m, f) => m + f.ocupadasPorNoche.reduce((a, b) => a + b, 0), 0);
     return {
       id: sede.id,
       nombre: sede.nombre,
@@ -347,8 +389,14 @@ export function construirPanelYali(e: EntradaPanel): PanelYali {
       ocupacionHoyPct: unidades === 0 ? 0 : Math.round((ocupadasHoy / unidades) * 100),
       llegadasHoy: dela.filter((r) => r.desde === e.hoy).length,
       salidasHoy: salidasHoy.filter((r) => r.sedeId === sede.id).length,
-      ingresoVentana: dela.reduce((s, r) => s + r.total, 0),
+      huespedesEnCasa: dela.filter((r) => cubre(r, e.hoy)).reduce((n, r) => n + r.huespedes, 0),
+      ingresoVentana: ingreso,
+      reservasVentana: dela.length,
+      nochesVendidas: noches,
+      tarifaMedia: noches === 0 ? 0 : Math.round(ingreso / noches),
       filas,
+      porCanal: repartoPorCanal(dela),
+      llegadas: proximasLlegadas(dela, e.hoy, 8),
     };
   });
 
@@ -360,17 +408,7 @@ export function construirPanelYali(e: EntradaPanel): PanelYali {
   );
   const ingresoVentana = sedes.reduce((s, x) => s + x.ingresoVentana, 0);
 
-  const porCanal = CANALES.map((canal) => {
-    const dela = enVentana.filter((r) => r.canal === canal);
-    return {
-      canal,
-      reservas: dela.length,
-      ingreso: dela.reduce((s, r) => s + r.total, 0),
-      pct: enVentana.length === 0 ? 0 : Math.round((dela.length / enVentana.length) * 100),
-    };
-  })
-    .filter((c) => c.reservas > 0)
-    .sort((a, b) => b.reservas - a.reservas);
+  const porCanal = repartoPorCanal(enVentana);
 
   return {
     hoy: e.hoy,
@@ -399,10 +437,7 @@ export function construirPanelYali(e: EntradaPanel): PanelYali {
       nochesVendibles: unidades * e.dias,
     },
     porCanal,
-    llegadas: enVentana
-      .filter((r) => r.desde >= e.hoy)
-      .sort((a, b) => (a.desde === b.desde ? a.sedeId.localeCompare(b.sedeId) : a.desde < b.desde ? -1 : 1))
-      .slice(0, 12),
+    llegadas: proximasLlegadas(enVentana, e.hoy, 12),
     consultado: e.ahora,
   };
 }

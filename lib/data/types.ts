@@ -92,6 +92,10 @@ export interface Conversation {
   asignadoA?: string; // StaffUser.id
   noLeidos: number;
   ultimoMensajeTs: string; // ISO 8601
+  // Sede a la que escribe el contacto, en los clientes con varias (hoy solo
+  // Yali). Sale de la pregunta de apertura del agente, y con ella el dashboard
+  // puede separar las conversaciones hotel por hotel.
+  sucursalId?: string;
 }
 
 export interface InternalChannel {

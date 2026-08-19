@@ -169,6 +169,29 @@ describe("el guion de Sofía no contradice las barandas", () => {
   });
 });
 
+describe("el dashboard puede separar por hotel", () => {
+  it("cada conversación de la semilla dice a qué sede pertenece", () => {
+    const ids = yalySucursales.opciones.map((o) => o.id);
+    for (const c of TENANTS.yaly.seed.conversations) {
+      expect(ids, c.id).toContain(c.sucursalId);
+    }
+  });
+
+  it("las tres sedes tienen al menos una conversación, o una pestaña saldría vacía", () => {
+    for (const o of yalySucursales.opciones) {
+      expect(
+        TENANTS.yaly.seed.conversations.some((c) => c.sucursalId === o.id),
+        o.nombre,
+      ).toBe(true);
+    }
+  });
+
+  it("hay al menos un chat asignado a mí, que es lo que muestra Mis chats", () => {
+    const mios = TENANTS.yaly.seed.conversations.filter((c) => c.asignadoA === TENANTS.yaly.seed.ME);
+    expect(mios.length).toBeGreaterThan(0);
+  });
+});
+
 describe("configuración del agente", () => {
   it("tiene tope de 10 mensajes por conversación", () => {
     expect(TENANTS.yaly.ai.limiteMensajes).toBe(10);

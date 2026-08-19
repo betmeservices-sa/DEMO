@@ -190,5 +190,8 @@ export const yalyTenant: TenantConfig = {
       ],
     },
   ],
-  whatsapp: {},
+  // Número del demo (el mismo que atiende el resto de clientes de prueba). Con
+  // él se arman los links de la bio de cada perfil de Instagram; cuando Yali
+  // tenga su propio número, se cambia acá y los tres links se regeneran solos.
+  whatsapp: { numeroPublico: "+503 7629 4980" },
 };
