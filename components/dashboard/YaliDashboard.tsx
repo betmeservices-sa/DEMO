@@ -8,21 +8,25 @@ import {
   Check,
   CircleDollarSign,
   Copy,
+  Globe,
   Inbox,
   Instagram,
+  Facebook,
+  MousePointerClick,
   LogIn,
   LogOut,
   Loader2,
   MessageSquare,
   RefreshCw,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useStore } from "@/lib/store";
 import { staff } from "@/lib/data/seed";
 import type { Conversation } from "@/lib/data/types";
 import { activeTenant } from "@/lib/tenants/active";
-import { linkBio, fraseBio } from "@/lib/origen-sede";
+import { urlDeEnlace } from "@/lib/enlaces";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { OrigenCanales } from "@/components/dashboard/OrigenCanales";
 import { DeptBreakdown } from "@/components/dashboard/DeptBreakdown";
@@ -359,7 +363,7 @@ function VistaSede({
         <Llegadas titulo={`Próximas llegadas a ${sede.nombre.split(",")[0]}`} reservas={sede.llegadas} />
         <div className="space-y-5">
           <PorCanal reparto={sede.porCanal} dias={panel.dias} />
-          <LinkDelPerfil sedeId={sede.id} />
+          <Origenes sedeId={sede.id} />
         </div>
       </div>
 
@@ -368,20 +372,101 @@ function VistaSede({
   );
 }
 
-// El link que va en la bio del perfil de Instagram de ESTA sede. Es lo que hace
-// que el agente sepa de qué hotel viene el huésped sin preguntárselo.
-function LinkDelPerfil({ sedeId }: { sedeId: string }) {
-  const tenant = activeTenant();
-  const sede = tenant.sucursales?.opciones.find((o) => o.id === sedeId);
-  const numero = tenant.whatsapp?.numeroPublico;
-  const [copiado, setCopiado] = useState(false);
+interface EnlaceMedido {
+  codigo: string;
+  sedeId: string;
+  canal: string;
+  frase: string;
+  utm: { source: string; medium: string; campaign: string };
+  clics: number;
+  ultimoClic: string | null;
+  campanas: string[];
+  conversaciones: number;
+}
 
-  if (!sede || !numero) return null;
-  const link = linkBio(numero, sede);
+const ICONO_CANAL: Record<string, LucideIcon> = {
+  Instagram,
+  Facebook,
+  "Sitio web": Globe,
+};
+
+// De dónde llegan los que escriben a ESTA sede.
+//
+// Los tres perfiles escriben al mismo WhatsApp y un wa.me pelado no deja rastro:
+// no viaja ningún UTM. Por eso en la bio va un link nuestro que cuenta el clic y
+// recién después manda a WhatsApp con el mensaje escrito. Acá se ven las dos
+// puntas: cuántos tocaron y cuántos escribieron.
+function Origenes({ sedeId }: { sedeId: string }) {
+  const [enlaces, setEnlaces] = useState<EnlaceMedido[] | null>(null);
+  const [dias, setDias] = useState(30);
+  const [base, setBase] = useState("");
+
+  useEffect(() => {
+    setBase(window.location.origin);
+  }, []);
+
+  useEffect(() => {
+    let vivo = true;
+    fetch(`/api/yali/origenes?dias=${dias}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (vivo && d.ok) setEnlaces(d.enlaces as EnlaceMedido[]);
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [dias]);
+
+  const mios = (enlaces ?? []).filter((e) => e.sedeId === sedeId);
+  const totalClics = mios.reduce((n, e) => n + e.clics, 0);
+
+  return (
+    <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-bold text-[var(--text)]">De dónde llegan los que escriben</h3>
+          <p className="text-[12px] text-[var(--text-3)]">
+            Un link por perfil. Cuenta el clic y deja el mensaje escrito.
+          </p>
+        </div>
+        <select
+          value={dias}
+          onChange={(e) => setDias(Number(e.target.value))}
+          className="rounded-lg border border-line bg-surface px-2 py-1 text-[12px] font-semibold text-[var(--text-2)] outline-none"
+        >
+          <option value={7}>7 días</option>
+          <option value={30}>30 días</option>
+          <option value={90}>90 días</option>
+        </select>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {mios.map((e) => (
+          <Enlace key={e.codigo} enlace={e} base={base} />
+        ))}
+      </div>
+
+      {enlaces !== null && totalClics === 0 && (
+        <p className="mt-3 flex items-start gap-2 rounded-xl bg-surface/70 px-3.5 py-2.5 text-[12px] leading-relaxed text-[var(--text-2)]">
+          <MousePointerClick size={14} className="mt-0.5 shrink-0 text-brand" />
+          Todavía sin clics. Empieza a contar en cuanto pongas estos links en la bio de cada
+          perfil, en lugar del número de WhatsApp suelto.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Enlace({ enlace, base }: { enlace: EnlaceMedido; base: string }) {
+  const [copiado, setCopiado] = useState(false);
+  const Icon = ICONO_CANAL[enlace.canal] ?? Globe;
+  const url = base ? urlDeEnlace(base, enlace) : `/ir/${enlace.codigo}`;
+  const pct = enlace.clics === 0 ? null : Math.round((enlace.conversaciones / enlace.clics) * 100);
 
   async function copiar() {
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(url);
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     } catch {
@@ -390,31 +475,32 @@ function LinkDelPerfil({ sedeId }: { sedeId: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
-      <div className="flex items-center gap-2">
-        <Instagram size={15} className="text-brand" />
-        <h3 className="text-sm font-bold text-[var(--text)]">Link para la bio de este perfil</h3>
-      </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-3)]">
-        Como los tres perfiles escriben al mismo WhatsApp, este link deja el mensaje escrito con
-        el nombre de este hotel. Así el agente sabe de dónde viene y no tiene que preguntarlo.
-      </p>
-      <p className="mt-3 rounded-xl bg-surface px-3 py-2.5 text-[12px] italic text-[var(--text-2)]">
-        &quot;{fraseBio(sede)}&quot;
-      </p>
-      <div className="mt-2 flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate rounded-xl bg-surface px-3 py-2 text-[11.5px] text-[var(--text-2)]">
-          {link}
-        </code>
+    <div className="rounded-xl border border-line bg-surface/50 p-3.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[var(--text)]">
+          <Icon size={14} className="text-brand" />
+          {enlace.canal}
+        </span>
+        <span className="text-[12px] text-[var(--text-3)]">
+          {enlace.clics} {enlace.clics === 1 ? "clic" : "clics"} · {enlace.conversaciones}{" "}
+          {enlace.conversaciones === 1 ? "escribió" : "escribieron"}
+          {pct !== null ? ` · ${pct}%` : ""}
+        </span>
         <button
           type="button"
           onClick={copiar}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-brand px-3 py-2 text-[12px] font-bold text-white shadow-sm shadow-brand/25 transition hover:brightness-110"
+          className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[11.5px] font-bold text-[var(--text-2)] transition hover:bg-surface"
         >
-          {copiado ? <Check size={13} /> : <Copy size={13} />}
-          {copiado ? "Copiado" : "Copiar"}
+          {copiado ? <Check size={12} /> : <Copy size={12} />}
+          {copiado ? "Copiado" : "Copiar link"}
         </button>
       </div>
+      <code className="mt-2 block truncate rounded-lg bg-card px-2.5 py-1.5 text-[11px] text-[var(--text-3)]">
+        {url}
+      </code>
+      <p className="mt-1.5 text-[11.5px] italic text-[var(--text-2)]">
+        Deja escrito: &quot;{enlace.frase}&quot;
+      </p>
     </div>
   );
 }

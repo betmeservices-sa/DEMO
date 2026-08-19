@@ -5,7 +5,7 @@ import { addAdjunto } from "@/lib/contacts-store";
 import { programarRespuestaIA } from "@/lib/ai-reply";
 import { getWaTenant } from "@/lib/wa-routing";
 import { TENANTS } from "@/lib/tenants";
-import { sedeDeOrigen, type ReferralWa } from "@/lib/origen-sede";
+import { origenDelContacto, type ReferralWa } from "@/lib/origen-sede";
 import { getEstadoSucursal, guardarSucursal } from "@/lib/sucursal-store";
 
 export const runtime = "nodejs";
@@ -166,8 +166,16 @@ export async function POST(req: Request) {
           if (sucursalesTenant && texto) {
             const yaTiene = (await getEstadoSucursal(m.from)).sucursalId;
             if (!yaTiene) {
-              const sede = sedeDeOrigen({ texto, referral: m.referral }, sucursalesTenant);
-              if (sede) await guardarSucursal(m.from, tenantActivo, sede.id, sede.nombre);
+              const origen = origenDelContacto({ texto, referral: m.referral }, sucursalesTenant);
+              if (origen) {
+                await guardarSucursal(
+                  m.from,
+                  tenantActivo,
+                  origen.sede.id,
+                  origen.sede.nombre,
+                  origen.enlace?.codigo ?? null,
+                );
+              }
             }
           }
 

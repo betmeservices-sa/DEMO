@@ -7,12 +7,12 @@
 // preguntando a cuál sede escribe.
 //
 // ── LO QUE SÍ SE PUEDE ──
-// 1. LINK CON MENSAJE PRELLENADO (funciona hoy, sin API, sin pauta). En la bio
-//    de cada perfil va un `wa.me/<numero>?text=...` distinto, con el nombre de
-//    ESE hotel adentro. El huésped toca, WhatsApp le abre el chat con el texto
-//    escrito y solo aprieta enviar. El primer mensaje llega diciendo de dónde
-//    viene y el agente se salta la pregunta. Si el huésped borra el texto,
-//    caemos en la pregunta de siempre: no se pierde nada.
+// 1. LINK RASTREABLE PROPIO (funciona hoy, sin API, sin pauta). En la bio de
+//    cada perfil va un link nuestro que registra el clic con sus UTMs y recién
+//    después manda a WhatsApp con el mensaje escrito, y ese mensaje dice de qué
+//    perfil y de qué hotel viene (ver lib/enlaces.ts). El huésped solo aprieta
+//    enviar. Si borra el texto, caemos en la pregunta de siempre: no se pierde
+//    nada.
 // 2. REFERRAL DE ANUNCIO (exacto, pero solo con pauta). Si el clic viene de un
 //    anuncio de click to WhatsApp, Meta manda un bloque `referral` en el
 //    webhook con el id del anuncio, su titular y su cuerpo. Ahí la sede se
@@ -23,6 +23,7 @@
 // Este archivo cubre 1 y 2. La 3 es una decisión del cliente, no código.
 
 import { interpretarSucursal } from "./sucursal-gate";
+import { enlaceDeTexto, type EnlaceRastreado } from "./enlaces";
 import type { SucursalTenant, TenantSucursales } from "./tenants/types";
 
 /** Bloque `referral` de WhatsApp Cloud API (solo llega en clics desde anuncios). */
@@ -35,29 +36,24 @@ export interface ReferralWa {
   ctwa_clid?: string;
 }
 
-/** El texto que va prellenado en el link de la bio de cada perfil. */
-export function fraseBio(sede: SucursalTenant): string {
-  return `Hola, quiero información de ${sede.nombre}`;
+export interface OrigenContacto {
+  sede: SucursalTenant;
+  /** El link rastreable que lo trajo, si vino por uno. Con él se une al clic. */
+  enlace: EnlaceRastreado | null;
+  /** Cómo se supo: por el anuncio, por el link de la bio o por lo que escribió. */
+  via: "anuncio" | "enlace" | "texto";
 }
 
 /**
- * Link para la bio de un perfil. El número va sin signos ni espacios, con
- * código de país (wa.me lo exige así).
+ * De dónde viene el contacto, o null si no se puede saber (ahí sí toca
+ * preguntar). El orden va de lo más confiable a lo menos: el anuncio es dato de
+ * Meta, el link es texto que pusimos nosotros, y lo que escribió el huésped
+ * puede ser cualquier cosa.
  */
-export function linkBio(numero: string, sede: SucursalTenant): string {
-  const limpio = numero.replace(/\D/g, "");
-  return `https://wa.me/${limpio}?text=${encodeURIComponent(fraseBio(sede))}`;
-}
-
-/**
- * Sede de la que viene el contacto, o null si no se puede saber (ahí sí toca
- * preguntar). Se mira primero el anuncio, que es dato de Meta, y después el
- * texto, que lo pudo haber editado el huésped.
- */
-export function sedeDeOrigen(
+export function origenDelContacto(
   entrada: { texto?: string; referral?: ReferralWa | null },
   sucursales?: TenantSucursales,
-): SucursalTenant | null {
+): OrigenContacto | null {
   if (!sucursales) return null;
 
   const r = entrada.referral;
@@ -67,15 +63,30 @@ export function sedeDeOrigen(
     for (const campo of [r.headline, r.body, urlLegible(r.source_url)]) {
       if (!campo) continue;
       const sede = interpretarSucursal(campo, sucursales);
-      if (sede) return sede;
+      if (sede) return { sede, enlace: null, via: "anuncio" };
     }
   }
 
   if (entrada.texto) {
+    // Primero el link: reconoce la frase completa, así que además del hotel dice
+    // de qué perfil salió y con eso se engancha el clic y su UTM.
+    const enlace = enlaceDeTexto(entrada.texto, sucursales);
+    if (enlace) {
+      const sede = sucursales.opciones.find((o) => o.id === enlace.sedeId);
+      if (sede) return { sede, enlace, via: "enlace" };
+    }
     const sede = interpretarSucursal(entrada.texto, sucursales);
-    if (sede) return sede;
+    if (sede) return { sede, enlace: null, via: "texto" };
   }
   return null;
+}
+
+/** Solo la sede, para quien no necesita el resto. */
+export function sedeDeOrigen(
+  entrada: { texto?: string; referral?: ReferralWa | null },
+  sucursales?: TenantSucursales,
+): SucursalTenant | null {
+  return origenDelContacto(entrada, sucursales)?.sede ?? null;
 }
 
 // "https://www.yalihospitality.com/costa-del-surf" -> "costa del surf", para que
