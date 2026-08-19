@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "costo:imagenes": "tsx scripts/costo-imagenes.ts",
+    "costo:medir": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/medir-costo-tokens.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
@@ -31,6 +33,7 @@
     "eslint-config-next": "16.2.1",
     "pg": "^8.22.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5",
     "vitest": "^4.1.9"
   }
