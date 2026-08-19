@@ -29,17 +29,17 @@ import { medidasDeImagen } from "./medidas-imagen";
 
 const PARCHE = 28;
 
-interface Nivel {
+export interface Nivel {
   nombre: string;
   ladoMax: number;
   tokensMax: number;
 }
 
-const ALTA: Nivel = { nombre: "alta", ladoMax: 2576, tokensMax: 4784 };
-const ESTANDAR: Nivel = { nombre: "estandar", ladoMax: 1568, tokensMax: 1568 };
+export const ALTA: Nivel = { nombre: "alta", ladoMax: 2576, tokensMax: 4784 };
+export const ESTANDAR: Nivel = { nombre: "estandar", ladoMax: 1568, tokensMax: 1568 };
 
 /** Modelos de 4.7 en adelante van en alta resolución. */
-function nivelDe(modelo: string): Nivel {
+export function nivelDe(modelo: string): Nivel {
   return /opus-5|sonnet-5|opus-4-(7|8)|fable-5/.test(modelo) ? ALTA : ESTANDAR;
 }
 
@@ -310,4 +310,5 @@ function main() {
   console.log("\nArchivos: medicion/COSTO-IMAGENES.md y medicion/imagenes.csv");
 }
 
-main();
+// Solo corre si se invoca directo; el simulador lo importa por sus funciones.
+if (process.argv[1]?.includes("costo-imagenes")) main();

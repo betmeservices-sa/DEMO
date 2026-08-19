@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "costo:imagenes": "tsx scripts/costo-imagenes.ts",
-    "costo:medir": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/medir-costo-tokens.ts"
+    "costo:medir": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/medir-costo-tokens.ts",
+    "costo:simular": "tsx scripts/simular-conversacion.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
