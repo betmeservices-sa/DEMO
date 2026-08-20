@@ -30,7 +30,6 @@ import { generarRespuesta, type TurnoIA } from "../lib/ai";
 import { transcribirAudio } from "../lib/transcribir";
 import { costoDeUso, tokensPrompt, type UsoTokens } from "../lib/tokens-precios";
 import { TENANTS } from "../lib/tenants";
-import { descargarImagenParaIA } from "../lib/wa-media";
 
 const TENANT = "yaly" as const;
 const SEDES = TENANTS.yaly.sucursales!.opciones;
@@ -152,9 +151,13 @@ async function enTandas<T>(tareas: (() => Promise<T>)[], conc: number, alAvanzar
   return resultados;
 }
 
+// OJO con el `||`: `--audio 0` es cero, no "sin valor". Con el fallback
+// ingenuo, pedir cero audios corria los dos por defecto.
 function arg(nombre: string, def: number): number {
   const i = process.argv.indexOf(`--${nombre}`);
-  return i > 0 ? Number(process.argv[i + 1]) || def : def;
+  if (i < 0) return def;
+  const v = Number(process.argv[i + 1]);
+  return Number.isFinite(v) ? v : def;
 }
 
 async function main() {
