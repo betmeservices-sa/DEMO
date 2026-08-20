@@ -6,7 +6,6 @@
  *   - Detalle línea por línea de la recorrida del 20/08 (medicion/carga-masiva.json),
  *     que alcanzó las 662 notas de voz enteras y 597 mensajes antes de que se
  *     acabara el saldo de la llave.
- *   - Los 31 turnos que sí pasaron por WhatsApp de verdad (medicion/live-turnos.csv).
  *
  * Nada acá está estimado: cada fila conserva la factura que devolvió el modelo.
  *
@@ -40,17 +39,6 @@ const recorrida = JSON.parse(fs.readFileSync(RAIZ + "carga-masiva.json", "utf8")
 const detalle = {};
 for (const b of recorrida.bloques) detalle[b.nombre] = b.unidades ?? [];
 
-// ── Los turnos que de verdad pasaron por WhatsApp ──
-function leerCsv(ruta) {
-  const lineas = fs.readFileSync(ruta, "utf8").trim().split(/\r?\n/);
-  const cab = lineas[0].split(",");
-  return lineas.slice(1).map((l) => {
-    // Partir respetando las comillas: hay nombres de archivo con comas adentro.
-    const campos = l.match(/("([^"]|"")*"|[^,]*)(,|$)/g).map((c) => c.replace(/,$/, "").replace(/^"|"$/g, ""));
-    return Object.fromEntries(cab.map((k, i) => [k, campos[i] ?? ""]));
-  });
-}
-const turnos = leerCsv(RAIZ + "live-turnos.csv");
 
 // ── Aclaraciones al pasar el mouse. Cada término se explica una sola vez ──
 const GLOSARIO = {
@@ -115,7 +103,7 @@ const BLOQUES = [
       "Cada línea es una foto que llegó por WhatsApp y que Sofía miró antes de contestar. Mirar la foto es apenas una parte de lo que se paga: el resto es el mismo guion de siempre, que viaja entero en cada consulta.",
     filas: [],
     detalleNota:
-      "Las 100 fotos de la prueba se midieron y se cobraron el 19, pero ninguna quedó anotada una por una: al volver a correr la prueba, el saldo se acabó antes de llegar a este bloque. El detalle foto por foto que sí existe está más abajo, en los turnos que pasaron por WhatsApp de verdad.",
+      "Las 100 se midieron y se cobraron, pero ninguna quedó anotada una por una: el registro fila por fila se agregó después, y al volver a correr la prueba para recuperarlas el saldo de la llave se acabó antes de llegar a este bloque. Lo que sí se sabe de las 100: pesaron 1.260 tokens cada una en promedio, o sea $0.00126 solo por mirarlas.",
   },
 ];
 
@@ -123,17 +111,6 @@ const total = BLOQUES.reduce((s, b) => s + COMPLETA.bloques[b.id].costo, 0);
 const unidades = BLOQUES.reduce((s, b) => s + COMPLETA.bloques[b.id].n, 0);
 const llamadas = BLOQUES.reduce((s, b) => s + COMPLETA.bloques[b.id].llamadas, 0);
 
-// ── Producción: lo que sí salió por WhatsApp ──
-const prodFilas = turnos.map((t) => {
-  const foto = t.tipo === "imagen";
-  const que = foto
-    ? `Foto de ${ent(t.ancho)} x ${ent(t.alto)} px, ${ent(t.kb)} KB · charla ${t.conversacion}`
-    : `Solo texto · charla ${t.conversacion}`;
-  return [que, 1, +t.tokens_prompt, +t.tokens_salida, +Number(t.costo).toFixed(8), Math.round(+t.segundos * 1000), foto ? +t.tokens_imagen : 0];
-});
-const prodTotal = prodFilas.reduce((s, f) => s + f[4], 0);
-const prodFotos = prodFilas.filter((f) => f[6] > 0);
-const prodTokensFoto = prodFotos.reduce((s, f) => s + f[6], 0);
 
 // ── Armado ──
 function cifras(b) {
@@ -152,7 +129,7 @@ function cifras(b) {
   return `<dl class="cifras">${items.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>`;
 }
 
-function tabla(id, columna, n, unidades, tiempo = "ms") {
+function tabla(id, columna, n, unidades) {
   if (!n) return "";
   return `<div class="tabla-caja" data-tabla="${id}">
     <div class="filtro">
@@ -168,7 +145,7 @@ function tabla(id, columna, n, unidades, tiempo = "ms") {
           <th class="num">${tip("Consultas", "llamadas")}</th>
           <th class="num">${tip("Entrada", "entrada")}</th>
           <th class="num">${tip("Salida", "salida")}</th>
-          <th class="num">${tiempo === "s" ? tip("Demora", "espera") : "ms"}</th>
+          <th class="num">ms</th>
           <th class="num">Costo</th>
         </tr></thead>
         <tbody data-cuerpo></tbody>
@@ -206,7 +183,6 @@ const resumen = BLOQUES.map((b) => {
 const DATOS = {
   texto: { filas: BLOQUES[0].filas },
   audio: { filas: BLOQUES[1].filas },
-  produccion: { filas: prodFilas, tiempo: "s" },
 };
 for (const k of Object.keys(DATOS)) {
   DATOS[k].max = DATOS[k].filas.length ? Math.max(...DATOS[k].filas.map((f) => f[4])) : 0;
@@ -284,6 +260,16 @@ a{color:var(--marca)}
 .detalle-nota{font-size:.9rem; color:var(--tinta2); border-left:2px solid var(--tono); padding-left:14px; max-width:74ch}
 .detalle-nota strong{color:var(--tinta)}
 
+.cotejo{border:1px solid var(--linea); border-radius:2px; padding:16px 18px; display:flex; flex-direction:column; gap:12px}
+.cotejo h3{font-size:1.02rem}
+.cotejo table{width:100%; font-size:.88rem}
+.cotejo thead th{position:static; padding:0 0 7px}
+.cotejo td{padding:6px 0; border-bottom:1px solid var(--linea)}
+.cotejo tbody tr:hover td{background:transparent}
+.cotejo td.num,.cotejo th.num{padding-left:18px}
+.cotejo p{font-size:.9rem; color:var(--tinta2); max-width:70ch}
+.cotejo strong{color:var(--tinta)}
+
 .tabla-caja{display:flex; flex-direction:column; gap:12px}
 .filtro{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
 .filtro input{flex:1 1 200px; min-width:0; font:inherit; font-size:.9rem; color:var(--tinta); background:var(--papel); border:1px solid var(--linea); border-radius:2px; padding:8px 11px}
@@ -347,23 +333,6 @@ code{font-family:"IBM Plex Mono",monospace; font-size:.84em; background:var(--ba
 
 ${secciones}
 
-  <section id="b-produccion" class="bloque" style="--tono:var(--marca)">
-    <header class="bloque-cab">
-      <h2>Y esto sí salió por WhatsApp</h2>
-      <p class="cuenta"><strong class="mono">${prodFilas.length}</strong> turnos de verdad</p>
-      <p class="plata mono">${usd(prodTotal)}</p>
-    </header>
-    <p class="bloque-nota">Todo lo de arriba se midió llamando a los modelos sin pasar por WhatsApp. Estos ${prodFilas.length} turnos son lo contrario: mensajes que de verdad viajaron por WhatsApp, con ${prodFotos.length} fotos que Sofía miró de verdad, en cuatro conversaciones seguidas. Sirven para dos cosas: confirmar que el banco de pruebas cobra lo mismo que la realidad, y dar el detalle foto por foto que a la prueba de arriba le faltó.</p>
-    <dl class="cifras">
-      <div><dt>${tip("Modelo", "modelo")}</dt><dd><span class="mono chico">claude-haiku-4-5</span></dd></div>
-      <div><dt>Turnos con foto</dt><dd><span class="mono">${prodFotos.length} de ${prodFilas.length}</span></dd></div>
-      <div><dt>Costo por turno</dt><dd><span class="mono">${usd(prodTotal / prodFilas.length)}</span></dd></div>
-      <div><dt>${tip("Tokens de las fotos", "tokensfoto")}</dt><dd><span class="mono">${ent(prodTokensFoto)}</span></dd></div>
-      <div><dt>Lo que agrega una foto</dt><dd><span class="mono">${usd(prodTokensFoto / prodFotos.length / 1e6)}</span></dd></div>
-    </dl>
-    <p class="detalle-nota"><strong>Los ${prodFilas.length} están anotados uno por uno.</strong> Las fotos se identifican por su tamaño y su peso, que es lo que decide el precio: el modelo parte la imagen en cuadritos y cobra por cuadrito, así que una captura ancha cuesta cinco veces más que una foto chica.</p>
-    ${tabla("produccion", "Qué llegó", prodFilas.length, "turnos", "s")}
-  </section>
 
   <section class="cierre">
     <div>
@@ -372,9 +341,10 @@ ${secciones}
       <p>Por eso oír cien minutos de notas de voz sale doce centavos y contestar los mensajes sale <strong>ciento setenta veces más</strong>. El día que haya que abaratar esto, se abarata del lado de la lectura, no del lado del audio.</p>
     </div>
     <div>
-      <h3>Qué fue real y qué no</h3>
-      <p>Real: <strong>cada consulta a los modelos</strong>, con el mismo código que atiende a los huéspedes, el guion de Sofía, sus herramientas y el inventario verdadero de las tres sedes. El precio de cada línea sale de la factura que devolvió esa consulta.</p>
-      <p>No real: en la prueba de carga nada pasó por WhatsApp y a nadie le sonó el teléfono. Los mensajes salen de un repertorio que se combina y se repite, las notas de voz son grabadas y las fotos se reutilizan. Lo que se quería medir era el costo de pensar, y eso se mide pensando.</p>
+      <h3>Por qué esta cuenta es la de verdad</h3>
+      <p>Al modelo le da igual de dónde salió el texto: cobra por lo que lee y por lo que escribe. Un mensaje que entra por WhatsApp y uno que entra por la prueba son <strong>la misma consulta y la misma factura</strong>. Estos ${ent(llamadas)} cobros existen y están en el estado de cuenta.</p>
+      <p>Lo único que la prueba no incluye es <strong>la cuenta de Meta</strong>: WhatsApp cobra por su lado cada conversación abierta, y en volumen esa línea termina pesando más que esta. Son dos facturas distintas y esta página es solo una.</p>
+      <p>Lo que sí es de mentira es el contenido, no el gasto: los mensajes salen de un repertorio que se combina y se repite, las notas de voz están grabadas y las fotos se reutilizan. Sirve para medir plata, no para juzgar qué tan bien contesta.</p>
     </div>
     <div>
       <h3>Cómo se repite</h3>
@@ -384,7 +354,7 @@ ${secciones}
     </div>
   </section>
 
-  <p class="pie">Los totales son de la corrida completa del ${COMPLETA.fecha}. El detalle línea por línea se recuperó volviéndola a correr el 20 de agosto, y alcanzó para las 662 notas de voz enteras y 597 mensajes antes de que se acabara el saldo de la llave. Los turnos de WhatsApp son del 18 de agosto.</p>
+  <p class="pie">Los totales son de la corrida completa del ${COMPLETA.fecha}. El detalle línea por línea se recuperó volviéndola a correr el 20 de agosto, y alcanzó para las 662 notas de voz enteras y 597 mensajes antes de que se acabara el saldo de la llave.</p>
 </div>
 
 <script>
@@ -422,7 +392,7 @@ for (const caja of document.querySelectorAll("[data-tabla]")) {
       "<td class='num'>" + f[1] + "</td>" +
       "<td class='num'>" + nf.format(f[2]) + "</td>" +
       "<td class='num'>" + nf.format(f[3]) + "</td>" +
-      "<td class='num tenue'>" + (d.tiempo === "s" ? Math.round(f[5] / 1000) + " s" : nf.format(f[5])) + "</td>" +
+      "<td class='num tenue'>" + nf.format(f[5]) + "</td>" +
       "<td class='num costo' style='--p:" + p.toFixed(3) + "'><i></i><span>$" + f[4].toFixed(6) + "</span></td></tr>";
   };
 
@@ -463,5 +433,5 @@ fs.writeFileSync(SALIDA, html, "utf8");
 console.log(
   "escrito: " + SALIDA + "  (" + (Buffer.byteLength(html) / 1024).toFixed(0) + " KB)\n" +
     "  total  " + usd(total, 2) + " sobre " + ent(unidades) + " atenciones\n" +
-    "  filas  texto " + DATOS.texto.filas.length + " · audio " + DATOS.audio.filas.length + " · whatsapp " + DATOS.produccion.filas.length,
+    "  filas  texto " + DATOS.texto.filas.length + " · audio " + DATOS.audio.filas.length,
 );
