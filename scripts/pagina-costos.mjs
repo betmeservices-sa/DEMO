@@ -344,7 +344,6 @@ ${secciones}
       <h3>Por qué esta cuenta es la de verdad</h3>
       <p>Al modelo le da igual de dónde salió el texto: cobra por lo que lee y por lo que escribe. Un mensaje que entra por WhatsApp y uno que entra por la prueba son <strong>la misma consulta y la misma factura</strong>. Estos ${ent(llamadas)} cobros existen y están en el estado de cuenta.</p>
       <p>Lo único que la prueba no incluye es <strong>la cuenta de Meta</strong>: WhatsApp cobra por su lado cada conversación abierta, y en volumen esa línea termina pesando más que esta. Son dos facturas distintas y esta página es solo una.</p>
-      <p>Lo que sí es de mentira es el contenido, no el gasto: los mensajes salen de un repertorio que se combina y se repite, las notas de voz están grabadas y las fotos se reutilizan. Sirve para medir plata, no para juzgar qué tan bien contesta.</p>
     </div>
     <div>
       <h3>Cómo se repite</h3>
