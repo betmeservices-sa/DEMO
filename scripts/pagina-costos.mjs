@@ -110,20 +110,6 @@ const BLOQUES = [
 const total = BLOQUES.reduce((s, b) => s + COMPLETA.bloques[b.id].costo, 0);
 const unidades = BLOQUES.reduce((s, b) => s + COMPLETA.bloques[b.id].n, 0);
 const llamadas = BLOQUES.reduce((s, b) => s + COMPLETA.bloques[b.id].llamadas, 0);
-// ── Los turnos que salieron por WhatsApp el 18 ──
-// Ya no tienen sección propia (el modelo cobra igual venga de donde venga), pero
-// fueron una medición y como tal entran en la bitácora.
-const turnosCsv = (() => {
-  try {
-    const l = fs.readFileSync(RAIZ + "live-turnos.csv", "utf8").trim().split(String.fromCharCode(10)).map((x) => x.trim()).filter(Boolean);
-    const i = l[0].split(",").indexOf("costo");
-    const filas = l.slice(1).map((x) => x.match(/("([^"]|"")*"|[^,]*)(,|$)/g).map((v) => v.replace(/,$/, "").replace(/^"|"$/g, "")));
-    return { n: filas.length, costo: filas.reduce((a, f) => a + Number(f[i]), 0) };
-  } catch {
-    return { n: 0, costo: 0 };
-  }
-})();
-
 // ── Bitácora: TODAS las mediciones, no solo la que titula la página ──
 //
 // Cada corrida dejó su informe en medicion/. Se leen de ahí en vez de copiarlos
@@ -144,8 +130,6 @@ function corrida(archivo) {
 }
 
 const BITACORA = [
-  { fecha: "18 ago", que: "Turnos por WhatsApp con fotos reales", partes: turnosCsv.n + " turnos", costo: turnosCsv.costo, llamadas: turnosCsv.n, detalle: turnosCsv.n },
-  { fecha: "18 ago", que: "Cálculo del peso en tokens de 600 fotos del disco", partes: "600 fotos", costo: 0, detalle: 600, sinLlamadas: true },
   { fecha: "19 ago", que: "Calibración de la transcripción", ...corrida("calibracion.json") },
   { fecha: "19 ago", que: "Los 100 minutos de audio, sueltos", ...corrida("audio-100min.json") },
   { fecha: "19 ago", que: "Prueba de humo del banco", ...corrida("humo.json") },
@@ -389,7 +373,7 @@ ${secciones}
       <p class="cuenta">${BITACORA.length} corridas</p>
       <p class="plata mono">${usd(gastoTotal)}</p>
     </header>
-    <p class="bloque-nota">La página se titula con una sola corrida, pero hubo ocho. Están todas acá, leídas de los informes que dejó cada una, para que quede claro qué se probó, cuándo, y cuánto se gastó en total probando.</p>
+    <p class="bloque-nota">La página se titula con una sola corrida, pero fueron ${BITACORA.length}. Están todas acá, leídas de los informes que dejó cada una, para que quede claro qué se probó, cuándo y cuánto se gastó en total probando.</p>
     <div class="scroll">
       <table>
         <thead><tr>
@@ -400,7 +384,7 @@ ${secciones}
           <th class="num">${tip("Con su fila", "detalle")}</th>
           <th class="num">Costo</th>
         </tr></thead>
-        <tbody>${BITACORA.map((x) => `<tr${x.principal ? ' class="destacada"' : ""}><td class="tenue">${x.fecha}</td><td>${x.que}</td><td class="tenue">${x.partes ?? ""}</td><td class="num">${x.sinLlamadas ? "sin llamadas" : ent(x.llamadas ?? 0)}</td><td class="num">${x.detalle ? ent(x.detalle) : "<span class=\"tenue\">ninguna</span>"}</td><td class="num">${x.costo ? usd(x.costo) : "<span class=\"tenue\">$0</span>"}</td></tr>`).join("")}</tbody>
+        <tbody>${BITACORA.map((x) => `<tr${x.principal ? ' class="destacada"' : ""}><td class="tenue">${x.fecha}</td><td>${x.que}</td><td class="tenue">${x.partes ?? ""}</td><td class="num">${ent(x.llamadas ?? 0)}</td><td class="num">${x.detalle ? ent(x.detalle) : "<span class=\"tenue\">ninguna</span>"}</td><td class="num">${x.costo ? usd(x.costo) : "<span class=\"tenue\">$0</span>"}</td></tr>`).join("")}</tbody>
         <tfoot><tr><td colspan="5">Gastado en medir, todo junto</td><td class="num">${usd(gastoTotal)}</td></tr></tfoot>
       </table>
     </div>
