@@ -110,6 +110,52 @@ const BLOQUES = [
 const total = BLOQUES.reduce((s, b) => s + COMPLETA.bloques[b.id].costo, 0);
 const unidades = BLOQUES.reduce((s, b) => s + COMPLETA.bloques[b.id].n, 0);
 const llamadas = BLOQUES.reduce((s, b) => s + COMPLETA.bloques[b.id].llamadas, 0);
+// ── Los turnos que salieron por WhatsApp el 18 ──
+// Ya no tienen sección propia (el modelo cobra igual venga de donde venga), pero
+// fueron una medición y como tal entran en la bitácora.
+const turnosCsv = (() => {
+  try {
+    const l = fs.readFileSync(RAIZ + "live-turnos.csv", "utf8").trim().split(String.fromCharCode(10)).map((x) => x.trim()).filter(Boolean);
+    const i = l[0].split(",").indexOf("costo");
+    const filas = l.slice(1).map((x) => x.match(/("([^"]|"")*"|[^,]*)(,|$)/g).map((v) => v.replace(/,$/, "").replace(/^"|"$/g, "")));
+    return { n: filas.length, costo: filas.reduce((a, f) => a + Number(f[i]), 0) };
+  } catch {
+    return { n: 0, costo: 0 };
+  }
+})();
+
+// ── Bitácora: TODAS las mediciones, no solo la que titula la página ──
+//
+// Cada corrida dejó su informe en medicion/. Se leen de ahí en vez de copiarlos
+// a mano para que la bitácora no pueda mentir sobre lo que de verdad se gastó.
+function corrida(archivo) {
+  try {
+    const j = JSON.parse(fs.readFileSync(RAIZ + archivo, "utf8"));
+    const b = j.bloques.filter((x) => x.n > 0);
+    return {
+      costo: b.reduce((s, x) => s + x.costo, 0),
+      llamadas: b.reduce((s, x) => s + x.llamadas, 0),
+      detalle: b.reduce((s, x) => s + (x.unidades ? x.unidades.length : 0), 0),
+      partes: b.map((x) => ent(x.n) + " " + ({ texto: "mensajes", audio: "notas", imagenes: "fotos" }[x.nombre] ?? x.nombre)).join(" + "),
+    };
+  } catch {
+    return null;
+  }
+}
+
+const BITACORA = [
+  { fecha: "18 ago", que: "Turnos por WhatsApp con fotos reales", partes: turnosCsv.n + " turnos", costo: turnosCsv.costo, llamadas: turnosCsv.n, detalle: turnosCsv.n },
+  { fecha: "18 ago", que: "Cálculo del peso en tokens de 600 fotos del disco", partes: "600 fotos", costo: 0, detalle: 600, sinLlamadas: true },
+  { fecha: "19 ago", que: "Calibración de la transcripción", ...corrida("calibracion.json") },
+  { fecha: "19 ago", que: "Los 100 minutos de audio, sueltos", ...corrida("audio-100min.json") },
+  { fecha: "19 ago", que: "Prueba de humo del banco", ...corrida("humo.json") },
+  { fecha: "19 ago", que: "CORRIDA COMPLETA, la de esta página", partes: "3.000 mensajes + 662 notas + 100 fotos", costo: total, llamadas: llamadas, detalle: 0, principal: true },
+  { fecha: "20 ago", que: "Humo, ya guardando fila por fila", ...corrida("humo2.json") },
+  { fecha: "20 ago", que: "Recorrida para recuperar el detalle", ...corrida("carga-masiva.json") },
+];
+const gastoTotal = BITACORA.reduce((s, x) => s + (x.costo ?? 0), 0);
+
+
 
 
 // ── Armado ──
@@ -270,6 +316,9 @@ a{color:var(--marca)}
 .cotejo p{font-size:.9rem; color:var(--tinta2); max-width:70ch}
 .cotejo strong{color:var(--tinta)}
 
+tfoot td{padding:10px 12px; border-top:1px solid var(--tinta); font-weight:600}
+tr.destacada td{background:var(--barra); font-weight:600}
+
 .tabla-caja{display:flex; flex-direction:column; gap:12px}
 .filtro{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
 .filtro input{flex:1 1 200px; min-width:0; font:inherit; font-size:.9rem; color:var(--tinta); background:var(--papel); border:1px solid var(--linea); border-radius:2px; padding:8px 11px}
@@ -333,6 +382,30 @@ code{font-family:"IBM Plex Mono",monospace; font-size:.84em; background:var(--ba
 
 ${secciones}
 
+
+  <section id="bitacora" class="bloque" style="--tono:var(--marca)">
+    <header class="bloque-cab">
+      <h2>Todo lo que se midió</h2>
+      <p class="cuenta">${BITACORA.length} corridas</p>
+      <p class="plata mono">${usd(gastoTotal)}</p>
+    </header>
+    <p class="bloque-nota">La página se titula con una sola corrida, pero hubo ocho. Están todas acá, leídas de los informes que dejó cada una, para que quede claro qué se probó, cuándo, y cuánto se gastó en total probando.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Cuándo</th>
+          <th>Qué se probó</th>
+          <th>Tamaño</th>
+          <th class="num">${tip("Consultas", "llamadas")}</th>
+          <th class="num">${tip("Con su fila", "detalle")}</th>
+          <th class="num">Costo</th>
+        </tr></thead>
+        <tbody>${BITACORA.map((x) => `<tr${x.principal ? ' class="destacada"' : ""}><td class="tenue">${x.fecha}</td><td>${x.que}</td><td class="tenue">${x.partes ?? ""}</td><td class="num">${x.sinLlamadas ? "sin llamadas" : ent(x.llamadas ?? 0)}</td><td class="num">${x.detalle ? ent(x.detalle) : "<span class=\"tenue\">ninguna</span>"}</td><td class="num">${x.costo ? usd(x.costo) : "<span class=\"tenue\">$0</span>"}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td colspan="5">Gastado en medir, todo junto</td><td class="num">${usd(gastoTotal)}</td></tr></tfoot>
+      </table>
+    </div>
+    <p class="detalle-nota"><strong>Las que dicen "ninguna" no perdieron su cobro, perdieron su fila.</strong> El banco de pruebas guardaba solo totales hasta el 20 de agosto; recién ahí empezó a anotar unidad por unidad. Recuperar las filas de la corrida grande exige volver a correrla, y ahí fue donde se terminó el saldo de la llave: alcanzó para 597 mensajes de 3.000 y ninguna foto. Con saldo, un comando la completa.</p>
+  </section>
 
   <section class="cierre">
     <div>
