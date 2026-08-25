@@ -88,6 +88,20 @@ async function suscribir(pageId: string, token: string): Promise<boolean> {
  * y token por cada sede (nueve datos y nueve formas de equivocarse), se pega un
  * token de usuario y acá se descubren todas con su Instagram ya vinculado.
  */
+/** El Instagram de una pagina, preguntado con el token de esa pagina. */
+async function instagramDe(pageId: string, pageToken: string): Promise<string | null> {
+  try {
+    const url = `${GRAPH}/${pageId}?fields=instagram_business_account{id}&access_token=${encodeURIComponent(pageToken)}`;
+    const r = await fetch(url, { cache: "no-store" });
+    const j = (await r.json()) as { instagram_business_account?: { id?: string } };
+    return j.instagram_business_account?.id ?? null;
+  } catch {
+    // Que falte el Instagram no puede tumbar la conexion de la pagina: sin el
+    // igual entran WhatsApp y Messenger.
+    return null;
+  }
+}
+
 async function conectarTodas(tenant: string, userToken: string) {
   const largo = await aTokenLargo(userToken);
   const url = `${GRAPH}/me/accounts?fields=id,name,access_token,instagram_business_account&limit=100&access_token=${encodeURIComponent(largo)}`;
@@ -100,14 +114,22 @@ async function conectarTodas(tenant: string, userToken: string) {
     throw new Error("Ese token no tiene ninguna página. Revisá que incluya el permiso pages_show_list.");
   }
 
-  const conexiones: MetaConnection[] = paginas.map((p) => ({
-    tenant,
-    pageId: p.id,
-    pageName: p.name ?? p.id,
-    pageToken: p.access_token as string,
-    igId: p.instagram_business_account?.id ?? null,
-    userToken: largo,
-  }));
+  // El Instagram se vuelve a pedir pagina por pagina cuando no vino en la
+  // consulta de arriba. No es paranoia: con la misma pagina y el mismo permiso,
+  // Graph a veces devuelve el campo anidado vacio contra el token de usuario y
+  // lleno contra el token de la pagina. Sin este rescate, la sede queda
+  // conectada pero sorda a los mensajes de Instagram, y no se nota hasta que
+  // alguien reclama que le escribio por ahi y nadie le contesto.
+  const conexiones: MetaConnection[] = await Promise.all(
+    paginas.map(async (p) => ({
+      tenant,
+      pageId: p.id,
+      pageName: p.name ?? p.id,
+      pageToken: p.access_token as string,
+      igId: p.instagram_business_account?.id ?? (await instagramDe(p.id, p.access_token as string)),
+      userToken: largo,
+    })),
+  );
 
   const suscritas = await Promise.all(conexiones.map((c) => suscribir(c.pageId, c.pageToken)));
   const donde = await guardarConexiones(tenant, conexiones);
