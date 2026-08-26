@@ -99,7 +99,10 @@ async function conversacionesDe(pageId, token, plataforma) {
 
 async function guardar(filas) {
   if (SECO || filas.length === 0) return filas.length;
-  const r = await fetch(`${SB_URL}/rest/v1/meta_messages`, {
+  // on_conflict=mid es lo que hace que "ignore-duplicates" funcione de verdad.
+  // Sin eso, un solo mensaje repetido tumba el lote ENTERO de 200 y esos 200 se
+  // pierden sin que se note: el script sigue como si nada.
+  const r = await fetch(`${SB_URL}/rest/v1/meta_messages?on_conflict=mid`, {
     method: "POST",
     headers: { ...cabeceras, Prefer: "resolution=ignore-duplicates,return=minimal" },
     body: JSON.stringify(filas),
