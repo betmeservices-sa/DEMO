@@ -305,7 +305,7 @@ export default function CrediqPage() {
             )}
           </div>
           {reporte ? (
-            <ReporteGerente r={reporte} />
+            <ReporteGerente r={reporte} casos={datos?.solicitudes ?? []} />
           ) : (
             <p className="flex items-center gap-2 text-[13px] text-[var(--text-3)]">
               <Loader2 size={15} className="animate-spin text-brand" /> Armando el reporte
