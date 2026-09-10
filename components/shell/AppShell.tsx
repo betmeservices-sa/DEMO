@@ -41,6 +41,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!permitido) router.replace(MODULO_RUTA[primerModulo(def)]);
   }, [permitido, def, router]);
 
+  // La clinica solo tiene sus dos pantallas: entrar cae en el consultorio y no
+  // en la bandeja, que para este cliente no existe.
+  useEffect(() => {
+    if (!sesion || activeTenantId() !== "consultorio") return;
+    if (modulo !== "consultorio" && modulo !== "laboratorio") router.replace("/consultorio");
+  }, [sesion, modulo, router]);
+
   // Aplica el tema del cliente activo en <html data-tenant>. Sin sesión se quita
   // (la pantalla de login usa el tema neutro de :root).
   useEffect(() => {

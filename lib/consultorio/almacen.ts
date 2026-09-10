@@ -350,7 +350,17 @@ const aTurno = (t: Turno) => ({
   cerrado: t.cerrado,
 });
 
-const esDeHoy = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
+// "Hoy" es el día de El Salvador, no el del servidor. En Vercel el proceso
+// corre en UTC, y con el día de UTC la fila del laboratorio se vaciaba sola a
+// las 6 de la tarde hora local: alguien tomaba turno a las 5:50 y quince
+// minutos después el mostrador ya no lo veía.
+const DIA_SV = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/El_Salvador",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const esDeHoy = (iso: string) => DIA_SV.format(new Date(iso)) === DIA_SV.format(new Date());
 
 /** La fila de hoy. Los turnos de ayer no le estorban a nadie. */
 export async function turnosDe(sucursalId: string): Promise<Turno[]> {

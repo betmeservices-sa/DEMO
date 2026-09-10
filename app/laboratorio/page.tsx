@@ -16,7 +16,7 @@ export default async function PaginaLaboratorio() {
   if (!(await esDeLaClinica())) notFound();
   const sucursal = await sucursalActual();
   return (
-    <div className="cons">
+    <div className="cons flex min-h-0 flex-1 flex-col overflow-y-auto">
       <Mostrador
         sucursal={sucursal}
         iniciales={await turnosDe(sucursal.id)}

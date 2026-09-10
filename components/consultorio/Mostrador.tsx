@@ -95,7 +95,7 @@ export function Mostrador({
   const atendidos = turnos.filter((t) => t.estado === "atendido").length;
 
   return (
-    <div className="min-h-dvh">
+    <div>
       <header className="no-imprimir bg-[var(--barra)] text-white">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-4">
           <span className="min-w-0">

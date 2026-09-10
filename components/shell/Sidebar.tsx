@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessagesSquare, PhoneCall, PhoneOutgoing, Settings, Share2, Stethoscope, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessagesSquare, PhoneCall, PhoneOutgoing, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { useStore } from "@/lib/store";
@@ -114,7 +114,13 @@ export function Sidebar({
   // pero Grupo Q no los trabaja desde aca: su mercadeo lleva las redes por su
   // cuenta y la pestana solo metia ruido en un panel de credito.
   const veComentarios = veRedes && tenant !== "grupoq";
-  const visibles = NAV.filter(
+  // La clinica NO es un centro de comunicacion: son tres vistas y nada mas
+  // (el doctor, el laboratorio y lo que ve el paciente). Bandeja, contactos,
+  // redes, comentarios y dashboard son de los otros clientes y aca solo hacen
+  // ruido, asi que su menu se arma aparte en vez de filtrarse.
+  const visibles = veClinica
+    ? NAV.filter((item) => item.id === "consultorio" || item.id === "laboratorio")
+    : NAV.filter(
     (item) =>
       def.ve.includes(item.id) &&
       (item.id !== "llamadas" || veLlamadas) &&
@@ -139,7 +145,7 @@ export function Sidebar({
       (item.id !== "promociones" || veYali) &&
       (item.id !== "perfil" || veYali) &&
       (item.id !== "sofia" || veYali),
-  );
+      );
 
   // Los avisos del menu: lo que espera respuesta en cada modulo.
   //
@@ -213,12 +219,25 @@ export function Sidebar({
             </Link>
           );
         })}
+
+        {veClinica && (
+          <a
+            href="/paciente"
+            target="_blank"
+            rel="noreferrer"
+            onClick={onClose}
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[var(--text-2)] transition hover:bg-surface hover:text-[var(--text)]"
+          >
+            <Smartphone size={18} strokeWidth={2.1} />
+            <span className="min-w-0 flex-1 truncate">Vista del paciente</span>
+          </a>
+        )}
       </nav>
 
       <div className="space-y-3 border-t border-line p-3">
         <CambiarClave />
         <ClienteSwitcher />
-        <RoleSwitcher />
+        {!veClinica && <RoleSwitcher />}
         <div className="flex items-center gap-2.5 rounded-xl px-2 py-1.5">
           <Avatar iniciales={yo.iniciales} size={34} />
           <div className="min-w-0 flex-1 leading-tight">
