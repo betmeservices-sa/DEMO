@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessagesSquare, PhoneCall, PhoneOutgoing, Settings, Share2, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessagesSquare, PhoneCall, PhoneOutgoing, Settings, Share2, Stethoscope, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { useStore } from "@/lib/store";
@@ -41,6 +41,8 @@ const NAV: NavItem[] = [
   { id: "publicacion", href: "/publicacion", label: "Publicación", Icon: Share2 },
   { id: "cobros", href: "/cobros", label: "Cartera de mora", Icon: HandCoins },
   { id: "campanas", href: "/campanas", label: "Campañas", Icon: PhoneOutgoing },
+  { id: "consultorio", href: "/consultorio", label: "Consultorio", Icon: Stethoscope },
+  { id: "laboratorio", href: "/laboratorio", label: "Laboratorio", Icon: FlaskConical },
   { id: "interno", href: "/interno", label: "Chat interno", Icon: MessagesSquare },
   { id: "redes", href: "/redes", label: "Redes sociales", Icon: Megaphone },
   { id: "comentarios", href: "/comentarios", label: "Comentarios", Icon: MsgSq },
@@ -94,6 +96,10 @@ export function Sidebar({
   // sin esa pantalla el traspaso existe pero nadie lo ve.
   const veCrediq = tenant === "grupoq";
   const veCobros = tenant === "promerica";
+  // El consultorio y el mostrador del laboratorio: los pacientes que se
+  // registran escaneando el QR del doctor y la fila de quien llega a hacerse
+  // los examenes. Solo la clinica.
+  const veClinica = tenant === "consultorio";
   // "promociones" y "perfil" son el tablero con el que Yali maneja a su agente:
   // lo que enciende en Promociones es lo único que el agente puede ofrecer, y
   // Perfil le muestra en cuatro tarjetas cómo está configurado.
@@ -123,6 +129,8 @@ export function Sidebar({
       (item.id !== "cartera" || veInmobiliaria) &&
       (item.id !== "publicacion" || veInmobiliaria) &&
       (item.id !== "cobros" || veCobros) &&
+      (item.id !== "consultorio" || veClinica) &&
+      (item.id !== "laboratorio" || veClinica) &&
       (item.id !== "campanas" || veCobros) &&
       (item.id !== "redes" || veRedes) &&
       (item.id !== "comentarios" || veComentarios) &&

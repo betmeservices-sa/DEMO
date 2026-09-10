@@ -15,6 +15,16 @@ import { LoginPage } from "./LoginPage";
 // Rutas públicas que NO llevan el chrome del dashboard (sidebar, store, etc.).
 const PUBLIC_ROUTES = ["/privacy"];
 
+// Lo mismo, pero por prefijo: las dos páginas que abre el PACIENTE al escanear
+// un QR del consultorio (`/r/<código>` la del doctor, `/s/<código>` la del
+// laboratorio). Quien las abre no tiene cuenta, así que no puede caer en la
+// pantalla de login ni ver la barra lateral de la clínica.
+const PUBLIC_PREFIXES = ["/r/", "/s/"];
+
+function esPublica(pathname: string): boolean {
+  return PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -39,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     else if (sesion === false) delete el.dataset.tenant;
   }, [sesion]);
 
-  if (PUBLIC_ROUTES.includes(pathname)) {
+  if (esPublica(pathname)) {
     return <>{children}</>;
   }
 
