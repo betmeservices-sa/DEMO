@@ -32,6 +32,9 @@ export type ModuleId =
   // flujo: quien llega a hacerse los examenes.
   | "consultorio"
   | "laboratorio"
+  // Lo que mira el jefe del laboratorio: cuanta gente paso, cuanto espero,
+  // cuanto se facturo y que quedo sin hacerse.
+  | "jefatura"
   | "interno"
   | "redes"
   | "comentarios"
@@ -75,7 +78,7 @@ export interface RoleDef {
 // marketing no gestiona casos, asi que no lo ve.
 // "mis-chats" lo ve todo el mundo: es donde caen los chats que el agente pasa a
 // una persona, y quien atiende tiene que verlos sin depender de su rol.
-const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "llamadas", "qa", "agentes", "settings"];
+const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "llamadas", "qa", "agentes", "settings"];
 export const VE: Record<RoleId, ModuleId[]> = {
   // Recepcion del consultorio es quien recibe al paciente y quien mueve la
   // fila del laboratorio: los dos modulos del modulo clinico son suyos.
@@ -92,7 +95,7 @@ export const VE: Record<RoleId, ModuleId[]> = {
   // El medico ve su consultorio (sus pacientes, sus recetas), pero no el
   // mostrador del laboratorio: esa fila no es suya.
   medico: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "interno"],
-  jefe: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "visitas", "cartera", "publicacion", "cobros", "consultorio", "laboratorio", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard"],
+  jefe: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "visitas", "cartera", "publicacion", "cobros", "consultorio", "laboratorio", "jefatura", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard"],
   admin: TODO,
 };
 
@@ -115,6 +118,7 @@ export const MODULO_RUTA: Record<ModuleId, string> = {
   campanas: "/campanas",
   consultorio: "/consultorio",
   laboratorio: "/laboratorio",
+  jefatura: "/laboratorio/jefatura",
   interno: "/interno",
   redes: "/redes",
   comentarios: "/comentarios",
@@ -144,6 +148,7 @@ export function moduloDeRuta(pathname: string): ModuleId | null {
   if (pathname.startsWith("/cobros")) return "cobros";
   if (pathname.startsWith("/campanas")) return "campanas";
   if (pathname.startsWith("/consultorio")) return "consultorio";
+  if (pathname.startsWith("/laboratorio/jefatura")) return "jefatura";
   if (pathname.startsWith("/laboratorio")) return "laboratorio";
   if (pathname.startsWith("/interno")) return "interno";
   if (pathname.startsWith("/redes")) return "redes";

@@ -43,6 +43,7 @@ const NAV: NavItem[] = [
   { id: "campanas", href: "/campanas", label: "Campañas", Icon: PhoneOutgoing },
   { id: "consultorio", href: "/consultorio", label: "Consultorio", Icon: Stethoscope },
   { id: "laboratorio", href: "/laboratorio", label: "Laboratorio", Icon: FlaskConical },
+  { id: "jefatura", href: "/laboratorio/jefatura", label: "Jefatura", Icon: BarChart3 },
   { id: "interno", href: "/interno", label: "Chat interno", Icon: MessagesSquare },
   { id: "redes", href: "/redes", label: "Redes sociales", Icon: Megaphone },
   { id: "comentarios", href: "/comentarios", label: "Comentarios", Icon: MsgSq },
@@ -119,7 +120,11 @@ export function Sidebar({
   // redes, comentarios y dashboard son de los otros clientes y aca solo hacen
   // ruido, asi que su menu se arma aparte en vez de filtrarse.
   const visibles = veClinica
-    ? NAV.filter((item) => item.id === "consultorio" || item.id === "laboratorio")
+    ? NAV.filter(
+        (item) =>
+          (item.id === "consultorio" || item.id === "laboratorio" || item.id === "jefatura") &&
+          def.ve.includes(item.id),
+      )
     : NAV.filter(
     (item) =>
       def.ve.includes(item.id) &&
@@ -189,7 +194,14 @@ export function Sidebar({
           se queda clavado. */}
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {visibles.map(({ id, href, label, Icon }) => {
-          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          const mejor = visibles.reduce(
+            (largo, it) =>
+              it.href !== "/" && pathname.startsWith(it.href) && it.href.length > largo.length
+                ? it.href
+                : largo,
+            "",
+          );
+          const active = href === "/" ? pathname === "/" : href === mejor;
           // El tablero de Grupo Q no resume comunicacion: mide al agente.
           const etiqueta = id === "dashboard" && tenant === "grupoq" ? "IA Performance" : label;
           return (

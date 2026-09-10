@@ -50,7 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     // abría y se devolvía sola al consultorio.
     if (esPublica(pathname)) return;
     if (!sesion || activeTenantId() !== "consultorio") return;
-    if (modulo !== "consultorio" && modulo !== "laboratorio") router.replace("/consultorio");
+    if (modulo !== "consultorio" && modulo !== "laboratorio" && modulo !== "jefatura") {
+      router.replace("/consultorio");
+    }
   }, [sesion, modulo, pathname, router]);
 
   // Aplica el tema del cliente activo en <html data-tenant>. Sin sesión se quita
