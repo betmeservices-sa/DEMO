@@ -44,9 +44,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   // La clinica solo tiene sus dos pantallas: entrar cae en el consultorio y no
   // en la bandeja, que para este cliente no existe.
   useEffect(() => {
+    // Las páginas del paciente NO son del menú: se abren en el teléfono de otra
+    // persona y se ven enteras. Sin esta salida, el efecto corría igual (los
+    // hooks van antes del return de las públicas) y la vista del paciente se
+    // abría y se devolvía sola al consultorio.
+    if (esPublica(pathname)) return;
     if (!sesion || activeTenantId() !== "consultorio") return;
     if (modulo !== "consultorio" && modulo !== "laboratorio") router.replace("/consultorio");
-  }, [sesion, modulo, router]);
+  }, [sesion, modulo, pathname, router]);
 
   // Aplica el tema del cliente activo en <html data-tenant>. Sin sesión se quita
   // (la pantalla de login usa el tema neutro de :root).
