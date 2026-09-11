@@ -108,17 +108,24 @@ export function armarCorreo(
 /**
  * Se lo entrega a n8n.
  *
- * La ruta es `<N8N_WEBHOOK_BASE>/consultorio-correo`, y el flujo del otro lado
- * solo tiene que tomar `a`, `asunto`, `html` y `texto` y enviarlos: el correo
- * va armado desde acá (ver n8n/consultorio-correo.json). Si no hay base
- * configurada o n8n contesta mal, devuelve false y el módulo dice que el correo
- * NO salió.
+ * La URL sale de N8N_CORREO_URL (o de <N8N_WEBHOOK_BASE>/consultorio-correo).
+ * El flujo del otro lado solo tiene que tomar `a`, `asunto`, `html` y `texto`
+ * y enviarlos: el correo va armado desde acá (ver n8n/consultorio-correo.json).
+ * Si no hay URL configurada o n8n contesta mal, devuelve false y el módulo dice
+ * que el correo NO salió.
  */
 export async function mandarPorN8n(correo: CorreoDeDocumento): Promise<boolean> {
-  const base = process.env.N8N_WEBHOOK_BASE;
-  if (!base) return false;
+  // Variable propia y no la base de los webhooks de citas: esa la comparten
+  // todos los clientes del demo, y encenderla acá le prendería el agendamiento
+  // por n8n a tenants que hoy no lo usan. Esto tiene que mover una sola cosa.
+  const url =
+    process.env.N8N_CORREO_URL ??
+    (process.env.N8N_WEBHOOK_BASE
+      ? `${process.env.N8N_WEBHOOK_BASE.replace(/\/$/, "")}/consultorio-correo`
+      : null);
+  if (!url) return false;
   try {
-    const r = await fetch(`${base.replace(/\/$/, "")}/consultorio-correo`, {
+    const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(correo),
