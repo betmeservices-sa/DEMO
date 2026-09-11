@@ -2,9 +2,11 @@
 
 // El expediente: lo que el doctor hace con el paciente que ya llegó.
 //
-// Dos documentos y nada más: la orden de exámenes y la receta. La orden va
-// primero porque es la que más se usa y la que más tiempo cuesta escribir a
-// mano; acá se marca y listo.
+// Cuatro cosas puede dejarle escritas: exámenes de laboratorio, estudios de
+// imagenología, procedimientos y la receta. Las tres primeras son la misma
+// pantalla con distinto catálogo, porque el gesto es el mismo: marcar lo que se
+// le va a hacer. Los exámenes van primero porque son los que más se usan y los
+// que más tiempo cuestan escribir a mano.
 //
 // La hoja de exámenes está en columnas por área y no en una lista alfabética
 // porque así es como se indican: nadie busca "TSH" entre ciento veinte
@@ -16,10 +18,24 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, TriangleAlert } from "lucide-react";
 import { Encabezado } from "@/components/consultorio/Encabezado";
-import { AREAS, agrupar, preparacion } from "@/lib/consultorio/examenes";
+import {
+  NOMBRE_TIPO,
+  agruparDe,
+  areasDe,
+  preparacionDe as preparacion,
+  type TipoOrden,
+} from "@/lib/consultorio/catalogos";
 import { edad, type Doctor, type Documento, type Medicamento, type Paciente } from "@/lib/consultorio/tipos";
 
-type Pestana = "orden" | "receta";
+type Pestana = TipoOrden | "receta";
+
+// Cómo se llama cada pestaña y qué se le dice al doctor cuando guarda.
+const PESTANAS: { id: Pestana; texto: string }[] = [
+  { id: "orden", texto: "Exámenes" },
+  { id: "imagen", texto: "Imagenología" },
+  { id: "proceso", texto: "Procesos" },
+  { id: "receta", texto: "Receta" },
+];
 
 const MED_VACIO: Medicamento = { nombre: "", dosis: "", frecuencia: "", duracion: "" };
 
@@ -60,9 +76,9 @@ export function Expediente({
     setAviso(null);
     try {
       const cuerpo =
-        pestana === "orden"
-          ? { tipo: "orden", pacienteId: paciente.id, examenes: marcados, diagnostico, indicaciones }
-          : { tipo: "receta", pacienteId: paciente.id, medicamentos, indicaciones };
+        pestana === "receta"
+          ? { tipo: "receta", pacienteId: paciente.id, medicamentos, indicaciones }
+          : { tipo: pestana, pacienteId: paciente.id, examenes: marcados, diagnostico, indicaciones };
 
       const r = await fetch("/api/consultorio/documentos", {
         method: "POST",
@@ -77,7 +93,7 @@ export function Expediente({
       }
 
       let doc: Documento = d.documento;
-      let texto = pestana === "orden" ? "Orden guardada." : "Receta guardada.";
+      let texto = pestana === "receta" ? "Receta guardada." : "Orden guardada.";
 
       if (enviar) {
         const e = await fetch(`/api/consultorio/documentos/${doc.id}/enviar`, { method: "POST" });
@@ -108,7 +124,7 @@ export function Expediente({
   }
 
   const puedeGuardar =
-    pestana === "orden" ? marcados.length > 0 : medicamentos.some((m) => m.nombre.trim());
+    pestana === "receta" ? medicamentos.some((m) => m.nombre.trim()) : marcados.length > 0;
 
   return (
     <>
@@ -148,16 +164,14 @@ export function Expediente({
         )}
 
         <div className="no-imprimir flex gap-6 border-b border-[var(--linea-2)]">
-          {(
-            [
-              ["orden", "Orden de exámenes"],
-              ["receta", "Receta"],
-            ] as const
-          ).map(([id, texto]) => (
+          {PESTANAS.map(({ id, texto }) => (
             <button
               key={id}
               type="button"
-              onClick={() => setPestana(id)}
+              onClick={() => {
+                setPestana(id);
+                setMarcados([]);
+              }}
               className={`-mb-px border-b-2 pb-2.5 font-serif text-[17px] transition ${
                 pestana === id
                   ? "border-[var(--verde)] text-[var(--texto)]"
@@ -169,13 +183,13 @@ export function Expediente({
           ))}
         </div>
 
-        {pestana === "orden" ? (
+        {pestana !== "receta" ? (
           <section className="tarjeta no-imprimir mt-5 px-6 py-5">
             {/* Columnas de verdad (CSS multicolumna): así la hoja se lee como el
                 formulario del laboratorio y cabe más en una pantalla sin
                 volverse una lista infinita. */}
             <div className="columns-1 gap-9 sm:columns-2 lg:columns-3">
-              {AREAS.map((a) => {
+              {areasDe(pestana).map((a) => {
                 const n = a.examenes.filter((e) => marcados.includes(e.id)).length;
                 return (
                   <div key={a.id} className="mb-7 break-inside-avoid">
@@ -195,13 +209,17 @@ export function Expediente({
                             checked={marcados.includes(e.id)}
                             onChange={() => marcar(e.id)}
                           />
-                          <span className="text-[13.5px] leading-snug text-[var(--texto)]">
+                          <span className="min-w-0 flex-1 text-[13.5px] leading-snug text-[var(--texto)]">
                             {e.nombre}
                             {e.nota && (
                               <span className="block text-[12px] text-[var(--texto-3)]">
                                 {e.nota}
                               </span>
                             )}
+                          </span>
+                          <span className="shrink-0 font-mono text-[12px] text-[var(--texto-3)]">
+                            {e.estimado ? "~" : ""}
+                            {e.precio}
                           </span>
                         </label>
                       ))}
@@ -319,7 +337,7 @@ export function Expediente({
                     </span>
                     <span className="text-right">
                       <span className="block font-serif text-[15px] text-[var(--texto)]">
-                        {d.tipo === "receta" ? "Receta" : "Orden de laboratorio"}
+                        {d.tipo === "receta" ? "Receta" : NOMBRE_TIPO[d.tipo]}
                       </span>
                       <span className="block font-sans text-[12.5px] text-[var(--texto-2)]">
                         {fechaLarga(d.fecha)}
@@ -366,7 +384,7 @@ export function Expediente({
                     </ol>
                   ) : (
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                      {agrupar(d.examenes).map((g) => (
+                      {agruparDe(d.tipo, d.examenes).map((g) => (
                         <div key={g.area}>
                           <p className="border-b border-[var(--linea)] pb-1 font-serif text-[14.5px] text-[var(--texto)]">
                             {g.area}
@@ -383,13 +401,13 @@ export function Expediente({
                     </div>
                   )}
 
-                  {d.tipo === "orden" && d.diagnostico && (
+                  {d.tipo !== "receta" && d.diagnostico && (
                     <p className="mt-4 text-[13.5px] text-[var(--texto)]">
                       <span className="text-[var(--texto-2)]">Diagnóstico presuntivo:</span>{" "}
                       {d.diagnostico}
                     </p>
                   )}
-                  {d.tipo === "orden" && preparacion(d.examenes).length > 0 && (
+                  {d.tipo !== "receta" && preparacion(d.examenes).length > 0 && (
                     <p className="mt-1 text-[13.5px] text-[var(--texto)]">
                       <span className="text-[var(--texto-2)]">Preparación:</span>{" "}
                       {preparacion(d.examenes).join(", ")}
