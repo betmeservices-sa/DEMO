@@ -11,9 +11,20 @@
 // que nadie toque nada.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Printer, Receipt, Search, Timer } from "lucide-react";
-import { agrupar, valorDe } from "@/lib/consultorio/examenes";
+import { ClipboardList, Download, Printer, Receipt, Search, Timer } from "lucide-react";
+import { EXAMENES, agrupar, valorDe } from "@/lib/consultorio/examenes";
 import type { Sucursal, Turno } from "@/lib/consultorio/tipos";
+
+/** Lo que devuelve el mostrador al buscar el código que trae el paciente. */
+interface Orden {
+  orden: { codigo: string; tipo: string; fecha: string; examenes: string[]; indicaciones: string };
+  paciente: { nombre: string; telefono: string } | null;
+  doctor: string;
+  turnoId: string | null;
+}
+
+const fechaCorta = (iso: string) =>
+  new Date(iso).toLocaleDateString("es-SV", { day: "numeric", month: "long" });
 
 /** A los diez minutos esperando, la fila deja de ser un detalle. */
 const TARDE = 10 * 60 * 1000;
@@ -53,6 +64,11 @@ export function Mostrador({
   // fila que ya está en pantalla, sin ir al servidor: son los turnos del día y
   // ya vienen todos.
   const [busca, setBusca] = useState("");
+  const q = busca.trim().toUpperCase().replace(/\s+/g, "");
+  // La orden que trae el paciente del doctor. Esa sí se busca en el servidor,
+  // y solo cuando lo escrito tiene forma de código: mientras se teclea un
+  // nombre no hay nada que preguntar.
+  const [orden, setOrden] = useState<Orden | null>(null);
 
   const traer = useCallback(async () => {
     try {
@@ -74,6 +90,27 @@ export function Mostrador({
     const id = setInterval(() => setAhora(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!/^[A-Z]{5}-?\d{6}$/.test(q)) {
+      setOrden(null);
+      return;
+    }
+    let vivo = true;
+    const codigo = q.includes("-") ? q : `${q.slice(0, 5)}-${q.slice(5)}`;
+    fetch(`/api/consultorio/ordenes/${encodeURIComponent(codigo)}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (vivo) setOrden(d.ok ? d : null);
+      })
+      .catch(() => {
+        // Si falla la consulta queda la búsqueda normal sobre la fila, que es
+        // lo que había antes de que existieran las órdenes.
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [q]);
 
   const mandar = useCallback(
     async (id: string, cuerpo: Record<string, unknown>) => {
@@ -102,7 +139,6 @@ export function Mostrador({
   const listos = useMemo(() => turnos.filter((t) => t.estado === "atendido"), [turnos]);
   const facturado = listos.reduce((n, t) => n + (t.monto ?? 0), 0);
 
-  const q = busca.trim().toUpperCase().replace(/\s+/g, "");
   const hallados = useMemo(
     () =>
       q.length === 0
@@ -195,11 +231,91 @@ export function Mostrador({
               />
             </label>
 
+            {orden && (
+              <section className="tarjeta abierta mt-5 px-5 py-5">
+                <p className="flex items-center gap-2 text-[12.5px] font-semibold text-[var(--texto-3)]">
+                  <ClipboardList size={15} /> Orden de {orden.doctor}
+                </p>
+                <p className="mt-1 font-serif text-[22px] leading-tight text-[var(--texto)]">
+                  {orden.paciente?.nombre ?? "Paciente"}
+                </p>
+                <p className="mt-0.5 font-mono text-[13px] text-[var(--texto-2)]">
+                  {orden.orden.codigo} · {fechaCorta(orden.orden.fecha)}
+                </p>
+
+                <ul className="mt-4 space-y-1.5">
+                  {orden.orden.examenes.map((e) => (
+                    <li key={e} className="flex items-baseline justify-between gap-3 text-[14px]">
+                      <span className="min-w-0 text-[var(--texto)]">
+                        {EXAMENES[e]?.nombre ?? e}
+                        <span className="ml-2 font-mono text-[11.5px] text-[var(--texto-3)]">
+                          {EXAMENES[e]?.codigo}
+                        </span>
+                      </span>
+                      <span className="shrink-0 font-mono text-[13px] text-[var(--texto-2)]">
+                        {EXAMENES[e]?.estimado ? "~" : ""}
+                        {dinero(EXAMENES[e]?.precio ?? 0)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 flex items-baseline justify-between gap-3 border-t border-[var(--linea)] pt-3">
+                  <span className="text-[13.5px] text-[var(--texto-2)]">
+                    {orden.orden.examenes.length} exámenes
+                  </span>
+                  <span className="font-serif text-[22px] text-[var(--texto)]">
+                    {dinero(valorDe(orden.orden.examenes))}
+                  </span>
+                </p>
+
+                {orden.orden.indicaciones && (
+                  <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--texto-2)]">
+                    {orden.orden.indicaciones}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  disabled={ocupado}
+                  onClick={async () => {
+                    if (orden.turnoId) {
+                      await mandar(orden.turnoId, { accion: "abrir" });
+                      setBusca("");
+                      return;
+                    }
+                    setOcupado(true);
+                    try {
+                      const r = await fetch(
+                        `/api/consultorio/ordenes/${encodeURIComponent(orden.orden.codigo)}`,
+                        { method: "POST" },
+                      );
+                      const d = await r.json();
+                      setOcupado(false);
+                      if (!d.ok) {
+                        setAviso(d.error ?? "No se pudo registrar.");
+                        return;
+                      }
+                      setBusca("");
+                      await mandar(d.turno.id, { accion: "abrir" });
+                    } catch {
+                      setOcupado(false);
+                      setAviso("No se pudo registrar: falló la conexión.");
+                    }
+                  }}
+                  className="boton mt-5"
+                >
+                  {orden.turnoId ? "Ya está en la fila, abrir su récord" : "Registrar y atender"}
+                </button>
+              </section>
+            )}
+
             {q.length > 0 ? (
               <>
                 <h2 className="mt-5 font-serif text-[19px] text-[var(--texto)]">
                   {hallados.length === 0
-                    ? "Nadie con ese dato hoy"
+                    ? orden
+                      ? "Todavía no ha tomado turno"
+                      : "Nadie con ese dato hoy"
                     : `${hallados.length} ${hallados.length === 1 ? "resultado" : "resultados"}`}
                 </h2>
                 <ul className="mt-3 space-y-2">

@@ -7,7 +7,7 @@ import {
   pacientePorId,
 } from "@/lib/consultorio/almacen";
 import { esExamen } from "@/lib/consultorio/examenes";
-import { idNuevo, type Documento, type Medicamento } from "@/lib/consultorio/tipos";
+import { codigoReceta, idNuevo, type Documento, type Medicamento } from "@/lib/consultorio/tipos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 
 export const runtime = "nodejs";
@@ -73,6 +73,9 @@ export async function POST(req: Request) {
     pacienteId: paciente.id,
     doctorId,
     fecha: new Date().toISOString(),
+    // Todo documento nace con su código, también la receta: es lo que el
+    // paciente lleva encima, y no vale la pena que unos tengan y otros no.
+    codigo: codigoReceta(),
     indicaciones: (b.indicaciones ?? "").trim(),
     enviado: null,
   };

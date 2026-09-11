@@ -233,26 +233,56 @@ export async function registrarPaciente(
 const deDocumento = (f: Record<string, unknown>): Documento =>
   ({
     id: String(f.id),
-    tipo: f.tipo as "receta" | "orden",
+    tipo: f.tipo as Documento["tipo"],
     pacienteId: String(f.paciente_id),
     doctorId: String(f.doctor_id),
     fecha: String(f.fecha),
+    codigo: String(f.codigo ?? ""),
     enviado: (f.enviado as Documento["enviado"]) ?? null,
     ...(f.datos as object),
   }) as Documento;
 
 const aDocumento = (d: Documento) => {
-  const { id, tipo, pacienteId, doctorId, fecha, enviado, ...resto } = d;
+  const { id, tipo, pacienteId, doctorId, fecha, codigo, enviado, ...resto } = d;
   return {
     id,
     tipo,
     paciente_id: pacienteId,
     doctor_id: doctorId,
     fecha,
+    codigo,
     enviado,
     datos: resto,
   };
 };
+
+/**
+ * El documento de un código.
+ *
+ * Es la puerta por la que el laboratorio recibe lo que mandó el doctor, y por
+ * eso NO filtra por doctor: el código lo trae el paciente y vale en cualquier
+ * mostrador. Lo que sí hace es no devolver recetas: lo que se reclama con un
+ * código en el laboratorio son exámenes, imágenes o procedimientos.
+ */
+export async function documentoPorCodigo(codigo: string): Promise<Documento | null> {
+  const c = codigo.trim().toUpperCase().replace(/\s+/g, "");
+  if (!/^[A-Z]{5}-\d{6}$/.test(c)) return null;
+  const sb = db();
+  if (sb) {
+    const { data, error } = await sb
+      .from("consultorio_documentos")
+      .select("*")
+      .eq("codigo", c)
+      .maybeSingle();
+    if (!error) {
+      const doc = data ? deDocumento(data) : null;
+      return doc && doc.tipo !== "receta" ? doc : null;
+    }
+    sinTablas("documentoPorCodigo", error?.message);
+  }
+  const doc = mem().documentos.find((d) => d.codigo?.toUpperCase() === c) ?? null;
+  return doc && doc.tipo !== "receta" ? doc : null;
+}
 
 export async function documentosDe(pacienteId: string): Promise<Documento[]> {
   const sb = db();

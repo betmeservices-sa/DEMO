@@ -49,6 +49,14 @@ export interface Receta {
   pacienteId: string;
   doctorId: string;
   fecha: string;
+  /**
+   * El código con el que se reclama.
+   *
+   * Es lo que amarra al doctor con el laboratorio: el paciente llega con este
+   * código, recepción lo escribe y le salen los exámenes que le dejaron, sin
+   * volver a marcarlos a mano ni adivinar la letra del doctor.
+   */
+  codigo: string;
   medicamentos: Medicamento[];
   indicaciones: string;
   enviado: Envio | null;
@@ -56,10 +64,17 @@ export interface Receta {
 
 export interface Orden {
   id: string;
-  tipo: "orden";
+  /**
+   * Qué se le está mandando a hacer: exámenes de laboratorio, un estudio de
+   * imágenes o un procedimiento. Comparten forma porque comparten todo lo
+   * demás (de quién es, para quién, cuándo, con qué código y si ya se envió);
+   * lo único que cambia es de cuál catálogo salen los ítems.
+   */
+  tipo: "orden" | "imagen" | "proceso";
   pacienteId: string;
   doctorId: string;
   fecha: string;
+  codigo: string;
   /** Ids del catálogo de exámenes. */
   examenes: string[];
   diagnostico: string;

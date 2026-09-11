@@ -324,6 +324,15 @@ export function Expediente({
                       <span className="block font-sans text-[12.5px] text-[var(--texto-2)]">
                         {fechaLarga(d.fecha)}
                       </span>
+                      {/* El código es lo que el paciente lleva al laboratorio:
+                          lo dicta en el mostrador o lo escribe en su teléfono y
+                          le salen marcados los exámenes de esta orden. Por eso
+                          va grande y en mono, para copiarlo sin equivocarse. */}
+                      {d.codigo && (
+                        <span className="mt-1 block font-mono text-[14px] tracking-[0.1em] text-[var(--texto)]">
+                          {d.codigo}
+                        </span>
+                      )}
                     </span>
                   </header>
 

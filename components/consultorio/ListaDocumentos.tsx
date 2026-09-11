@@ -113,6 +113,13 @@ export function ListaDocumentos({
                       >
                         {d.pacienteNombre}
                       </Link>
+                      {/* El código con el que se reclama en el laboratorio: acá
+                          se ve para poder dictarlo por teléfono. */}
+                      {d.codigo && (
+                        <span className="block font-mono text-[11.5px] text-[var(--texto-3)]">
+                          {d.codigo}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       {d.tipo === "receta" ? (
