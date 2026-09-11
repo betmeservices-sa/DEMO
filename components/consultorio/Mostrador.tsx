@@ -11,14 +11,18 @@
 // que nadie toque nada.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Printer, Timer } from "lucide-react";
+import { Download, Printer, Receipt, Search, Timer } from "lucide-react";
 import { agrupar } from "@/lib/consultorio/examenes";
+import { valorDe } from "@/lib/consultorio/estadisticas";
 import type { Sucursal, Turno } from "@/lib/consultorio/tipos";
 
 /** A los diez minutos esperando, la fila deja de ser un detalle. */
 const TARDE = 10 * 60 * 1000;
 
 const reloj = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+const dinero = (n: number) =>
+  `${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** Al registrarse el teléfono se guarda sin espacios, y ocho dígitos seguidos
     no se leen de un vistazo cuando hay que marcarlos. */
@@ -46,6 +50,10 @@ export function Mostrador({
   // Empieza en null y lo llena el navegador: si el servidor pintara una hora,
   // el primer render del cliente no cuadraría con la que llegó en el HTML.
   const [ahora, setAhora] = useState<number | null>(null);
+  // Lo que el paciente enseña en el mostrador es su código. Se busca sobre la
+  // fila que ya está en pantalla, sin ir al servidor: son los turnos del día y
+  // ya vienen todos.
+  const [busca, setBusca] = useState("");
 
   const traer = useCallback(async () => {
     try {
@@ -92,7 +100,24 @@ export function Mostrador({
   const esperando = useMemo(() => turnos.filter((t) => t.estado === "esperando"), [turnos]);
   const pendientes = useMemo(() => turnos.filter((t) => t.estado === "pendiente"), [turnos]);
   const abierto = turnos.find((t) => t.estado === "atendiendo") ?? null;
-  const atendidos = turnos.filter((t) => t.estado === "atendido").length;
+  const listos = useMemo(() => turnos.filter((t) => t.estado === "atendido"), [turnos]);
+  const facturado = listos.reduce((n, t) => n + (t.monto ?? 0), 0);
+
+  const q = busca.trim().toUpperCase().replace(/\s+/g, "");
+  const hallados = useMemo(
+    () =>
+      q.length === 0
+        ? []
+        : turnos.filter(
+            (t) =>
+              t.codigo.toUpperCase().includes(q) ||
+              (t.factura ?? "").toUpperCase().includes(q) ||
+              t.nombre.toUpperCase().replace(/\s+/g, "").includes(q) ||
+              t.telefono.includes(q) ||
+              String(t.numero) === q,
+          ),
+    [turnos, q],
+  );
 
   return (
     <div>
@@ -101,16 +126,25 @@ export function Mostrador({
           <span className="min-w-0">
             <span className="block font-serif text-[19px] leading-tight">{sucursal.nombre}</span>
             <span className="block text-[12.5px] text-white/60">
-              {esperando.length} esperando · {atendidos} atendidos hoy
+              {esperando.length} esperando · {listos.length} atendidos · {dinero(facturado)}{" "}
+              facturado hoy
             </span>
           </span>
-          <a
-            href={`/api/consultorio/publico/qr/${sucursal.codigo}`}
-            download={`qr-${sucursal.codigo}.png`}
-            className="ml-auto text-[13.5px] text-white/70 underline underline-offset-4 transition hover:text-white"
-          >
-            Descargar el QR de la entrada
-          </a>
+          <span className="ml-auto flex flex-wrap items-center gap-4">
+            <a
+              href="/api/consultorio/turnos/reporte"
+              className="flex items-center gap-1.5 text-[13.5px] text-white/70 underline underline-offset-4 transition hover:text-white"
+            >
+              <Download size={14} /> Corte del día
+            </a>
+            <a
+              href={`/api/consultorio/publico/qr/${sucursal.codigo}`}
+              download={`qr-${sucursal.codigo}.png`}
+              className="text-[13.5px] text-white/70 underline underline-offset-4 transition hover:text-white"
+            >
+              QR de la entrada
+            </a>
+          </span>
           {escritorio}
         </div>
       </header>
@@ -124,8 +158,12 @@ export function Mostrador({
                 turno={abierto}
                 segundos={corridos(abierto, ahora)}
                 ocupado={ocupado}
-                cerrar={(hechos, final) =>
-                  mandar(abierto.id, { accion: final ? "finalizar" : "continuar", hechos })
+                cerrar={(hechos, final, monto) =>
+                  mandar(abierto.id, {
+                    accion: final ? "finalizar" : "continuar",
+                    hechos,
+                    monto,
+                  })
                 }
               />
             ) : (
@@ -145,9 +183,72 @@ export function Mostrador({
             )}
             {aviso && <p className="mt-3 text-[13.5px] text-[var(--ambar)]">{aviso}</p>}
 
-            <h2 className="mt-7 font-serif text-[19px] text-[var(--texto)]">
-              Esperando{esperando.length > 0 ? ` (${esperando.length})` : ""}
-            </h2>
+            <label className="relative mt-7 block">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--texto-3)]"
+              />
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por código, nombre, teléfono o número de turno"
+                className="campo campo-icono"
+              />
+            </label>
+
+            {q.length > 0 ? (
+              <>
+                <h2 className="mt-5 font-serif text-[19px] text-[var(--texto)]">
+                  {hallados.length === 0
+                    ? "Nadie con ese dato hoy"
+                    : `${hallados.length} ${hallados.length === 1 ? "resultado" : "resultados"}`}
+                </h2>
+                <ul className="mt-3 space-y-2">
+                  {hallados.map((t) => (
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        disabled={ocupado}
+                        onClick={() => mandar(t.id, { accion: "abrir" })}
+                        className="tarjeta fila-cola flex w-full items-center gap-4 px-4 py-3 text-left transition"
+                      >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--panel-2)] font-serif text-[17px] text-[var(--texto)]">
+                          {t.numero}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-serif text-[16px] text-[var(--texto)]">
+                            {t.nombre}
+                          </span>
+                          <span className="block truncate font-mono text-[12.5px] text-[var(--texto-2)]">
+                            {t.codigo} · {t.examenes.length}{" "}
+                            {t.examenes.length === 1 ? "examen" : "exámenes"}
+                          </span>
+                        </span>
+                        <span
+                          className={`chip shrink-0 ${
+                            t.estado === "atendido"
+                              ? "chip-verde"
+                              : t.estado === "pendiente"
+                                ? "chip-ambar"
+                                : "chip-gris"
+                          }`}
+                        >
+                          {t.estado === "atendido"
+                            ? (t.factura ?? "atendido")
+                            : t.estado === "pendiente"
+                              ? `faltan ${t.examenes.length - t.hechos.length}`
+                              : "esperando"}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <>
+                <h2 className="mt-5 font-serif text-[19px] text-[var(--texto)]">
+                  Esperando{esperando.length > 0 ? ` (${esperando.length})` : ""}
+                </h2>
             {esperando.length === 0 ? (
               <p className="tarjeta mt-3 px-6 py-8 text-center text-[14px] text-[var(--texto-2)]">
                 Cuando alguien escanee el QR de la entrada va a aparecer acá.
@@ -231,6 +332,44 @@ export function Mostrador({
                 </ul>
               </>
             )}
+
+            {listos.length > 0 && (
+              <>
+                <h2 className="mt-7 font-serif text-[19px] text-[var(--texto)]">
+                  Facturados hoy ({listos.length})
+                </h2>
+                <ul className="mt-3 space-y-2">
+                  {listos.map((t) => (
+                    <li
+                      key={t.id}
+                      className="tarjeta flex items-center gap-4 px-4 py-3"
+                    >
+                      <Receipt size={17} className="shrink-0 text-[var(--texto-3)]" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-serif text-[16px] text-[var(--texto)]">
+                          {t.nombre}
+                        </span>
+                        <span className="block truncate font-mono text-[12.5px] text-[var(--texto-2)]">
+                          {t.factura ?? "sin factura"} · {t.codigo} · {t.hechos.length}{" "}
+                          {t.hechos.length === 1 ? "examen" : "exámenes"}
+                        </span>
+                      </span>
+                      <span className="shrink-0 font-serif text-[17px] text-[var(--texto)]">
+                        {t.monto === null ? "—" : dinero(t.monto)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 flex justify-between border-t border-[var(--linea)] pt-3 text-[14px]">
+                  <span className="text-[var(--texto-2)]">Total del día</span>
+                  <span className="font-serif text-[19px] text-[var(--texto)]">
+                    {dinero(facturado)}
+                  </span>
+                </p>
+              </>
+            )}
+              </>
+            )}
           </div>
 
           <aside className="documento self-start px-6 py-6 text-center">
@@ -281,17 +420,32 @@ function Record({
   turno: Turno;
   segundos: number;
   ocupado: boolean;
-  cerrar: (hechos: string[], final: boolean) => void;
+  cerrar: (hechos: string[], final: boolean, monto: string) => void;
 }) {
   // La primera vez llegan todos marcados, que es el caso normal: vino por diez
   // y se hace los diez. Si vuelve por lo que le faltó, se abre con lo que ya
   // tiene hecho y se le agrega lo de hoy.
   const [marcados, setMarcados] = useState<string[]>(turno.cerrado ? turno.hechos : turno.examenes);
+  // El monto lo escribe recepción. Se propone el del catálogo para no teclear
+  // de cero, pero manda lo que ella ponga: el precio real lleva convenios,
+  // paquetes y descuentos que el catálogo no sabe. En cuanto lo toca, deja de
+  // moverse solo, aunque después cambie un check.
+  const [monto, setMonto] = useState<string>(
+    turno.monto !== null ? String(turno.monto) : String(valorDe(turno.cerrado ? turno.hechos : turno.examenes)),
+  );
+  const [tocado, setTocado] = useState(turno.monto !== null);
 
   const grupos = useMemo(() => agrupar(turno.examenes), [turno.examenes]);
+  const sugerido = valorDe(marcados);
+  const cobrado = Number(monto);
+  const sePuedeFinalizar = monto.trim() !== "" && Number.isFinite(cobrado) && cobrado > 0;
 
   function marcar(id: string) {
-    setMarcados((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
+    setMarcados((m) => {
+      const nuevo = m.includes(id) ? m.filter((x) => x !== id) : [...m, id];
+      if (!tocado) setMonto(String(valorDe(nuevo)));
+      return nuevo;
+    });
   }
 
   return (
@@ -343,26 +497,45 @@ function Record({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-[var(--linea)] px-6 py-4">
-        <span className="text-[13.5px] text-[var(--texto-2)]">
-          {marcados.length} de {turno.examenes.length}
-        </span>
+      <div className="flex flex-wrap items-end gap-x-5 gap-y-4 border-t border-[var(--linea)] px-6 py-4">
+        <label className="block">
+          <span className="block text-[13px] font-semibold text-[var(--texto)]">
+            Monto facturado
+          </span>
+          <span className="mt-1.5 flex items-center gap-2">
+            <span className="font-serif text-[20px] text-[var(--texto-2)]">$</span>
+            <input
+              inputMode="decimal"
+              value={monto}
+              onChange={(e) => {
+                setTocado(true);
+                setMonto(e.target.value.replace(/[^\d.]/g, ""));
+              }}
+              className="campo w-[130px] font-mono"
+            />
+          </span>
+          <span className="mt-1 block text-[12px] text-[var(--texto-3)]">
+            {marcados.length} de {turno.examenes.length} exámenes · catálogo: {dinero(sugerido)}
+          </span>
+        </label>
+
         <div className="ml-auto flex flex-wrap gap-2">
           <button
             type="button"
             disabled={ocupado}
-            onClick={() => cerrar(marcados, false)}
+            onClick={() => cerrar(marcados, false, monto)}
             className="boton-2"
           >
             Continuar
           </button>
           <button
             type="button"
-            disabled={ocupado}
-            onClick={() => cerrar(marcados, true)}
+            disabled={ocupado || !sePuedeFinalizar}
+            onClick={() => cerrar(marcados, true, monto)}
             className="boton"
+            title={sePuedeFinalizar ? undefined : "Escribí el monto facturado"}
           >
-            Finalizar
+            Finalizar y facturar
           </button>
         </div>
       </div>

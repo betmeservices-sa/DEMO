@@ -96,3 +96,16 @@ drop policy if exists consultorio_turnos_demo     on public.consultorio_turnos;
 create policy consultorio_pacientes_demo  on public.consultorio_pacientes  for all using (true) with check (true);
 create policy consultorio_documentos_demo on public.consultorio_documentos for all using (true) with check (true);
 create policy consultorio_turnos_demo     on public.consultorio_turnos     for all using (true) with check (true);
+
+-- ── Facturación en el mostrador (2026-09-10) ────────────────────────────────
+--
+-- El paciente paga en el laboratorio, al terminar: por eso el monto lo pone
+-- recepción sobre los exámenes que SÍ se hicieron, y sin monto no se puede
+-- cerrar la visita. El número de factura se genera al finalizar y corre por día
+-- y por sucursal, que es como se cuadra después con caja.
+alter table public.consultorio_turnos
+  add column if not exists monto numeric(10, 2),
+  add column if not exists factura text;
+
+create index if not exists consultorio_turnos_factura_idx
+  on public.consultorio_turnos (sucursal_id, factura);

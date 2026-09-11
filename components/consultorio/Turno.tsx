@@ -14,11 +14,15 @@ import { agrupar } from "@/lib/consultorio/examenes";
 
 interface Estado {
   numero: number;
+  /** El código de su orden: es lo que le piden en el mostrador. */
+  codigo: string;
   estado: "esperando" | "atendiendo" | "pendiente" | "atendido";
   delante: number;
   /** Los exámenes que quedaron sin hacerse. */
   faltan: number;
   sucursal: string;
+  factura: string | null;
+  monto: number | null;
 }
 
 export function Turno({ turnoId, examenes }: { turnoId: string; examenes: string[] }) {
@@ -62,9 +66,22 @@ export function Turno({ turnoId, examenes }: { turnoId: string; examenes: string
         <p className="mt-1 font-serif text-[76px] leading-none text-[var(--texto)]">
           {estado ? estado.numero : "—"}
         </p>
+        {estado?.codigo && (
+          <p className="mt-2 font-mono text-[15px] tracking-[0.12em] text-[var(--texto-2)]">
+            {estado.codigo}
+          </p>
+        )}
 
         {atendido ? (
-          <p className="mt-5 font-serif text-[20px] text-[var(--texto)]">Ya te atendieron</p>
+          <div className="mt-5 border-t border-[var(--linea)] pt-5">
+            <p className="font-serif text-[20px] text-[var(--texto)]">Ya te atendieron</p>
+            {estado?.factura && (
+              <p className="mt-2 font-mono text-[14px] text-[var(--texto-2)]">
+                Factura {estado.factura}
+                {estado.monto !== null && ` · ${estado.monto.toFixed(2)}`}
+              </p>
+            )}
+          </div>
         ) : pendiente ? (
           <div className="mt-5 border-t border-[var(--linea)] pt-5">
             <p className="font-serif text-[22px] leading-snug text-[var(--texto)]">

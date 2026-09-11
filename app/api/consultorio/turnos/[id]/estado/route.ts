@@ -16,9 +16,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ ok: false, error: "No existe." }, { status: 404 });
   }
   const sucursalId = (await sucursalActual()).id;
-  const { accion, hechos } = (await req.json().catch(() => ({}))) as {
+  const { accion, hechos, monto } = (await req.json().catch(() => ({}))) as {
     accion?: string;
     hechos?: string[];
+    monto?: number | string | null;
   };
   const { id } = await params;
 
@@ -34,9 +35,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   if (accion === "continuar" || accion === "finalizar") {
     const marcados = Array.isArray(hechos) ? hechos.map(String) : [];
+    const cobrado = monto === null || monto === undefined || monto === "" ? null : Number(monto);
+    if (cobrado !== null && (!Number.isFinite(cobrado) || cobrado < 0)) {
+      return NextResponse.json({ ok: false, error: "Ese monto no es un número." }, { status: 400 });
+    }
+    // Sin monto no se cierra la visita: el paciente paga acá, y una visita
+    // finalizada sin cobro es un descuadre que caja descubre al final del día.
+    if (accion === "finalizar" && (cobrado === null || cobrado <= 0)) {
+      return NextResponse.json(
+        { ok: false, error: "Escribí el monto facturado antes de finalizar." },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({
       ok: true,
-      turno: await cerrarTurno(id, marcados, accion === "finalizar"),
+      turno: await cerrarTurno(id, marcados, accion === "finalizar", cobrado),
     });
   }
 

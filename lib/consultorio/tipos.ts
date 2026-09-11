@@ -132,12 +132,20 @@ export type EstadoTurno = "esperando" | "atendiendo" | "pendiente" | "atendido";
 /**
  * El código de la receta de laboratorio.
  *
- * PROVISIONAL: es el número con el que el laboratorio identifica la orden en su
- * sistema, y todavía no sabemos de dónde sale (lo trae el paciente en la orden
- * del doctor, o lo asigna el laboratorio al recibirlo). Mientras tanto, uno
- * fijo y evidentemente de mentira, para que nadie lo confunda con uno real.
+ * Cinco letras, guión y seis dígitos: la forma de "ABCDE-123456", que fue el
+ * ejemplo con el que nació. Se genera uno por visita porque con él se busca en
+ * el mostrador ("dígame su código"), y un código igual para todos no encuentra
+ * a nadie.
+ *
+ * Sigue siendo PROVISIONAL en una cosa: falta saber si lo trae el paciente en
+ * la orden del doctor o si lo asigna el laboratorio al recibirlo. Hoy lo asigna
+ * el laboratorio, acá.
  */
-export const CODIGO_RECETA = "ABCDE-123456";
+export function codigoReceta(): string {
+  const letras = Array.from({ length: 5 }, () => ALFABETO[Math.floor(Math.random() * 24)]).join("");
+  const numeros = String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0");
+  return `${letras}-${numeros}`;
+}
 
 export interface Turno {
   id: string;
@@ -165,4 +173,14 @@ export interface Turno {
   segundos: number;
   /** Cuándo se le dio continuar o finalizar la última vez. */
   cerrado: string | null;
+  /**
+   * Lo que se le cobró, en dólares.
+   *
+   * Lo pone recepción sobre los exámenes que SÍ se hicieron, no lo calcula el
+   * sistema: el precio real lleva convenios, descuentos y paquetes que el
+   * catálogo no sabe. Sin monto no se puede finalizar.
+   */
+  monto: number | null;
+  /** El número de factura, que se genera al finalizar. */
+  factura: string | null;
 }

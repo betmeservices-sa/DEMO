@@ -179,7 +179,9 @@ export function resumenDeHoy(turnos: Turno[]): Resumen {
     examenes: hechos.length,
     espera: promedio(esperas),
     atencion: promedio(cerrados.map((t) => t.segundos)),
-    ingresos: valorDe(hechos),
+    // Lo facturado de verdad: lo que recepcion cobro. El precio de catalogo
+    // solo se usa cuando todavia no hay monto escrito.
+    ingresos: Math.round(cerrados.reduce((n, t) => n + (t.monto ?? valorDe(t.hechos)), 0)),
     sinCompletar: cerrados.filter((t) => t.hechos.length < t.examenes.length).length,
     tarde: esperas.filter((s) => s >= 600).length,
   };

@@ -16,8 +16,10 @@ import {
   doctorPorCodigo,
   listarDoctores,
   sucursalPorCodigo,
+  turnoPorCodigo,
   turnosDe,
 } from "@/lib/consultorio/almacen";
+import { resumenDeHoy, valorDe } from "@/lib/consultorio/estadisticas";
 
 const SUCURSAL = "suc_escalon";
 
@@ -171,13 +173,13 @@ describe("la fila del laboratorio", () => {
   it("continuar deja pendiente lo que no se hizo, finalizar cierra", async () => {
     const a = await tomar("Ana", ["hemograma", "glucosa", "tipeo"]);
     await abrirTurno(a.id);
-    const seguido = await cerrarTurno(a.id, ["hemograma", "glucosa"], false);
+    const seguido = await cerrarTurno(a.id, ["hemograma", "glucosa"], false, null);
     expect(seguido?.estado).toBe("pendiente");
     expect(seguido?.hechos).toEqual(["hemograma", "glucosa"]);
     expect(seguido?.abierto).toBeNull();
 
     await abrirTurno(a.id);
-    const cerrado = await cerrarTurno(a.id, ["hemograma", "glucosa", "tipeo"], true);
+    const cerrado = await cerrarTurno(a.id, ["hemograma", "glucosa", "tipeo"], true, 46);
     expect(cerrado?.estado).toBe("atendido");
     expect(cerrado?.hechos).toHaveLength(3);
   });
@@ -185,7 +187,7 @@ describe("la fila del laboratorio", () => {
   it("no se puede marcar como hecho un examen que la persona no pidió", async () => {
     const a = await tomar("Ana", ["hemograma"]);
     await abrirTurno(a.id);
-    const cerrado = await cerrarTurno(a.id, ["hemograma", "tipeo", "polvo_de_hadas"], true);
+    const cerrado = await cerrarTurno(a.id, ["hemograma", "tipeo", "polvo_de_hadas"], true, 12);
     expect(cerrado?.hechos).toEqual(["hemograma"]);
   });
 
@@ -200,5 +202,82 @@ describe("la fila del laboratorio", () => {
     });
     expect(otra.numero).toBe(1);
     expect((await turnosDe(SUCURSAL)).map((t) => t.nombre)).toEqual(["Ana"]);
+  });
+});
+
+describe("la facturación del mostrador", () => {
+  const tomar = (nombre: string, examenes: string[]) =>
+    crearTurno({ sucursalId: SUCURSAL, nombre, telefono: "70000000", correo: "", examenes });
+
+  it("cada visita trae su propio código, con la forma ABCDE-123456", async () => {
+    const a = await tomar("Ana", ["hemograma"]);
+    const b = await tomar("Beto", ["glucosa"]);
+    expect(a.codigo).toMatch(/^[A-Z]{5}-\d{6}$/);
+    expect(a.codigo).not.toBe(b.codigo);
+  });
+
+  it("con el código se encuentra a quien lo enseña en el mostrador", async () => {
+    const a = await tomar("Ana", ["hemograma"]);
+    expect((await turnoPorCodigo(SUCURSAL, a.codigo.toLowerCase()))?.id).toBe(a.id);
+    expect(await turnoPorCodigo(SUCURSAL, "ZZZZZ-000000")).toBeNull();
+    // El código de una sucursal no abre el récord en la otra.
+    expect(await turnoPorCodigo("suc_santa_tecla", a.codigo)).toBeNull();
+  });
+
+  it("finalizar emite factura y guarda el monto", async () => {
+    const a = await tomar("Ana", ["hemograma", "glucosa"]);
+    await abrirTurno(a.id);
+    const cerrado = await cerrarTurno(a.id, ["hemograma", "glucosa"], true, 18.5);
+    expect(cerrado?.monto).toBe(18.5);
+    expect(cerrado?.factura).toMatch(/^ES-\d{6}-001$/);
+  });
+
+  it("el correlativo corre por sucursal y no se repite", async () => {
+    const a = await tomar("Ana", ["hemograma"]);
+    const b = await tomar("Beto", ["glucosa"]);
+    await abrirTurno(a.id);
+    const uno = await cerrarTurno(a.id, ["hemograma"], true, 12);
+    await abrirTurno(b.id);
+    const dos = await cerrarTurno(b.id, ["glucosa"], true, 6);
+    expect(uno?.factura).toMatch(/-001$/);
+    expect(dos?.factura).toMatch(/-002$/);
+
+    const otra = await crearTurno({
+      sucursalId: "suc_santa_tecla",
+      nombre: "Caro",
+      telefono: "70000001",
+      correo: "",
+      examenes: ["tipeo"],
+    });
+    await abrirTurno(otra.id);
+    const tres = await cerrarTurno(otra.id, ["tipeo"], true, 8);
+    expect(tres?.factura).toMatch(/^ST-\d{6}-001$/);
+  });
+
+  it("continuar no factura: lo que falta también se cobra", async () => {
+    const a = await tomar("Ana", ["hemograma", "glucosa"]);
+    await abrirTurno(a.id);
+    const seguido = await cerrarTurno(a.id, ["hemograma"], false, 12);
+    expect(seguido?.factura).toBeNull();
+    expect(seguido?.monto).toBe(12);
+  });
+
+  it("una visita ya facturada conserva su número si se vuelve a abrir", async () => {
+    const a = await tomar("Ana", ["hemograma"]);
+    await abrirTurno(a.id);
+    const primera = await cerrarTurno(a.id, ["hemograma"], true, 12);
+    await abrirTurno(a.id);
+    const otra = await cerrarTurno(a.id, ["hemograma"], true, 15);
+    expect(otra?.factura).toBe(primera?.factura);
+    expect(otra?.monto).toBe(15);
+  });
+
+  it("el catálogo propone un precio, pero manda lo que cobró recepción", async () => {
+    const a = await tomar("Ana", ["hemograma", "glucosa"]);
+    expect(valorDe(a.examenes)).toBe(18);
+    await abrirTurno(a.id);
+    await cerrarTurno(a.id, ["hemograma", "glucosa"], true, 15);
+    const resumen = resumenDeHoy(await turnosDe(SUCURSAL));
+    expect(resumen.ingresos).toBe(15);
   });
 });

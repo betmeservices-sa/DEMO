@@ -16,7 +16,7 @@
 import { getSupabase } from "@/lib/supabase";
 import {
   idNuevo,
-  CODIGO_RECETA,
+  codigoReceta,
   type Doctor,
   type Documento,
   type Paciente,
@@ -325,12 +325,14 @@ const deTurno = (f: Record<string, unknown>): Turno => ({
   correo: String(f.correo ?? ""),
   examenes: (f.examenes as string[]) ?? [],
   hechos: (f.hechos as string[]) ?? [],
-  codigo: String(f.codigo ?? CODIGO_RECETA),
+  codigo: String(f.codigo ?? ""),
   estado: f.estado as Turno["estado"],
   creado: String(f.creado),
   abierto: (f.abierto as string | null) ?? null,
   segundos: Number(f.segundos ?? 0),
   cerrado: (f.cerrado as string | null) ?? null,
+  monto: f.monto === null || f.monto === undefined ? null : Number(f.monto),
+  factura: (f.factura as string | null) ?? null,
 });
 
 const aTurno = (t: Turno) => ({
@@ -348,6 +350,8 @@ const aTurno = (t: Turno) => ({
   abierto: t.abierto,
   segundos: t.segundos,
   cerrado: t.cerrado,
+  monto: t.monto,
+  factura: t.factura,
 });
 
 // "Hoy" es el día de El Salvador, no el del servidor. En Vercel el proceso
@@ -410,12 +414,14 @@ export async function crearTurno(
     id: idNuevo("trn"),
     numero: (hoy.at(-1)?.numero ?? 0) + 1,
     hechos: [],
-    codigo: CODIGO_RECETA,
+    codigo: codigoReceta(),
     estado: "esperando",
     creado: new Date().toISOString(),
     abierto: null,
     segundos: 0,
     cerrado: null,
+    monto: null,
+    factura: null,
   };
   const sb = db();
   if (sb) {
@@ -433,6 +439,18 @@ export async function crearTurno(
  * Cuenta solo a los que siguen esperando: los ya atendidos no le quitan el
  * lugar a nadie, y el que está adentro tampoco. 0 = te toca.
  */
+/**
+ * El turno de un código, dentro de la sucursal que pregunta.
+ *
+ * Se busca en la fila del día y no en toda la tabla a propósito: el código de
+ * ayer no abre el récord de hoy, y el de la otra sucursal tampoco.
+ */
+export async function turnoPorCodigo(sucursalId: string, codigo: string): Promise<Turno | null> {
+  const c = codigo.trim().toUpperCase().replace(/s+/g, "");
+  const fila = await turnosDe(sucursalId);
+  return fila.find((t) => t.codigo.toUpperCase() === c) ?? null;
+}
+
 export async function cuantosDelante(turno: Turno): Promise<number> {
   const fila = await turnosDe(turno.sucursalId);
   return fila.filter((t) => t.estado === "esperando" && t.numero < turno.numero).length;
@@ -478,14 +496,35 @@ export async function abrirTurno(turnoId: string): Promise<Turno | null> {
   return guardarTurno(t);
 }
 
+/** El correlativo del día, por sucursal: es como se cuadra con caja. */
+async function facturaNueva(sucursalId: string, sigla: string): Promise<string> {
+  const fila = await turnosDe(sucursalId);
+  const dadas = fila.filter((t) => t.factura).length;
+  const dia = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/El_Salvador",
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(new Date())
+    .replace(/-/g, "");
+  return `${sigla}-${dia}-${String(dadas + 1).padStart(3, "0")}`;
+}
+
 /**
  * Continuar o finalizar: en las dos se para el cronómetro y se guarda lo que sí
- * se le hizo. La diferencia es si la visita queda abierta.
+ * se le hizo y lo que se le cobró. La diferencia es si la visita queda abierta.
+ *
+ * Al finalizar se emite la factura, y solo ahí: mientras la persona siga
+ * debiendo exámenes no se le cierra la cuenta, porque lo que falta también se
+ * cobra. Por eso el número se genera acá y no en la pantalla, y una visita
+ * finalizada conserva el suyo aunque se vuelva a abrir.
  */
 export async function cerrarTurno(
   turnoId: string,
   hechos: string[],
   final: boolean,
+  monto: number | null,
 ): Promise<Turno | null> {
   const t = await turnoPorId(turnoId);
   if (!t) return null;
@@ -496,5 +535,10 @@ export async function cerrarTurno(
   t.abierto = null;
   t.cerrado = new Date().toISOString();
   t.estado = final ? "atendido" : "pendiente";
+  if (monto !== null && Number.isFinite(monto)) t.monto = Math.round(monto * 100) / 100;
+  if (final && !t.factura) {
+    const sigla = t.sucursalId === "suc_santa_tecla" ? "ST" : "ES";
+    t.factura = await facturaNueva(t.sucursalId, sigla);
+  }
   return guardarTurno(t);
 }

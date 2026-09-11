@@ -19,11 +19,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return NextResponse.json({
     ok: true,
     numero: turno.numero,
+    // El código con el que lo llaman en el mostrador: el paciente lo enseña en
+    // la pantalla de su teléfono y recepción lo escribe para abrir su récord.
+    codigo: turno.codigo,
     estado: turno.estado,
     delante: await cuantosDelante(turno),
     // Los que quedaron sin hacerse, para que la pantalla del paciente no diga
     // "listo" cuando en realidad le faltan cuatro.
     faltan: turno.examenes.length - turno.hechos.length,
     sucursal: sucursalPorId(turno.sucursalId)?.nombre ?? "",
+    // Lo que se le cobró, cuando ya se facturó.
+    factura: turno.factura,
+    monto: turno.monto,
   });
 }
