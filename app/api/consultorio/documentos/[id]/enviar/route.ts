@@ -43,7 +43,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ ok: false, error: "Ese documento no existe." }, { status: 404 });
   }
 
-  const salio = await mandarPorN8n(armarCorreo(doc, paciente, doctor));
+  const { salio, porque } = await mandarPorN8n(armarCorreo(doc, paciente, doctor));
 
   await guardarDocumento({
     ...doc,
@@ -54,12 +54,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     ok: true,
     a: paciente.correo,
     simulado: !salio,
-    ...(salio
-      ? {}
-      : {
-          aviso: process.env.N8N_WEBHOOK_BASE
-            ? "n8n no recibió el correo: no salió nada."
-            : "Falta conectar el flujo de correo en n8n: no salió nada.",
-        }),
+    ...(salio ? {} : { aviso: porque }),
   });
 }

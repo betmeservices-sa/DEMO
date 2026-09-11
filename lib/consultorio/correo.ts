@@ -114,7 +114,9 @@ export function armarCorreo(
  * Si no hay URL configurada o n8n contesta mal, devuelve false y el módulo dice
  * que el correo NO salió.
  */
-export async function mandarPorN8n(correo: CorreoDeDocumento): Promise<boolean> {
+export async function mandarPorN8n(
+  correo: CorreoDeDocumento,
+): Promise<{ salio: boolean; porque?: string }> {
   // Variable propia y no la base de los webhooks de citas: esa la comparten
   // todos los clientes del demo, y encenderla acá le prendería el agendamiento
   // por n8n a tenants que hoy no lo usan. Esto tiene que mover una sola cosa.
@@ -123,15 +125,17 @@ export async function mandarPorN8n(correo: CorreoDeDocumento): Promise<boolean> 
     (process.env.N8N_WEBHOOK_BASE
       ? `${process.env.N8N_WEBHOOK_BASE.replace(/\/$/, "")}/consultorio-correo`
       : null);
-  if (!url) return false;
+  if (!url) return { salio: false, porque: "Falta conectar el flujo de correo en n8n." };
   try {
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(correo),
     });
-    return r.ok;
+    return r.ok
+      ? { salio: true }
+      : { salio: false, porque: `n8n contestó ${r.status}: el correo no salió.` };
   } catch {
-    return false;
+    return { salio: false, porque: "No se pudo hablar con n8n: el correo no salió." };
   }
 }
