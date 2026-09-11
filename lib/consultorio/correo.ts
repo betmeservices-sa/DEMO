@@ -10,7 +10,8 @@
 // pantalla lo repite con todas sus letras. Un visto bueno falso se descubre
 // cuando el paciente llega a la farmacia sin la receta.
 
-import { TODOS, NOMBRE_TIPO, conLado } from "./catalogos";
+import { NOMBRE_TIPO, agruparDe, conLado } from "./catalogos";
+import { armarHtml } from "./correo-html";
 import type { Doctor, Documento, Paciente } from "./tipos";
 
 export const CLINICA = "Centro Médico San Benito";
@@ -21,6 +22,9 @@ const fecha = (iso: string) =>
 export interface CorreoDeDocumento {
   a: string;
   asunto: string;
+  /** El correo ya armado: n8n lo manda tal cual. */
+  html: string;
+  /** El mismo contenido en texto plano, para quien no pinta HTML. */
   texto: string;
   clinica: string;
   codigo: string;
@@ -47,13 +51,20 @@ export function armarCorreo(
               [m.dosis, m.frecuencia, m.duracion].filter(Boolean).map((x) => `\n   ${x}`).join(""),
           )
           .join("\n")
-      : doc.examenes
-          .map((id) => {
-            const item = TODOS[id];
-            const nota = item?.nota ? `\n   ${item.nota}` : "";
-            return `- ${conLado(id, doc.lados)}${item?.codigo ? ` (${item.codigo})` : ""}${nota}`;
-          })
-          .join("\n");
+      : // Agrupado por área, como en la hoja impresa: un renglón que dice
+        // "Tiroides" no aclara si es el ultrasonido o la prueba de sangre.
+        agruparDe(doc.tipo, doc.examenes)
+          .map(
+            (g) =>
+              `${g.area.toUpperCase()}\n` +
+              g.examenes
+                .map((e) => {
+                  const nota = e.nota ? `\n   ${e.nota}` : "";
+                  return `- ${conLado(e.id, doc.lados)}${e.codigo ? ` (${e.codigo})` : ""}${nota}`;
+                })
+                .join("\n"),
+          )
+          .join("\n\n");
 
   const lineas = [
     `${CLINICA}`,
@@ -64,6 +75,7 @@ export function armarCorreo(
     `Código: ${doc.codigo}`,
     "",
     cuerpo,
+    doc.tipo !== "receta" && doc.diagnostico ? `\nDatos clínicos: ${doc.diagnostico}` : "",
     doc.indicaciones ? `\nIndicaciones:\n${doc.indicaciones}` : "",
     doc.tipo !== "receta"
       ? `\nPresente este código en la recepción y le marcamos todo sin llenar nada: ${doc.codigo}`
@@ -77,6 +89,7 @@ export function armarCorreo(
   return {
     a: paciente.correo,
     asunto: `${titulo} de ${CLINICA} · ${doc.codigo}`,
+    html: armarHtml(doc, paciente, doctor, CLINICA),
     texto: lineas.filter((l) => l !== "").join("\n"),
     clinica: CLINICA,
     codigo: doc.codigo,
@@ -96,8 +109,10 @@ export function armarCorreo(
  * Se lo entrega a n8n.
  *
  * La ruta es `<N8N_WEBHOOK_BASE>/consultorio-correo`, y el flujo del otro lado
- * solo tiene que tomar `a`, `asunto` y `texto`. Si no hay base configurada o
- * n8n contesta mal, devuelve false y el módulo dice que el correo NO salió.
+ * solo tiene que tomar `a`, `asunto`, `html` y `texto` y enviarlos: el correo
+ * va armado desde acá (ver n8n/consultorio-correo.json). Si no hay base
+ * configurada o n8n contesta mal, devuelve false y el módulo dice que el correo
+ * NO salió.
  */
 export async function mandarPorN8n(correo: CorreoDeDocumento): Promise<boolean> {
   const base = process.env.N8N_WEBHOOK_BASE;
