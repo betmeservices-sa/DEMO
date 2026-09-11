@@ -12,8 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Printer, Receipt, Search, Timer } from "lucide-react";
-import { agrupar } from "@/lib/consultorio/examenes";
-import { valorDe } from "@/lib/consultorio/estadisticas";
+import { agrupar, valorDe } from "@/lib/consultorio/examenes";
 import type { Sucursal, Turno } from "@/lib/consultorio/tipos";
 
 /** A los diez minutos esperando, la fila deja de ser un detalle. */
@@ -22,7 +21,7 @@ const TARDE = 10 * 60 * 1000;
 const reloj = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
 const dinero = (n: number) =>
-  `${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** Al registrarse el teléfono se guarda sin espacios, y ocho dígitos seguidos
     no se leen de un vistazo cuando hay que marcarlos. */
@@ -437,6 +436,7 @@ function Record({
 
   const grupos = useMemo(() => agrupar(turno.examenes), [turno.examenes]);
   const sugerido = valorDe(marcados);
+  const hayEstimados = grupos.some((g) => g.examenes.some((e) => e.estimado));
   const cobrado = Number(monto);
   const sePuedeFinalizar = monto.trim() !== "" && Number.isFinite(cobrado) && cobrado > 0;
 
@@ -477,7 +477,9 @@ function Record({
       </div>
 
       <div className="px-6 py-5">
-        <p className="text-[13.5px] text-[var(--texto-2)]">Desmarcá lo que no se va a hacer hoy.</p>
+        <p className="text-[13.5px] text-[var(--texto-2)]">
+          Desmarcá lo que no se va a hacer hoy. El total se arma con lo marcado.
+        </p>
         <div className="mt-3 sm:columns-2">
           {grupos.map((g) => (
             <div key={g.area} className="mb-4 break-inside-avoid">
@@ -489,12 +491,39 @@ function Record({
                     checked={marcados.includes(e.id)}
                     onChange={() => marcar(e.id)}
                   />
-                  <span className="text-[14.5px] leading-snug text-[var(--texto)]">{e.nombre}</span>
+                  <span className="min-w-0 flex-1 text-[14.5px] leading-snug text-[var(--texto)]">
+                    {e.nombre}
+                    <span className="block font-mono text-[11.5px] text-[var(--texto-3)]">
+                      {e.codigo}
+                    </span>
+                  </span>
+                  <span
+                    className="shrink-0 font-mono text-[13px] text-[var(--texto-2)]"
+                    title={e.estimado ? "Precio estimado: no viene en la lista del laboratorio" : undefined}
+                  >
+                    {e.estimado ? "~" : ""}
+                    {dinero(e.precio)}
+                  </span>
                 </label>
               ))}
             </div>
           ))}
         </div>
+
+        <div className="mt-2 flex items-baseline justify-between gap-3 border-t border-[var(--linea)] pt-3">
+          <span className="text-[13.5px] text-[var(--texto-2)]">
+            {marcados.length} de {turno.examenes.length} exámenes
+          </span>
+          <span className="font-serif text-[26px] leading-none text-[var(--texto)]">
+            {dinero(sugerido)}
+          </span>
+        </div>
+        {hayEstimados && (
+          <p className="mt-2 text-[12px] leading-relaxed text-[var(--texto-3)]">
+            Los precios con ~ son estimados: no vienen en la lista del laboratorio. El monto que se
+            factura es el de abajo, que manda sobre esta suma.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-end gap-x-5 gap-y-4 border-t border-[var(--linea)] px-6 py-4">
@@ -515,7 +544,7 @@ function Record({
             />
           </span>
           <span className="mt-1 block text-[12px] text-[var(--texto-3)]">
-            {marcados.length} de {turno.examenes.length} exámenes · catálogo: {dinero(sugerido)}
+            Según la lista: {dinero(sugerido)}
           </span>
         </label>
 
