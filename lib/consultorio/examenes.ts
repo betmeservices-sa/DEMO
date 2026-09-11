@@ -27,6 +27,14 @@ export interface Examen {
   nota?: string;
   /** Cuánto tarda el resultado, como lo dice el laboratorio. */
   tiempo?: string;
+  /**
+   * Si hay que decir de qué lado.
+   *
+   * En la orden de imagenología impresa son los que llevan "Der Izq" para
+   * circular. Sin lado, la placa se toma de la rodilla equivocada y el paciente
+   * vuelve otro día.
+   */
+  lado?: boolean;
 }
 
 export interface AreaExamenes {

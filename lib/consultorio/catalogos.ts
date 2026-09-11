@@ -9,91 +9,27 @@
 // pantalla sirve para los tres y no hay tres formas de marcar una casilla.
 
 import { AREAS as AREAS_EXAMENES, EXAMENES, type AreaExamenes, type Examen } from "./examenes";
+import { AREAS_IMAGEN } from "./imagenes";
+
+export { AREAS_IMAGEN };
+
+/** De qué lado va un estudio que lo pide. */
+export type Lado = "der" | "izq" | "ambos";
+
+export const LADOS: { id: Lado; texto: string }[] = [
+  { id: "der", texto: "Der" },
+  { id: "izq", texto: "Izq" },
+  { id: "ambos", texto: "Ambos" },
+];
+
+/** Cómo se lee un estudio con su lado: "Rodilla (der)". */
+export function conLado(id: string, lados?: Record<string, Lado>): string {
+  const nombre = TODOS[id]?.nombre ?? id;
+  const l = lados?.[id];
+  return l ? `${nombre} (${l === "ambos" ? "ambos" : l})` : nombre;
+}
 
 export type TipoOrden = "orden" | "imagen" | "proceso";
-
-export const AREAS_IMAGEN: AreaExamenes[] = [
-  {
-    id: "radiografia",
-    nombre: "Radiografía",
-    examenes: [
-      { id: "i101", codigo: "IM101", nombre: "Radiografía de tórax", precio: 25, estimado: true },
-      { id: "i102", codigo: "IM102", nombre: "Radiografía de abdomen simple", precio: 28, estimado: true },
-      { id: "i103", codigo: "IM103", nombre: "Radiografía de columna lumbar", precio: 32, estimado: true },
-      { id: "i104", codigo: "IM104", nombre: "Radiografía de columna cervical", precio: 32, estimado: true },
-      { id: "i105", codigo: "IM105", nombre: "Radiografía de rodilla", precio: 26, estimado: true },
-      { id: "i106", codigo: "IM106", nombre: "Radiografía de hombro", precio: 26, estimado: true },
-      { id: "i107", codigo: "IM107", nombre: "Radiografía de senos paranasales", precio: 26, estimado: true },
-      { id: "i108", codigo: "IM108", nombre: "Serie ósea metastásica", precio: 95, estimado: true },
-    ],
-  },
-  {
-    id: "ultrasonido",
-    nombre: "Ultrasonido",
-    examenes: [
-      {
-        id: "i201",
-        codigo: "IM201",
-        nombre: "Ultrasonido abdominal completo",
-        precio: 45,
-        estimado: true,
-        nota: "Ayuno de 6 horas",
-      },
-      {
-        id: "i202",
-        codigo: "IM202",
-        nombre: "Ultrasonido pélvico",
-        precio: 45,
-        estimado: true,
-        nota: "Llegar con la vejiga llena: tomar un litro de agua una hora antes",
-      },
-      { id: "i203", codigo: "IM203", nombre: "Ultrasonido obstétrico", precio: 45, estimado: true },
-      { id: "i204", codigo: "IM204", nombre: "Ultrasonido de tiroides", precio: 45, estimado: true },
-      { id: "i205", codigo: "IM205", nombre: "Ultrasonido de mama", precio: 50, estimado: true },
-      { id: "i206", codigo: "IM206", nombre: "Ultrasonido renal y vías urinarias", precio: 48, estimado: true },
-      { id: "i207", codigo: "IM207", nombre: "Ultrasonido doppler de miembros inferiores", precio: 85, estimado: true },
-      { id: "i208", codigo: "IM208", nombre: "Ultrasonido de partes blandas", precio: 42, estimado: true },
-    ],
-  },
-  {
-    id: "tomografia",
-    nombre: "Tomografía y resonancia",
-    examenes: [
-      { id: "i301", codigo: "IM301", nombre: "Tomografía de cráneo simple", precio: 160, estimado: true },
-      {
-        id: "i302",
-        codigo: "IM302",
-        nombre: "Tomografía de abdomen con contraste",
-        precio: 240,
-        estimado: true,
-        nota: "Ayuno de 6 horas. Traer creatinina de menos de un mes",
-      },
-      { id: "i303", codigo: "IM303", nombre: "Tomografía de tórax", precio: 210, estimado: true },
-      { id: "i304", codigo: "IM304", nombre: "Resonancia de columna lumbar", precio: 320, estimado: true },
-      { id: "i305", codigo: "IM305", nombre: "Resonancia de rodilla", precio: 300, estimado: true },
-      { id: "i306", codigo: "IM306", nombre: "Resonancia de cráneo", precio: 330, estimado: true },
-    ],
-  },
-  {
-    id: "gabinete",
-    nombre: "Gabinete",
-    examenes: [
-      { id: "i401", codigo: "IM401", nombre: "Electrocardiograma", precio: 20, estimado: true },
-      { id: "i402", codigo: "IM402", nombre: "Mamografía bilateral", precio: 55, estimado: true },
-      { id: "i403", codigo: "IM403", nombre: "Densitometría ósea", precio: 60, estimado: true },
-      { id: "i404", codigo: "IM404", nombre: "Espirometría", precio: 35, estimado: true },
-      {
-        id: "i405",
-        codigo: "IM405",
-        nombre: "Prueba de esfuerzo",
-        precio: 120,
-        estimado: true,
-        nota: "Venir con ropa cómoda y zapato deportivo. No desayunar pesado",
-      },
-      { id: "i406", codigo: "IM406", nombre: "Holter de 24 horas", precio: 150, estimado: true },
-    ],
-  },
-];
 
 export const AREAS_PROCESO: AreaExamenes[] = [
   {

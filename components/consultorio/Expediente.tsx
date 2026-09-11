@@ -19,13 +19,22 @@ import Link from "next/link";
 import { ArrowLeft, TriangleAlert } from "lucide-react";
 import { Encabezado } from "@/components/consultorio/Encabezado";
 import {
+  LADOS,
   NOMBRE_TIPO,
   agruparDe,
   areasDe,
+  conLado,
   preparacionDe as preparacion,
+  type Lado,
   type TipoOrden,
 } from "@/lib/consultorio/catalogos";
-import { edad, type Doctor, type Documento, type Medicamento, type Paciente } from "@/lib/consultorio/tipos";
+import {
+  edad,
+  type Doctor,
+  type Documento,
+  type Medicamento,
+  type Paciente,
+} from "@/lib/consultorio/tipos";
 
 type Pestana = TipoOrden | "receta";
 
@@ -54,6 +63,10 @@ export function Expediente({
   const [pestana, setPestana] = useState<Pestana>("orden");
   const [documentos, setDocumentos] = useState<Documento[]>(iniciales);
   const [marcados, setMarcados] = useState<string[]>([]);
+  // De qué lado va cada estudio que lo pide. En la orden impresa es el "Der
+  // Izq" que se circula, y acá es obligatorio: una placa de la rodilla
+  // equivocada es un viaje perdido.
+  const [lados, setLados] = useState<Record<string, Lado>>({});
   const [diagnostico, setDiagnostico] = useState("");
   const [indicaciones, setIndicaciones] = useState("");
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([{ ...MED_VACIO }]);
@@ -65,7 +78,20 @@ export function Expediente({
 
   function marcar(id: string) {
     setMarcados((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
+    setLados((l) => {
+      if (!marcados.includes(id)) return l;
+      const { [id]: _fuera, ...resto } = l;
+      return resto;
+    });
   }
+
+  /** Los que están marcados, piden lado y todavía no lo tienen. */
+  const sinLado = marcados.filter((id) => {
+    const e = areasDe(pestana === "receta" ? "orden" : pestana)
+      .flatMap((a) => a.examenes)
+      .find((x) => x.id === id);
+    return e?.lado && !lados[id];
+  });
 
   function cambiarMed(i: number, campo: keyof Medicamento, valor: string) {
     setMedicamentos((ms) => ms.map((m, j) => (j === i ? { ...m, [campo]: valor } : m)));
@@ -78,7 +104,14 @@ export function Expediente({
       const cuerpo =
         pestana === "receta"
           ? { tipo: "receta", pacienteId: paciente.id, medicamentos, indicaciones }
-          : { tipo: pestana, pacienteId: paciente.id, examenes: marcados, diagnostico, indicaciones };
+          : {
+              tipo: pestana,
+              pacienteId: paciente.id,
+              examenes: marcados,
+              lados,
+              diagnostico,
+              indicaciones,
+            };
 
       const r = await fetch("/api/consultorio/documentos", {
         method: "POST",
@@ -113,6 +146,7 @@ export function Expediente({
 
       setDocumentos((prev) => [doc, ...prev]);
       setMarcados([]);
+      setLados({});
       setDiagnostico("");
       setIndicaciones("");
       setMedicamentos([{ ...MED_VACIO }]);
@@ -124,7 +158,9 @@ export function Expediente({
   }
 
   const puedeGuardar =
-    pestana === "receta" ? medicamentos.some((m) => m.nombre.trim()) : marcados.length > 0;
+    pestana === "receta"
+      ? medicamentos.some((m) => m.nombre.trim())
+      : marcados.length > 0 && sinLado.length === 0;
 
   return (
     <>
@@ -171,6 +207,7 @@ export function Expediente({
               onClick={() => {
                 setPestana(id);
                 setMarcados([]);
+                setLados({});
               }}
               className={`-mb-px border-b-2 pb-2.5 font-serif text-[17px] transition ${
                 pestana === id
@@ -203,25 +240,45 @@ export function Expediente({
                     </h3>
                     <div className="mt-1.5">
                       {a.examenes.map((e) => (
-                        <label key={e.id} className="casilla">
-                          <input
-                            type="checkbox"
-                            checked={marcados.includes(e.id)}
-                            onChange={() => marcar(e.id)}
-                          />
-                          <span className="min-w-0 flex-1 text-[13.5px] leading-snug text-[var(--texto)]">
-                            {e.nombre}
-                            {e.nota && (
-                              <span className="block text-[12px] text-[var(--texto-3)]">
-                                {e.nota}
-                              </span>
-                            )}
-                          </span>
-                          <span className="shrink-0 font-mono text-[12px] text-[var(--texto-3)]">
-                            {e.estimado ? "~" : ""}
-                            {e.precio}
-                          </span>
-                        </label>
+                        <div key={e.id}>
+                          <label className="casilla">
+                            <input
+                              type="checkbox"
+                              checked={marcados.includes(e.id)}
+                              onChange={() => marcar(e.id)}
+                            />
+                            <span className="min-w-0 flex-1 text-[13.5px] leading-snug text-[var(--texto)]">
+                              {e.nombre}
+                              {e.nota && (
+                                <span className="block text-[12px] text-[var(--texto-3)]">
+                                  {e.nota}
+                                </span>
+                              )}
+                            </span>
+                            <span className="shrink-0 font-mono text-[12px] text-[var(--texto-3)]">
+                              {e.estimado ? "~" : ""}
+                              {e.precio}
+                            </span>
+                          </label>
+                          {e.lado && marcados.includes(e.id) && (
+                            <span className="mb-1 ml-8 flex gap-1">
+                              {LADOS.map((l) => (
+                                <button
+                                  key={l.id}
+                                  type="button"
+                                  onClick={() => setLados((x) => ({ ...x, [e.id]: l.id }))}
+                                  className={`rounded-[6px] border px-2 py-0.5 text-[11.5px] transition ${
+                                    lados[e.id] === l.id
+                                      ? "border-[var(--verde)] bg-[var(--verde-claro)] font-semibold text-[var(--verde-hondo)]"
+                                      : "border-[var(--linea-2)] text-[var(--texto-2)] hover:border-[var(--texto-3)]"
+                                  }`}
+                                >
+                                  {l.texto}
+                                </button>
+                              ))}
+                            </span>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -392,7 +449,7 @@ export function Expediente({
                           <ul className="mt-1 space-y-0.5">
                             {g.examenes.map((e) => (
                               <li key={e.id} className="text-[13.5px] text-[var(--texto-2)]">
-                                {e.nombre}
+                                {conLado(e.id, d.lados)}
                               </li>
                             ))}
                           </ul>
@@ -453,7 +510,11 @@ export function Expediente({
       <div className="no-imprimir fixed inset-x-0 bottom-0 border-t border-[var(--linea-2)] bg-[var(--panel)]/95 backdrop-blur lg:left-[236px]">
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
           <p className="text-[13.5px] text-[var(--texto-2)]">
-            {pestana === "orden" ? (
+            {sinLado.length > 0 ? (
+              <span className="text-[var(--ambar)]">
+                Falta decir de qué lado: {sinLado.map((id) => conLado(id)).join(", ")}
+              </span>
+            ) : pestana !== "receta" ? (
               marcados.length === 0 ? (
                 "Marcá los exámenes que le vas a dejar."
               ) : (

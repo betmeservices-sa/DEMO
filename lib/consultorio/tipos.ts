@@ -77,6 +77,11 @@ export interface Orden {
   codigo: string;
   /** Ids del catálogo de exámenes. */
   examenes: string[];
+  /**
+   * De qué lado va cada estudio que lo pide (los que en la orden impresa
+   * llevan "Der Izq"). Solo aparecen los que lo necesitan.
+   */
+  lados?: Record<string, "der" | "izq" | "ambos">;
   diagnostico: string;
   indicaciones: string;
   enviado: Envio | null;

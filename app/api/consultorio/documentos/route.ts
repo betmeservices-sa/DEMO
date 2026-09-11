@@ -6,7 +6,7 @@ import {
   guardarDocumento,
   pacientePorId,
 } from "@/lib/consultorio/almacen";
-import { esDe, type TipoOrden } from "@/lib/consultorio/catalogos";
+import { LADOS, TODOS, esDe, type Lado, type TipoOrden } from "@/lib/consultorio/catalogos";
 import { codigoReceta, idNuevo, type Documento, type Medicamento } from "@/lib/consultorio/tipos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 
@@ -62,6 +62,7 @@ export async function POST(req: Request) {
     pacienteId?: string;
     medicamentos?: Medicamento[];
     examenes?: string[];
+    lados?: Record<string, string>;
     diagnostico?: string;
     indicaciones?: string;
   };
@@ -109,7 +110,22 @@ export async function POST(req: Request) {
     if (examenes.length === 0) {
       return NextResponse.json({ ok: false, error: "No marcaste nada." }, { status: 400 });
     }
-    doc = { ...comun, tipo, examenes, diagnostico: (b.diagnostico ?? "").trim() };
+    // El lado solo se guarda de los estudios que lo piden, y solo si es uno de
+    // los tres válidos: un "lado" pegado a una radiografía de tórax sería ruido
+    // en la hoja, y uno inventado sería una instrucción que nadie puede seguir.
+    const lados: Record<string, Lado> = {};
+    for (const id of examenes) {
+      const valor = b.lados?.[id];
+      if (TODOS[id]?.lado && LADOS.some((l) => l.id === valor)) lados[id] = valor as Lado;
+    }
+    const falta = examenes.filter((id) => TODOS[id]?.lado && !lados[id]);
+    if (falta.length > 0) {
+      return NextResponse.json(
+        { ok: false, error: "Falta decir de qué lado va cada estudio." },
+        { status: 400 },
+      );
+    }
+    doc = { ...comun, tipo, examenes, lados, diagnostico: (b.diagnostico ?? "").trim() };
   } else {
     return NextResponse.json({ ok: false, error: "Ese tipo no existe." }, { status: 400 });
   }
