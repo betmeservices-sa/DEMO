@@ -50,6 +50,7 @@ const DOCTORES: Doctor[] = [
 const SUCURSALES: Sucursal[] = [
   {
     id: "suc_escalon",
+    tipo: "laboratorio",
     nombre: "Laboratorio Escalón",
     direccion: "Paseo General Escalón, frente al parque Beethoven",
     horario: "Lunes a viernes de 6:30 a. m. a 5:00 p. m. · Sábados hasta mediodía",
@@ -57,10 +58,27 @@ const SUCURSALES: Sucursal[] = [
   },
   {
     id: "suc_santa_tecla",
+    tipo: "laboratorio",
     nombre: "Laboratorio Santa Tecla",
     direccion: "Avenida Manuel Gallardo, contiguo a la clínica municipal",
     horario: "Lunes a sábado de 7:00 a. m. a 4:00 p. m.",
     codigo: "LAB9ST",
+  },
+  {
+    id: "uni_imagenes",
+    tipo: "imagenologia",
+    nombre: "Unidad de Imagenología",
+    direccion: "Paseo General Escalón, segundo nivel de la clínica",
+    horario: "Lunes a viernes de 7:00 a. m. a 7:00 p. m. · Sábados de 8:00 a. m. a 1:00 p. m.",
+    codigo: "IMG7RX",
+  },
+  {
+    id: "uni_procesos",
+    tipo: "procesos",
+    nombre: "Sala de procedimientos",
+    direccion: "Paseo General Escalón, primer nivel, pasillo B",
+    horario: "Lunes a viernes de 7:00 a. m. a 5:00 p. m.",
+    codigo: "PRC5CG",
   },
 ];
 
@@ -78,8 +96,13 @@ export function doctorPorCodigo(codigo: string): Doctor | null {
   return DOCTORES.find((d) => d.codigo === c) ?? null;
 }
 
-export function listarSucursales(): Sucursal[] {
-  return SUCURSALES;
+export function listarSucursales(tipo?: Sucursal["tipo"]): Sucursal[] {
+  return tipo ? SUCURSALES.filter((s) => s.tipo === tipo) : SUCURSALES;
+}
+
+/** Con cuál catálogo se marca en esta unidad. */
+export function tipoDeOrdenDe(tipo: Sucursal["tipo"]): "orden" | "imagen" | "proceso" {
+  return tipo === "imagenologia" ? "imagen" : tipo === "procesos" ? "proceso" : "orden";
 }
 
 export function sucursalPorId(id: string): Sucursal | null {

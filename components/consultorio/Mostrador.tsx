@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ClipboardList, Download, Printer, Receipt, Search, Timer } from "lucide-react";
-import { EXAMENES, agrupar, valorDe } from "@/lib/consultorio/examenes";
+import { TODOS, agruparDe, conLado, valorTotal, type TipoOrden } from "@/lib/consultorio/catalogos";
 import type { Sucursal, Turno } from "@/lib/consultorio/tipos";
 
 /** Lo que devuelve el mostrador al buscar el código que trae el paciente. */
@@ -21,6 +21,9 @@ interface Orden {
   paciente: { nombre: string; telefono: string } | null;
   doctor: string;
   turnoId: string | null;
+  /** Si lo que trae la orden se hace en esta unidad. */
+  suya: boolean;
+  unidad: string;
 }
 
 const fechaCorta = (iso: string) =>
@@ -45,13 +48,13 @@ function corridos(t: Turno, ahora: number | null): number {
 }
 
 export function Mostrador({
-  sucursal,
+  unidad,
   iniciales,
   escritorio,
 }: {
-  sucursal: Sucursal;
+  unidad: Sucursal;
   iniciales: Turno[];
-  /** El selector de con cuál sucursal se está mirando. Lo arma la página. */
+  /** El selector de con cuál unidad se está mirando. Lo arma la página. */
   escritorio?: React.ReactNode;
 }) {
   const [turnos, setTurnos] = useState<Turno[]>(iniciales);
@@ -69,17 +72,21 @@ export function Mostrador({
   // y solo cuando lo escrito tiene forma de código: mientras se teclea un
   // nombre no hay nada que preguntar.
   const [orden, setOrden] = useState<Orden | null>(null);
+  // Con cuál catálogo se lee esta fila: el laboratorio marca exámenes, la
+  // unidad de imagenología estudios y la sala de procedimientos, procedimientos.
+  const tipoOrden: TipoOrden =
+    unidad.tipo === "imagenologia" ? "imagen" : unidad.tipo === "procesos" ? "proceso" : "orden";
 
   const traer = useCallback(async () => {
     try {
-      const r = await fetch("/api/consultorio/turnos", { cache: "no-store" });
+      const r = await fetch(`/api/consultorio/turnos?unidad=${unidad.id}`, { cache: "no-store" });
       const d = await r.json();
       if (d.ok) setTurnos(d.turnos);
     } catch {
       // La siguiente vuelta corrige. Un error en pantalla por un parpadeo de
       // red, en un mostrador con gente esperando, es peor que el parpadeo.
     }
-  }, []);
+  }, [unidad.id]);
 
   useEffect(() => {
     const id = setInterval(traer, 5000);
@@ -98,7 +105,9 @@ export function Mostrador({
     }
     let vivo = true;
     const codigo = q.includes("-") ? q : `${q.slice(0, 5)}-${q.slice(5)}`;
-    fetch(`/api/consultorio/ordenes/${encodeURIComponent(codigo)}`, { cache: "no-store" })
+    fetch(`/api/consultorio/ordenes/${encodeURIComponent(codigo)}?unidad=${unidad.id}`, {
+      cache: "no-store",
+    })
       .then((r) => r.json())
       .then((d) => {
         if (vivo) setOrden(d.ok ? d : null);
@@ -110,7 +119,7 @@ export function Mostrador({
     return () => {
       vivo = false;
     };
-  }, [q]);
+  }, [q, unidad.id]);
 
   const mandar = useCallback(
     async (id: string, cuerpo: Record<string, unknown>) => {
@@ -159,7 +168,7 @@ export function Mostrador({
       <header className="no-imprimir bg-[var(--barra)] text-white">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-4">
           <span className="min-w-0">
-            <span className="block font-serif text-[19px] leading-tight">{sucursal.nombre}</span>
+            <span className="block font-serif text-[19px] leading-tight">{unidad.nombre}</span>
             <span className="block text-[12.5px] text-white/60">
               {esperando.length} esperando · {listos.length} atendidos · {dinero(facturado)}{" "}
               facturado hoy
@@ -167,14 +176,14 @@ export function Mostrador({
           </span>
           <span className="ml-auto flex flex-wrap items-center gap-4">
             <a
-              href="/api/consultorio/turnos/reporte"
+              href={`/api/consultorio/turnos/reporte?unidad=${unidad.id}`}
               className="flex items-center gap-1.5 text-[13.5px] text-white/70 underline underline-offset-4 transition hover:text-white"
             >
               <Download size={14} /> Corte del día
             </a>
             <a
-              href={`/api/consultorio/publico/qr/${sucursal.codigo}`}
-              download={`qr-${sucursal.codigo}.png`}
+              href={`/api/consultorio/publico/qr/${unidad.codigo}`}
+              download={`qr-${unidad.codigo}.png`}
               className="text-[13.5px] text-white/70 underline underline-offset-4 transition hover:text-white"
             >
               QR de la entrada
@@ -191,6 +200,7 @@ export function Mostrador({
               <Record
                 key={abierto.id}
                 turno={abierto}
+                tipoOrden={tipoOrden}
                 segundos={corridos(abierto, ahora)}
                 ocupado={ocupado}
                 cerrar={(hechos, final, monto) =>
@@ -247,14 +257,14 @@ export function Mostrador({
                   {orden.orden.examenes.map((e) => (
                     <li key={e} className="flex items-baseline justify-between gap-3 text-[14px]">
                       <span className="min-w-0 text-[var(--texto)]">
-                        {EXAMENES[e]?.nombre ?? e}
+                        {conLado(e)}
                         <span className="ml-2 font-mono text-[11.5px] text-[var(--texto-3)]">
-                          {EXAMENES[e]?.codigo}
+                          {TODOS[e]?.codigo}
                         </span>
                       </span>
                       <span className="shrink-0 font-mono text-[13px] text-[var(--texto-2)]">
-                        {EXAMENES[e]?.estimado ? "~" : ""}
-                        {dinero(EXAMENES[e]?.precio ?? 0)}
+                        {TODOS[e]?.estimado ? "~" : ""}
+                        {dinero(TODOS[e]?.precio ?? 0)}
                       </span>
                     </li>
                   ))}
@@ -264,7 +274,7 @@ export function Mostrador({
                     {orden.orden.examenes.length} exámenes
                   </span>
                   <span className="font-serif text-[22px] text-[var(--texto)]">
-                    {dinero(valorDe(orden.orden.examenes))}
+                    {dinero(valorTotal(orden.orden.examenes))}
                   </span>
                 </p>
 
@@ -274,9 +284,16 @@ export function Mostrador({
                   </p>
                 )}
 
+                {orden.suya === false && (
+                  <p className="mt-3 border-l-2 border-[var(--ambar)] bg-[var(--ambar-claro)] px-4 py-2.5 text-[13.5px] leading-relaxed text-[var(--texto)]">
+                    Esa orden no es de {orden.unidad}: hay que atenderla en el departamento que
+                    corresponde.
+                  </p>
+                )}
+
                 <button
                   type="button"
-                  disabled={ocupado}
+                  disabled={ocupado || orden.suya === false}
                   onClick={async () => {
                     if (orden.turnoId) {
                       await mandar(orden.turnoId, { accion: "abrir" });
@@ -286,7 +303,7 @@ export function Mostrador({
                     setOcupado(true);
                     try {
                       const r = await fetch(
-                        `/api/consultorio/ordenes/${encodeURIComponent(orden.orden.codigo)}`,
+                        `/api/consultorio/ordenes/${encodeURIComponent(orden.orden.codigo)}?unidad=${unidad.id}`,
                         { method: "POST" },
                       );
                       const d = await r.json();
@@ -488,20 +505,20 @@ export function Mostrador({
           </div>
 
           <aside className="documento self-start px-6 py-6 text-center">
-            <p className="font-serif text-[14px] text-[var(--texto-2)]">{sucursal.nombre}</p>
+            <p className="font-serif text-[14px] text-[var(--texto-2)]">{unidad.nombre}</p>
             <h2 className="mt-2 font-serif text-[21px] leading-snug text-[var(--texto)]">
               Escaneá para tomar turno
             </h2>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`/api/consultorio/publico/qr/${sucursal.codigo}`}
-              alt={`Código QR de ${sucursal.nombre}`}
+              src={`/api/consultorio/publico/qr/${unidad.codigo}`}
+              alt={`Código QR de ${unidad.nombre}`}
               width={240}
               height={240}
               className="mx-auto mt-3 w-full max-w-[240px]"
             />
             <p className="mt-2 font-mono text-[17px] font-semibold tracking-[0.3em] text-[var(--texto)]">
-              {sucursal.codigo}
+              {unidad.codigo}
             </p>
             <button
               type="button"
@@ -528,11 +545,14 @@ export function Mostrador({
  */
 function Record({
   turno,
+  tipoOrden,
   segundos,
   ocupado,
   cerrar,
 }: {
   turno: Turno;
+  /** De cuál catálogo salen los ítems de este turno. */
+  tipoOrden: TipoOrden;
   segundos: number;
   ocupado: boolean;
   cerrar: (hechos: string[], final: boolean, monto: string) => void;
@@ -546,12 +566,14 @@ function Record({
   // paquetes y descuentos que el catálogo no sabe. En cuanto lo toca, deja de
   // moverse solo, aunque después cambie un check.
   const [monto, setMonto] = useState<string>(
-    turno.monto !== null ? String(turno.monto) : String(valorDe(turno.cerrado ? turno.hechos : turno.examenes)),
+    turno.monto !== null
+      ? String(turno.monto)
+      : String(valorTotal(turno.cerrado ? turno.hechos : turno.examenes)),
   );
   const [tocado, setTocado] = useState(turno.monto !== null);
 
-  const grupos = useMemo(() => agrupar(turno.examenes), [turno.examenes]);
-  const sugerido = valorDe(marcados);
+  const grupos = useMemo(() => agruparDe(tipoOrden, turno.examenes), [tipoOrden, turno.examenes]);
+  const sugerido = valorTotal(marcados);
   const hayEstimados = grupos.some((g) => g.examenes.some((e) => e.estimado));
   const cobrado = Number(monto);
   const sePuedeFinalizar = monto.trim() !== "" && Number.isFinite(cobrado) && cobrado > 0;
@@ -559,7 +581,7 @@ function Record({
   function marcar(id: string) {
     setMarcados((m) => {
       const nuevo = m.includes(id) ? m.filter((x) => x !== id) : [...m, id];
-      if (!tocado) setMonto(String(valorDe(nuevo)));
+      if (!tocado) setMonto(String(valorTotal(nuevo)));
       return nuevo;
     });
   }

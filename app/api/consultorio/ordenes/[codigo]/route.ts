@@ -5,9 +5,11 @@ import {
   documentoPorCodigo,
   doctorPorId,
   pacientePorId,
+  sucursalPorId,
+  tipoDeOrdenDe,
   turnosDe,
 } from "@/lib/consultorio/almacen";
-import { EXAMENES } from "@/lib/consultorio/examenes";
+import { TODOS } from "@/lib/consultorio/catalogos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 
 export const runtime = "nodejs";
@@ -29,6 +31,12 @@ async function buscar(codigo: string) {
   return { doc, paciente, doctor: doctorPorId(doc.doctorId) };
 }
 
+/** En qué mostrador se está preguntando. */
+async function unidadDe(req: Request) {
+  const pedida = new URL(req.url).searchParams.get("unidad");
+  return (pedida ? sucursalPorId(pedida) : null) ?? (await sucursalActual());
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ codigo: string }> }) {
   if (tenantFromRequest(req) !== "consultorio") {
     return NextResponse.json({ ok: false, error: "No existe." }, { status: 404 });
@@ -42,18 +50,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ codigo: 
 
   // Si ya está en la fila de hoy, lo que hace falta es abrir su récord, no
   // meterlo otra vez.
-  const sucursal = await sucursalActual();
+  const sucursal = await unidadDe(req);
   const yaEnFila = (await turnosDe(sucursal.id)).find(
     (t) => paciente && t.telefono === paciente.telefono,
   );
 
+  // Una orden de laboratorio no se atiende en imagenología: se dice acá, en
+  // vez de dejar que registren a alguien por estudios que esa unidad no hace.
+  const suya = doc.tipo === tipoDeOrdenDe(sucursal.tipo);
+
   return NextResponse.json({
     ok: true,
+    suya,
+    unidad: sucursal.nombre,
     orden: {
       codigo: doc.codigo,
       tipo: doc.tipo,
       fecha: doc.fecha,
-      examenes: doc.examenes.filter((e) => e in EXAMENES),
+      examenes: doc.examenes.filter((e) => e in TODOS),
       indicaciones: doc.indicaciones,
     },
     paciente: paciente ? { nombre: paciente.nombre, telefono: paciente.telefono } : null,
@@ -73,15 +87,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ codigo:
   }
   const { doc, paciente } = hallado;
 
-  const examenes = doc.examenes.filter((e) => e in EXAMENES);
+  const examenes = doc.examenes.filter((e) => e in TODOS);
   if (examenes.length === 0) {
     return NextResponse.json(
-      { ok: false, error: "Esa orden no trae exámenes que el laboratorio haga." },
+      { ok: false, error: "Esa orden no trae nada que esta unidad haga." },
       { status: 400 },
     );
   }
 
-  const sucursal = await sucursalActual();
+  const sucursal = await unidadDe(req);
+  if (doc.tipo !== tipoDeOrdenDe(sucursal.tipo)) {
+    return NextResponse.json(
+      { ok: false, error: `Esa orden no es de ${sucursal.nombre}.` },
+      { status: 400 },
+    );
+  }
   const turno = await crearTurno({
     sucursalId: sucursal.id,
     nombre: paciente.nombre,

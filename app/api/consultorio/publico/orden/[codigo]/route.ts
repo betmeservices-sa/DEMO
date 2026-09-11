@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { documentoPorCodigo, doctorPorId, pacientePorId } from "@/lib/consultorio/almacen";
-import { EXAMENES } from "@/lib/consultorio/examenes";
+import { TODOS } from "@/lib/consultorio/catalogos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +35,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ codigo:
     // Solo los que existen hoy en el catálogo: una orden vieja puede traer un
     // examen que el laboratorio ya no hace, y marcar algo inexistente dejaría
     // al paciente en la fila esperando por lo que nadie le va a tomar.
-    examenes: doc.examenes.filter((e) => e in EXAMENES),
+    examenes: doc.examenes.filter((e) => e in TODOS),
   });
 }

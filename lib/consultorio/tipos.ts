@@ -127,8 +127,19 @@ export function idNuevo(prefijo: string): string {
 
 // ── La sucursal donde se hacen los exámenes ─────────────────────────────────
 
+/**
+ * Qué se hace en esta unidad.
+ *
+ * De esto cuelga TODO lo demás: con cuál catálogo se marca, qué órdenes del
+ * doctor acepta y en qué mostrador aparece la fila. Un paciente que llega con
+ * una orden de laboratorio a la unidad de imagenología no tiene nada que hacer
+ * ahí, y la pantalla tiene que poder decírselo.
+ */
+export type TipoUnidad = "laboratorio" | "imagenologia" | "procesos";
+
 export interface Sucursal {
   id: string;
+  tipo: TipoUnidad;
   nombre: string;
   direccion: string;
   horario: string;

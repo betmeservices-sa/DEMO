@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessagesSquare, PhoneCall, PhoneOutgoing, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { useStore } from "@/lib/store";
@@ -43,7 +43,9 @@ const NAV: NavItem[] = [
   { id: "campanas", href: "/campanas", label: "Campañas", Icon: PhoneOutgoing },
   { id: "consultorio", href: "/consultorio", label: "Consultorio", Icon: Stethoscope },
   { id: "laboratorio", href: "/laboratorio", label: "Laboratorio", Icon: FlaskConical },
+  { id: "imagenologia", href: "/imagenologia", label: "Imagenología", Icon: Scan },
   { id: "jefatura", href: "/laboratorio/jefatura", label: "Jefatura", Icon: BarChart3 },
+  { id: "mensajes", href: "/mensajes", label: "Bandeja", Icon: MessageCircle },
   { id: "interno", href: "/interno", label: "Chat interno", Icon: MessagesSquare },
   { id: "redes", href: "/redes", label: "Redes sociales", Icon: Megaphone },
   { id: "comentarios", href: "/comentarios", label: "Comentarios", Icon: MsgSq },
@@ -122,7 +124,11 @@ export function Sidebar({
   const visibles = veClinica
     ? NAV.filter(
         (item) =>
-          (item.id === "consultorio" || item.id === "laboratorio" || item.id === "jefatura") &&
+          (item.id === "consultorio" ||
+            item.id === "laboratorio" ||
+            item.id === "imagenologia" ||
+            item.id === "jefatura" ||
+            item.id === "mensajes") &&
           def.ve.includes(item.id),
       )
     : NAV.filter(
