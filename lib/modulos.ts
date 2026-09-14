@@ -56,6 +56,18 @@ export type ModuleId =
   | "agentes"
   | "settings";
 
+// Los modulos que solo existen en la clinica (tenant "consultorio"). Es UNA
+// lista para el menu de la clinica y para esconderlos en los demas clientes:
+// antes eran dos listas a mano, y jefatura, imagenologia y la bandeja de
+// muestra entraron a una sola, asi que aparecian en el menu de todos.
+export const MODULOS_CLINICA: readonly ModuleId[] = [
+  "consultorio",
+  "laboratorio",
+  "imagenologia",
+  "jefatura",
+  "mensajes",
+];
+
 export interface RoleDef {
   id: RoleId;
   nombre: string;

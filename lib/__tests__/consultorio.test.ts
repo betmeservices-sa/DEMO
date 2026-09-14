@@ -6,7 +6,7 @@
 // quién le toca (un "sos el 4" equivocado se descubre con la sala llena).
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEMO_LOGINS, TENANTS, isTenantId, resolveTenantByLogin } from "@/lib/tenants";
-import { VE, moduloDeRuta, puedeVerRuta } from "@/lib/modulos";
+import { MODULOS_CLINICA, VE, moduloDeRuta, puedeVerRuta } from "@/lib/modulos";
 import { agrupar, esExamen, preparacion } from "@/lib/consultorio/examenes";
 import {
   abrirTurno,
@@ -79,6 +79,14 @@ describe("quién ve el módulo clínico", () => {
 
   it("recepción mueve la fila", () => {
     expect(puedeVerRuta("recepcion", "/laboratorio")).toBe(true);
+  });
+
+  it("cada pantalla de la clínica está en la lista que la esconde a los demás", () => {
+    // Sin esto, un módulo nuevo de la clínica sale en el menú de todos los
+    // clientes: pasó con jefatura, imagenología y la bandeja de muestra.
+    for (const ruta of ["/consultorio", "/laboratorio", "/laboratorio/jefatura", "/imagenologia", "/imagenologia/procesos", "/mensajes"]) {
+      expect(MODULOS_CLINICA).toContain(moduloDeRuta(ruta));
+    }
   });
 
   it("no le agrega módulos al rol de atención, que es de otro cliente", () => {
