@@ -28,6 +28,7 @@ import { HotelOcupacion } from "@/components/dashboard/HotelOcupacion";
 import { YaliDashboard } from "@/components/dashboard/YaliDashboard";
 import { AgenciaDashboard } from "@/components/dashboard/AgenciaDashboard";
 import { CrediqDashboard } from "@/components/dashboard/CrediqDashboard";
+import { NissanDashboard } from "@/components/dashboard/NissanDashboard";
 import { OrigenCanales } from "@/components/dashboard/OrigenCanales";
 import { ConsumoIA } from "@/components/dashboard/ConsumoIA";
 import { RedesResumen } from "@/components/dashboard/RedesResumen";
@@ -88,6 +89,8 @@ export default function DashboardPage() {
   // Grupo Q mira el rendimiento del agente sobre sus leads de credito, no la
   // actividad de comunicacion en general.
   if (activeTenantId() === "grupoq") return <CrediqDashboard />;
+  // Nissan mira si los carros salen del piso, no la actividad de la bandeja.
+  if (activeTenantId() === "nissan") return <NissanDashboard />;
 
   return (
     <div className="flex h-full flex-col">

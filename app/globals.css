@@ -287,6 +287,46 @@
   background: #a7b8b3;
 }
 
+/* Sala de ventas Nissan: grafito y rojo, en CLARO. Va DESPUÉS del bloque de
+   marca unificada para ganarle con la misma especificidad.
+
+   POR QUÉ EL PRIMARIO NO ES EL ROJO DE LA MARCA. En este panel el rojo ya
+   significa una cosa: algo se está cayendo (un lead sin llamar, una cita que se
+   pasó, una venta trabada). Si además fuera el color de las pestañas, los
+   botones y las barras de avance, la alarma dejaría de verse como alarma. Por
+   eso el primario es el grafito de la marca y el rojo #C3002F queda de acento:
+   el logotipo, las pills y la cita que está por venir.
+
+   Contraste medido sobre el fondo #F4F5F7: tinta #14181D 16.3:1, secundario
+   #434C57 8.0:1, terciario #5D6773 5.3:1, grafito #1B1F23 15.2:1, rojo de
+   marca #C3002F 5.7:1, rojo de estado #B3261E 6.0:1 y verde #146C43 5.9:1.
+   Sobre la tarjeta blanca todos suben. Por encima del 4.5:1 que pide WCAG AA
+   para texto normal. Lo cubre nissan-tema.test.ts. */
+[data-tenant="nissan"] {
+  --brand-blue: #1b1f23;
+  --brand-blue-dark: #0d1013;
+  --brand-green: #146c43;
+  --brand-red: #b3261e;
+  --brand-accent: #c3002f;
+  --brand-accent-soft: #fdecee;
+
+  --surface: #f4f5f7;
+  --surface-2: #e8ebf0;
+  --card: #ffffff;
+  --border: #e0e4ea;
+  --border-2: #c7cdd7;
+  --text: #14181d;
+  --text-2: #434c57;
+  --text-3: #5d6773;
+
+  --font-app: 'Barlow', Arial, system-ui, sans-serif;
+}
+
+/* La barra de scroll clara de Nissan. */
+[data-tenant="nissan"] ::-webkit-scrollbar-thumb:hover {
+  background: #aab2bd;
+}
+
 @theme inline {
   --font-sans: var(--font-app);
   --color-brand: var(--brand-blue);

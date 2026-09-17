@@ -44,7 +44,14 @@ export type TipoEvento =
   | "tomado"
   | "cerrado"
   | "aviso_gerente"
-  | "vencido";
+  | "vencido"
+  // Los del tablero de la sala de ventas (lib/autos-store). Comparten tabla
+  // porque comparten forma: un caso por persona, con su historia. Lo que cambia
+  // es que ahi no se persiguen papeles sino momentos de la venta.
+  | "paso_agendado"
+  | "paso_hecho"
+  | "paso_trabado"
+  | "modelo";
 
 export interface Evento {
   ts: string;

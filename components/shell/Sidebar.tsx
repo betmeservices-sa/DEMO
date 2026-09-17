@@ -37,6 +37,7 @@ const NAV: NavItem[] = [
   { id: "calendario", href: "/calendario", label: "Calendario", Icon: CalendarDays },
   { id: "pipeline", href: "/pipeline", label: "Pipeline", Icon: Filter },
   { id: "crediq", href: "/crediq", label: "Pipeline", Icon: GitBranch },
+  { id: "ventas", href: "/ventas", label: "Sala de ventas", Icon: GitBranch },
   { id: "visitas", href: "/visitas", label: "Visitas", Icon: CalendarClock },
   { id: "cartera", href: "/cartera", label: "Cartera", Icon: Building2 },
   { id: "publicacion", href: "/publicacion", label: "Publicación", Icon: Share2 },
@@ -99,6 +100,10 @@ export function Sidebar({
   // que es donde caen las conversaciones que el agente ya paso a una persona:
   // sin esa pantalla el traspaso existe pero nadie lo ve.
   const veCrediq = tenant === "grupoq";
+  // Nissan: el tablero de la sala de ventas. Y "Mis chats", por lo mismo que
+  // Grupo Q: sin esa pantalla el traspaso del agente a una persona existe pero
+  // nadie lo ve.
+  const veNissan = tenant === "nissan";
   const veCobros = tenant === "promerica";
   // El consultorio y el mostrador del laboratorio: los pacientes que se
   // registran escaneando el QR del doctor y la fila de quien llega a hacerse
@@ -135,6 +140,7 @@ export function Sidebar({
       (item.id !== "hoy" || veHotel) &&
       (item.id !== "pipeline" || veInmobiliaria) &&
       (item.id !== "crediq" || veCrediq) &&
+      (item.id !== "ventas" || veNissan) &&
       (item.id !== "visitas" || veInmobiliaria) &&
       (item.id !== "cartera" || veInmobiliaria) &&
       (item.id !== "publicacion" || veInmobiliaria) &&
@@ -143,7 +149,7 @@ export function Sidebar({
       (item.id !== "campanas" || veCobros) &&
       (item.id !== "redes" || veRedes) &&
       (item.id !== "comentarios" || veComentarios) &&
-      (item.id !== "mis-chats" || veYali || veCrediq) &&
+      (item.id !== "mis-chats" || veYali || veCrediq || veNissan) &&
       (item.id !== "tickets" || tieneTickets) &&
       (item.id !== "promociones" || veYali) &&
       (item.id !== "perfil" || veYali) &&
