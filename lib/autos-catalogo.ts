@@ -1,11 +1,12 @@
 // El catalogo de la sala de ventas y los pasos por los que pasa una venta.
 //
-// Es el equivalente de crediq-requisitos para el tablero de autos, y cambia lo
-// que se persigue: alla se persiguen PAPELES (que el cliente mande el DUI),
-// aca se persiguen MOMENTOS (que venga a manejar la unidad, que acepte la
-// propuesta, que deje la prima). Por eso los pasos no son documentos que se
-// aprueban o se devuelven: son cosas que pasan, que se pueden agendar y que se
-// pueden trabar.
+// Lo que se persigue aca son MOMENTOS de la venta: que venga a manejar la
+// unidad, que acepte la propuesta, que deje el deposito, que se lleve las
+// llaves. Por eso los pasos no son documentos que se aprueban o se devuelven:
+// son cosas que pasan, que se pueden agendar y que se pueden trabar.
+//
+// Nada de esto es papeleo de credito. La forma de pago es asunto del asesor en
+// la sala; el tablero mide si el carro sale del piso.
 //
 // Los precios son los de lista de Nissan El Salvador que ya usa el guion de
 // Sofia (ver lib/tenants/grupoq.ts). Se muestran SIEMPRE como referencia
@@ -141,7 +142,7 @@ export const PASOS: Paso[] = [
   {
     id: "cotizacion",
     nombre: "Cotización enviada",
-    ayuda: "Ya tiene por escrito el precio, la prima y la cuota estimada",
+    ayuda: "Ya tiene por escrito el precio, el equipamiento y los colores",
     agendable: false,
   },
   {
@@ -166,7 +167,7 @@ export const PASOS: Paso[] = [
   {
     id: "separacion",
     nombre: "Unidad separada",
-    ayuda: "Dejó prima o depósito: la unidad sale de disponible",
+    ayuda: "Dejó el depósito y la unidad sale de disponible para los demás",
     agendable: false,
   },
   {
@@ -188,10 +189,11 @@ export const PASOS_REQUERIDOS = PASOS.filter((p) => !p.opcional);
  */
 export const MOTIVOS_TRABA = [
   { id: "precio", nombre: "El precio no le cierra" },
-  { id: "cuota", nombre: "La cuota le queda alta" },
-  { id: "credito", nombre: "No le pasó el crédito" },
+  { id: "presupuesto", nombre: "Se le pasa del presupuesto" },
   { id: "inventario", nombre: "No hay la unidad o el color" },
   { id: "usado", nombre: "No acepta el valor de su usado" },
+  { id: "entrega", nombre: "El tiempo de entrega no le sirve" },
+  { id: "prueba", nombre: "No le convenció al manejarla" },
   { id: "tiempo", nombre: "Lo está pensando" },
   { id: "competencia", nombre: "Está viendo otra marca" },
   { id: "otro", nombre: "Otro" },

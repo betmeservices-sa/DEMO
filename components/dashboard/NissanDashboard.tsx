@@ -111,7 +111,7 @@ export function NissanDashboard() {
                   </div>
                   <div className="h-2.5 overflow-hidden rounded-full bg-surface">
                     <div
-                      className="h-full rounded-full bg-[var(--brand-accent)] transition-all duration-500"
+                      className="h-full rounded-full bg-brand transition-all duration-500"
                       style={{ width: `${Math.round((m.interesados / topModelo) * 100)}%` }}
                     />
                   </div>

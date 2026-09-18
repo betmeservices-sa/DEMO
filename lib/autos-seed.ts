@@ -211,7 +211,7 @@ const CASOS: Sembrado[] = [
     pasos: [
       { id: "cotizacion", estado: "hecho", hace: 88 },
       { id: "prueba", estado: "hecho", hace: 60 },
-      { id: "propuesta", estado: "hecho", hace: 20, nota: "Descuento de empleado, 84 meses." },
+      { id: "propuesta", estado: "hecho", hace: 20, nota: "Precio de exhibición, con estribos y polarizado incluidos." },
     ],
     actualizado: 20,
   },
@@ -229,7 +229,7 @@ const CASOS: Sembrado[] = [
       { id: "prueba", estado: "hecho", hace: 90 },
       { id: "usado", estado: "hecho", hace: 80, nota: "Versa 2017, $7,800." },
       { id: "propuesta", estado: "hecho", hace: 72 },
-      { id: "separacion", estado: "trabado", hace: 70, motivo: "cuota", nota: "Quiere quedar debajo de $380 al mes." },
+      { id: "separacion", estado: "trabado", hace: 70, motivo: "presupuesto", nota: "No pasa de $20,000 con el usado adentro." },
     ],
     actualizado: 70,
   },
@@ -281,7 +281,7 @@ const CASOS: Sembrado[] = [
       { id: "cotizacion", estado: "hecho", hace: 218 },
       { id: "prueba", estado: "hecho", hace: 200 },
       { id: "propuesta", estado: "hecho", hace: 180 },
-      { id: "separacion", estado: "hecho", hace: 50, nota: "Prima de $6,800." },
+      { id: "separacion", estado: "hecho", hace: 50, nota: "Depósito de $1,000, unidad apartada en gris." },
       { id: "entrega", estado: "agendado", hace: 40, cita: 30, nota: "Viernes 3 pm, con entrega de llaves." },
     ],
     actualizado: 40,
@@ -419,11 +419,11 @@ const CASOS: Sembrado[] = [
     pasos: [
       { id: "cotizacion", estado: "hecho", hace: 278 },
       { id: "propuesta", estado: "hecho", hace: 242 },
-      { id: "separacion", estado: "trabado", hace: 240, motivo: "credito" },
+      { id: "separacion", estado: "trabado", hace: 240, motivo: "entrega" },
     ],
     cerrado: 90,
     resultado: "perdido",
-    motivoCierre: "No le aprobaron el financiamiento",
+    motivoCierre: "Otra agencia se la entregaba la misma semana",
     actualizado: 90,
   },
   {
@@ -473,6 +473,11 @@ function enHoraDeSala(ts: number, hora: number, futura: boolean): string {
   let cita = reloj.getTime() - SV;
   if (futura && cita <= Date.now()) cita += 24 * HORA;
   if (!futura && cita >= Date.now()) cita -= 24 * HORA;
+  // Los domingos la sala abre para visitas libres pero no se agendan citas, y
+  // asi lo dice el guion del agente. Una prueba de manejo sembrada en domingo
+  // deja al demo contradiciendose solo.
+  const esDomingo = (t: number) => new Date(t + SV).getUTCDay() === 0;
+  if (esDomingo(cita)) cita += (futura ? 1 : -1) * 24 * HORA;
   return new Date(cita).toISOString();
 }
 

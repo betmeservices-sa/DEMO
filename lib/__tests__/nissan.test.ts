@@ -8,14 +8,15 @@ import { describe, expect, it } from "vitest";
 import { DEMO_LOGINS, TENANTS, isTenantId, resolveTenantByLogin } from "@/lib/tenants";
 import { MODULO_RUTA, VE, moduloDeRuta } from "@/lib/modulos";
 import { vendedoresDe, gerenteDe } from "@/lib/ventas-equipo";
-import { MODELOS, PASOS_REQUERIDOS } from "@/lib/autos-catalogo";
+import { MODELOS, MOTIVOS_TRABA, PASOS_REQUERIDOS } from "@/lib/autos-catalogo";
 
 describe("tenant nissan", () => {
   it("su contraseña entra a la sala de ventas", () => {
-    expect(resolveTenantByLogin("demoagentia", "miagentianissan")).toBe("nissan");
+    expect(resolveTenantByLogin("demoagentia", "demon")).toBe("nissan");
   });
 
   it("no le roba la contraseña a ninguno de los otros", () => {
+    expect(resolveTenantByLogin("demoagentia", "demoh")).toBe("hospital");
     expect(resolveTenantByLogin("demoagentia", "demoi")).toBe("grupoq");
     expect(resolveTenantByLogin("demoagentia", "demol")).toBe("consultorio");
     expect(resolveTenantByLogin("demoagentia", "miagentiayaly")).toBe("yaly");
@@ -67,6 +68,22 @@ describe("el guion vende carros, no créditos", () => {
   it("no manda a pedir el expediente de crédito", () => {
     expect(prompt).not.toMatch(/constancia de salario/i);
     expect(prompt).not.toMatch(/dos referencias personales/i);
+  });
+
+  // El chat no hace precalificacion: preguntar ingresos o prometer aprobacion
+  // convierte una conversacion de compra en un tramite, y ahi se enfria.
+  it("no interroga al cliente sobre su plata", () => {
+    expect(prompt).toMatch(/NUNCA preguntes ingresos/);
+    expect(prompt).not.toMatch(/rango de ingresos/i);
+    expect(prompt).not.toMatch(/prometas aprobaci[óo]n|sale el mismo d[íi]a la aprobaci[óo]n/i);
+  });
+
+  it("los motivos por los que se traba una venta son de sala, no de banco", () => {
+    const motivos = MOTIVOS_TRABA.map((m) => m.nombre).join(" | ");
+    expect(motivos).toMatch(/color/i);
+    expect(motivos).toMatch(/usado/i);
+    expect(motivos).toMatch(/entrega/i);
+    expect(motivos).not.toMatch(/cr[ée]dito|cuota|tasa/i);
   });
 
   it("los precios del guion son los mismos del catálogo del tablero", () => {

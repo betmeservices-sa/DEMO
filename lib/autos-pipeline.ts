@@ -5,8 +5,8 @@
 // de oro y un objeto distinto. LA REGLA: la etapa NO se escribe a mano, sale de
 // los pasos de la venta y de las marcas de tiempo, asi el tablero no puede
 // mentir. EL OBJETO: aca no se persigue un expediente, se persigue una unidad.
-// Alguien que ya manejo el carro y dejo prima esta mas cerca de comprar que
-// alguien con todos los papeles en regla, y el tablero tiene que decir eso.
+// Alguien que ya manejo el carro y dejo el deposito esta mas cerca de comprar
+// que alguien con todos los papeles en regla, y el tablero tiene que decir eso.
 //
 // Puro (sin base y sin reloj propio) para poder probarlo: recibe las
 // oportunidades y devuelve etapas, alertas y el reporte del gerente.
@@ -41,51 +41,65 @@ export interface Etapa {
   color: string;
 }
 
+/**
+ * Los colores del embudo son una RAMPA del rojo de la marca, de claro a oscuro
+ * conforme la venta avanza: el tablero se va cargando de color hasta la
+ * entrega. Es una sola magnitud a lo largo de un proceso ordenado, no
+ * categorias, asi que rampa y no paleta.
+ *
+ * Tres se salen de la rampa a proposito. "Sin respuesta" va en ambar porque no
+ * es un paso adelante sino un desvio; "entregados" en verde y "perdidos" en
+ * gris, porque son el resultado y no un lugar donde alguien espera algo.
+ *
+ * Todos los tramos abiertos llevan texto BLANCO encima en el embudo, asi que
+ * todos pasan el 4.5:1 contra blanco (lo cubre nissan-tema.test.ts). Si se
+ * agrega una etapa, hay que medir el tono nuevo, no elegirlo a ojo.
+ */
 export const ETAPAS: Etapa[] = [
   {
     id: "nuevos",
     nombre: "Leads asignados",
     ayuda: "Entró el lead y tiene vendedor, pero todavía nadie le habla",
-    color: "#38bdf8",
+    color: "#e11d48",
   },
   {
     id: "contactados",
     nombre: "Contactados",
     ayuda: "Ya se le habló y contestó",
-    color: "#0ea5e9",
+    color: "#d80b3c",
   },
   {
     id: "sin_respuesta",
     nombre: "Sin respuesta",
     ayuda: "Se le habló y lleva días sin contestar",
-    color: "#f59e0b",
+    color: "#8a5300",
   },
   {
     id: "cotizados",
     nombre: "Con cotización",
     ayuda: "Ya tiene el precio por escrito y lo está pensando",
-    color: "#6366f1",
+    color: "#c3002f",
   },
   {
     id: "prueba",
     nombre: "Prueba de manejo",
     ayuda: "Agendada o ya manejó la unidad",
-    color: "#7c3aed",
+    color: "#ab0029",
   },
   {
     id: "negociacion",
     nombre: "Negociación",
     ayuda: "Hay propuesta en firme sobre la mesa, falta que diga que sí",
-    color: "#2563eb",
+    color: "#930023",
   },
   {
     id: "separados",
     nombre: "Unidad separada",
-    ayuda: "Dejó prima: la unidad ya no se le vende a otro",
-    color: "#0891b2",
+    ayuda: "Dejó el depósito: la unidad ya no se le vende a otro",
+    color: "#7b001d",
   },
-  { id: "entregados", nombre: "Entregados", ayuda: "Vendido y con las llaves puestas", color: "#16a34a" },
-  { id: "perdidos", nombre: "Perdidos", ayuda: "No compró", color: "#dc2626" },
+  { id: "entregados", nombre: "Entregados", ayuda: "Vendido y con las llaves puestas", color: "#146c43" },
+  { id: "perdidos", nombre: "Perdidos", ayuda: "No compró", color: "#525252" },
 ];
 
 export const ETAPA: Record<EtapaId, Etapa> = Object.fromEntries(ETAPAS.map((e) => [e.id, e])) as Record<
@@ -181,8 +195,8 @@ const fechaCorta = (iso: string | null | undefined): string =>
  * En que punto va la venta y que es lo siguiente que hay que hacer.
  *
  * Un paso trabado pesa MAS que uno pendiente: al pendiente solo hay que
- * empujarlo, al trabado hay que resolver algo antes (bajar la cuota, conseguir
- * el color) y si nadie lo mira, ahi se queda la venta.
+ * empujarlo, al trabado hay que resolver algo antes (ajustar el precio,
+ * conseguir el color) y si nadie lo mira, ahi se queda la venta.
  */
 export function avanceDe(pasos: Pasos | null | undefined, ahora = Date.now()): Avance {
   const todos = pasosDe(pasos);
@@ -259,7 +273,7 @@ export interface Oportunidad {
   contactado: string | null;
   /** Cuando se le mando la cotizacion. */
   cotizado: string | null;
-  /** Cuando dejo la prima y la unidad salio de disponible. */
+  /** Cuando dejo el deposito y la unidad salio de disponible. */
   separado: string | null;
   asignado: string | null;
   /** Cuando el vendedor lo tomo (su primer contacto). */

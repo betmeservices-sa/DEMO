@@ -1,7 +1,7 @@
 // Guion de bandeja en vivo de la sala de ventas Nissan.
 // Todo gira alrededor de sacar el carro del piso: existencia, prueba de manejo,
-// usado a cuenta, colores y entrega. El financiamiento aparece, pero nunca es
-// el tema: aca se vende el carro, no el credito.
+// usado a cuenta, colores, equipamiento y entrega. De la forma de pago se habla
+// en la sala, no en el chat.
 import type { TenantSimulacion } from "../types";
 
 export const nissanSimulacion: TenantSimulacion = {
@@ -19,8 +19,8 @@ export const nissanSimulacion: TenantSimulacion = {
       responde: "Sí, se lo valuamos sin costo el mismo día. ¿Qué modelo y año es el suyo?",
     },
     {
-      entra: "¿De cuánto es la prima de la X-Trail?",
-      responde: "La prima arranca desde el 20 por ciento. ¿Le mando la cotización con todo desglosado?",
+      entra: "¿Qué trae la X-Trail de equipamiento?",
+      responde: "Trae tres filas, cámara 360 y Apple CarPlay. ¿Se la aparto para que la vea hoy?",
     },
     {
       entra: "¿Tienen la Kicks en gris?",
@@ -48,7 +48,7 @@ export const nissanSimulacion: TenantSimulacion = {
     },
     {
       entra: "Ya me decidí por la Kicks, ¿qué sigue?",
-      responde: "Excelente. Con la prima queda separada a su nombre. ¿Se la dejo apartada desde hoy?",
+      responde: "Excelente. Con el depósito queda separada a su nombre. ¿Se la aparto desde hoy?",
     },
   ],
   contactos: [

@@ -4,9 +4,9 @@
 // dias y con fechas fijas nace vacio el dia que se ensena.
 //
 // Lo que se ve aca es UNA sala de ventas: quien pregunta por un modelo, quien
-// quiere probarlo, quien trae un usado a cuenta y quien viene por su entrega.
-// El financiamiento aparece de refilon, como aparece en la vida real, pero el
-// tablero de este cliente no es de creditos: es de carros que salen del piso.
+// quiere probarlo, quien trae un usado a cuenta, quien esta viendo colores y
+// quien viene por su entrega. Ni un chat de papeleo de credito: este cliente
+// mide carros que salen del piso.
 
 import type { TenantSeed } from "../types";
 
@@ -51,8 +51,8 @@ export const nissanSeed: TenantSeed = {
     // que solo tienen handle, nunca aparecen ahí.
     { id: "c5", nombre: "Marielos Cañas", telefono: "+503 7003 0010", correo: "mcanas@gmail.com", canal: "whatsapp", tags: ["Interés SUV", "Cotización enviada"], notas: "Qashqai. Comparando contra compra de contado." },
     { id: "c6", nombre: "Ernesto Batres", telefono: "+503 7003 0015", canal: "whatsapp", tags: ["Interés Pickup", "Prueba de manejo"], notas: "Frontier Cabina Simple. Prueba de manejo el sábado a las 10 en Autopista Sur." },
-    { id: "c7", nombre: "Rocío Zelaya", telefono: "+503 7003 0019", correo: "rzelaya@gmail.com", canal: "whatsapp", tags: ["Interés Pickup", "Propuesta enviada"], notas: "Frontier doble cabina con descuento de empleado. Quiere bajar la cuota a 84 meses." },
-    { id: "c8", nombre: "Fátima Rodríguez", telefono: "+503 7003 0023", correo: "frodriguez@outlook.com", canal: "whatsapp", tags: ["Interés SUV", "Unidad separada"], notas: "X-Trail gris. Prima pagada, entrega el viernes a las 3." },
+    { id: "c7", nombre: "Rocío Zelaya", telefono: "+503 7003 0019", correo: "rzelaya@gmail.com", canal: "whatsapp", tags: ["Interés Pickup", "Propuesta enviada"], notas: "Frontier doble cabina, versión tope. Pide que le incluyan estribos y polarizado en el precio." },
+    { id: "c8", nombre: "Fátima Rodríguez", telefono: "+503 7003 0023", correo: "frodriguez@outlook.com", canal: "whatsapp", tags: ["Interés SUV", "Unidad separada"], notas: "X-Trail gris. Depósito pagado, entrega el viernes a las 3." },
     { id: "c9", nombre: "Luis Menéndez", telefono: "+503 7003 0020", correo: "lmenendez@hotmail.com", canal: "whatsapp", tags: ["Interés SUV", "Usado a cuenta"], notas: "X-Trail e-POWER. Entrega un Versa 2017 valuado en $7,800." },
     { id: "c10", nombre: "Wilber Chávez", telefono: "+503 7003 0017", canal: "whatsapp", tags: ["Interés SUV", "Prueba de manejo"], notas: "Kicks. No llegó a la prueba de manejo y nadie la volvió a agendar." },
   ],
@@ -89,15 +89,15 @@ export const nissanSeed: TenantSeed = {
     // v6 - WA, prueba de manejo agendada
     { id: "m13", conversationId: "v6", autor: "cliente", texto: "Quería probar la Frontier cabina simple antes de decidir.", ts: "2026-06-23T09:20:00" },
     { id: "m14", conversationId: "v6", autor: "staff", staffId: "s3", texto: "Con gusto don Ernesto. Le dejo la prueba el sábado a las diez en Autopista Sur. Solo traiga su licencia vigente.", ts: "2026-06-23T09:31:00" },
-    // v7 - WA, Rocío negociando la cuota
-    { id: "m15", conversationId: "v7", autor: "staff", staffId: ME, texto: "Doña Rocío, ya tengo la propuesta autorizada con el descuento de empleado.", ts: "2026-06-23T10:30:00" },
-    { id: "m16", conversationId: "v7", autor: "cliente", texto: "Gracias. ¿Y a 84 meses cómo me quedaría la cuota?", ts: "2026-06-23T10:41:00" },
+    // v7 - WA, Rocío negociando el equipamiento
+    { id: "m15", conversationId: "v7", autor: "staff", staffId: ME, texto: "Doña Rocío, ya tengo la propuesta autorizada con el precio de exhibición.", ts: "2026-06-23T10:30:00" },
+    { id: "m16", conversationId: "v7", autor: "cliente", texto: "Gracias. ¿Y si me la llevo con estribos y polarizado, cuánto sube?", ts: "2026-06-23T10:41:00" },
     // v8 - WA, entrega del viernes
     { id: "m17", conversationId: "v8", autor: "cliente", texto: "¿Todo listo para el viernes? ¿A qué hora paso?", ts: "2026-06-23T10:22:00" },
     { id: "m18", conversationId: "v8", autor: "staff", staffId: ME, texto: "Todo listo doña Fátima. La entrega es el viernes a las tres. Calcule una hora: ahí mismo le configuramos el CarPlay y le explicamos el mantenimiento.", ts: "2026-06-23T10:29:00" },
     // v9 - WA, usado valuado
     { id: "m19", conversationId: "v9", autor: "cliente", texto: "¿En cuánto me quedó valuado el Versa?", ts: "2026-06-23T09:44:00" },
-    { id: "m20", conversationId: "v9", autor: "staff", staffId: "s6", texto: "Don Luis, el Versa 2017 quedó en $7,800 con la revisión de 150 puntos. Eso entra directo a la prima de la X-Trail e-POWER.", ts: "2026-06-23T09:58:00" },
+    { id: "m20", conversationId: "v9", autor: "staff", staffId: "s6", texto: "Don Luis, el Versa 2017 quedó en $7,800 con la revisión de 150 puntos. Eso se le descuenta directo del precio de la X-Trail e-POWER.", ts: "2026-06-23T09:58:00" },
     // v10 - WA, el que no llegó a la prueba
     { id: "m21", conversationId: "v10", autor: "cliente", texto: "Disculpe, no pude llegar el sábado a la prueba del Kicks. ¿Se puede otro día?", ts: "2026-06-23T08:52:00" },
   ],

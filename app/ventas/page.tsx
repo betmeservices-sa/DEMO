@@ -8,7 +8,7 @@
 //
 // La columna en la que cae cada quien NO se elige a mano: sale de los pasos de
 // la venta (si ya se le mando la cotizacion, si vino a manejar la unidad, si
-// dejo la prima) y de las marcas de tiempo. Por eso las tarjetas no se
+// dejo el deposito) y de las marcas de tiempo. Por eso las tarjetas no se
 // arrastran: se marca el paso en la ficha y el caso se mueve solo. Cuando la
 // entrega queda hecha, la venta se cierra sola.
 

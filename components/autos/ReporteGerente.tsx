@@ -18,11 +18,14 @@ import type { RespuestaReporte } from "./tipos";
 import { Embudo } from "./Embudo";
 import { Enfriandose } from "./Enfriandose";
 
-// La paleta validada de la guia tiene cuatro colores adyacentes; por eso la
-// dona muestra los cuatro modelos mas pedidos y agrupa el resto. Agregar un
-// quinto tono a ojo es justo lo que el validador existe para evitar.
-const PALETA = ["#3B82F6", "#059669", "#D97706", "#DB2777"];
-const OTROS = "#6B7280";
+// La dona va con los colores de la marca: rojo, negro y gris. Ademas de ser lo
+// que corresponde en este panel, los tres se separan por LUMINOSIDAD y no solo
+// por tono, que es lo que hace que se distingan tambien en blanco y negro y
+// para quien no distingue colores. Cada gajo lleva ademas su nombre y su
+// numero, asi que el color nunca es el unico canal.
+// Contraste sobre la tarjeta blanca: #C3002F 6.2:1, #000000 21:1, #767676 4.5:1.
+const PALETA = ["#c3002f", "#000000", "#767676"];
+const OTROS = "#b4b4b4";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 

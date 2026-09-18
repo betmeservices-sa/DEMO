@@ -102,11 +102,11 @@ describe("el avance de la venta", () => {
 
   it("un paso trabado pesa mas que uno pendiente y se dice en el resumen", () => {
     const avance = avanceDe(
-      { cotizacion: hecho(), propuesta: { estado: "trabado", motivo: "cuota" } },
+      { cotizacion: hecho(), propuesta: { estado: "trabado", motivo: "presupuesto" } },
       AHORA,
     );
     expect(avance.trabados).toHaveLength(1);
-    expect(avance.resumen).toContain("cuota");
+    expect(avance.resumen).toContain("presupuesto");
   });
 
   it("con una cita puesta, el resumen dice cuando es", () => {
@@ -187,7 +187,7 @@ describe("el reporte del gerente", () => {
       modelo: "frontier-dc",
       monto: 40000,
       contactado: hace(8),
-      pasos: { cotizacion: hecho(), propuesta: { estado: "trabado", motivo: "cuota" } },
+      pasos: { cotizacion: hecho(), propuesta: { estado: "trabado", motivo: "presupuesto" } },
     }),
     caso({
       telefono: "3",
@@ -221,7 +221,7 @@ describe("el reporte del gerente", () => {
   });
 
   it("dice donde se traba la venta", () => {
-    expect(r.pasos.trabas).toEqual([{ motivo: "cuota", nombre: "La cuota le queda alta", n: 1 }]);
+    expect(r.pasos.trabas).toEqual([{ motivo: "presupuesto", nombre: "Se le pasa del presupuesto", n: 1 }]);
   });
 
   it("separa lo que se pide de lo que se entrega", () => {

@@ -14,7 +14,7 @@
 //   vehiculo   -> modelo del catalogo
 //   expediente -> pasos de la venta
 //   pedidos    -> cuando se le mando la cotizacion
-//   completado -> cuando dejo la prima y la unidad salio de disponible
+//   completado -> cuando dejo el deposito y la unidad salio de disponible
 //
 // Sin Supabase cae a memoria, igual que el resto de los stores.
 
