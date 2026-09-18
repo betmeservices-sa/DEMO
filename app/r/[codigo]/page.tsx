@@ -1,5 +1,6 @@
 import { doctorPorCodigo } from "@/lib/consultorio/almacen";
 import { Registro } from "@/components/consultorio/Registro";
+import { Logo } from "@/components/consultorio/Logo";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,10 @@ export default async function PaginaRegistro({ params }: { params: Promise<{ cod
       <main className="mx-auto max-w-md px-4 py-6">
         <div className="documento px-6 py-7">
           <header className="membrete pb-3 text-center">
-            <h1 className="font-serif text-[24px] leading-tight text-[var(--texto)]">
+            {/* Quien escanea todavía no sabe dónde cayó: lo primero que ve es
+                de quién es la clínica. */}
+            <Logo alto={104} className="mx-auto" />
+            <h1 className="mt-3 font-serif text-[24px] leading-tight text-[var(--texto)]">
               {doctor.nombre}
             </h1>
             <p className="mt-0.5 text-[13px] text-[var(--texto-2)]">

@@ -1,4 +1,4 @@
-// Guion de la bandeja en vivo del Centro Médico San Benito.
+// Guion de la bandeja en vivo del Centro Ginecologico.
 //
 // Es solo para el interruptor "En vivo" del demo: el motor inyecta estos turnos
 // en el navegador para que la bandeja se vea con movimiento mientras se enseña.

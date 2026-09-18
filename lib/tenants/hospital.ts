@@ -99,6 +99,9 @@ export const hospitalTenant: TenantConfig = {
     emailPlaceholder: "nombre@centroginecologico.com",
     wordmark: {
       icon: "HeartPulse",
+      // Acá la barra lateral SÍ es oscura (el tenant va en tema oscuro), así
+      // que entra la versión blanca del símbolo.
+      logoSrc: "/gineco/simbolo-blanco.svg",
       titulo: "Centro Ginecológico",
       subtitulo: "Somos parte de tu vida",
     },

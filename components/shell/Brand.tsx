@@ -31,12 +31,19 @@ export function Brand({ compact = false }: { compact?: boolean }) {
   const Icon = brand.wordmark ? WORDMARK_ICONS[brand.wordmark.icon] : HeartPulse;
   const titulo = brand.wordmark?.titulo ?? brand.nombreCorto;
   const subtitulo = brand.wordmark?.subtitulo ?? brand.tagline;
+  const simbolo = brand.wordmark?.logoSrc;
 
   return (
     <div className="flex items-center gap-2.5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white shadow-sm">
-        <Icon size={20} strokeWidth={2.4} />
-      </span>
+      {simbolo ? (
+        // El simbolo del cliente respira solo: sin la caja de color del icono
+        // generico, que a un logotipo ajeno solo le estorba.
+        <img src={simbolo} alt="" aria-hidden className="h-9 w-auto shrink-0" />
+      ) : (
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white shadow-sm">
+          <Icon size={20} strokeWidth={2.4} />
+        </span>
+      )}
       {!compact && (
         <div className="leading-tight">
           <p className="text-[15px] font-extrabold tracking-tight text-[var(--text)]">{titulo}</p>

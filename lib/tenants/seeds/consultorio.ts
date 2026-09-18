@@ -1,4 +1,4 @@
-// Datos semilla del tenant "consultorio" — Centro Médico San Benito.
+// Datos semilla del tenant "consultorio": el Centro Ginecologico.
 //
 // Una clínica chica con laboratorio propio: dos doctores que pasan consulta y
 // dos sucursales donde se toman las muestras. Lo que la distingue de los otros
@@ -96,8 +96,8 @@ export const consultorioSeed: TenantSeed = {
     { id: "sp4", red: "facebook", estado: "borrador", texto: "¿Por qué te piden ayuno para algunos exámenes y para otros no? Te lo explicamos en dos minutos.", fecha: "2026-09-10T12:00:00" },
   ],
   socialStats: [
-    { red: "instagram", handle: "@centromedicosanbenito", seguidores: 9240, nuevosSeguidores: 312, crecimientoPct: 3.5, alcance30d: 28400, vistas30d: 61200, interacciones30d: 3410 },
-    { red: "facebook", handle: "Centro Médico San Benito", seguidores: 16800, nuevosSeguidores: 268, crecimientoPct: 1.6, alcance30d: 41300, vistas30d: 88500, interacciones30d: 4980 },
+    { red: "instagram", handle: "@centroginecologicosv", seguidores: 9240, nuevosSeguidores: 312, crecimientoPct: 3.5, alcance30d: 28400, vistas30d: 61200, interacciones30d: 3410 },
+    { red: "facebook", handle: "Centro Ginecológico", seguidores: 16800, nuevosSeguidores: 268, crecimientoPct: 1.6, alcance30d: 41300, vistas30d: 88500, interacciones30d: 4980 },
   ],
   metrics: [
     { label: "Conversaciones hoy", valor: 24, delta: 9 },

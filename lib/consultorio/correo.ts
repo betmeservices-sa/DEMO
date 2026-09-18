@@ -12,9 +12,12 @@
 
 import { NOMBRE_TIPO, agruparDe, conLado } from "./catalogos";
 import { armarHtml } from "./correo-html";
+import { CLINICA } from "./marca";
 import type { Doctor, Documento, Paciente } from "./tipos";
 
-export const CLINICA = "Centro Médico San Benito";
+// El nombre vive en lib/consultorio/marca.ts, con el resto de la marca. Se
+// reexporta para no romper a quien ya lo importaba desde acá.
+export { CLINICA };
 
 const fecha = (iso: string) =>
   new Date(iso).toLocaleDateString("es-SV", { day: "numeric", month: "long", year: "numeric" });

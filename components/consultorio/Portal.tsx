@@ -18,6 +18,8 @@ import type {
   RecetaDelPortal,
   Seccion,
 } from "@/lib/consultorio/portal";
+import { Logo } from "@/components/consultorio/Logo";
+import { CLINICA } from "@/lib/consultorio/marca";
 
 const ICONO: Record<Seccion, LucideIcon> = {
   receta: Pill,
@@ -41,7 +43,9 @@ const fechaLarga = (iso: string) =>
     timeZone: "America/El_Salvador",
   });
 
-export function Portal({ clinica }: { clinica: string }) {
+// `clinica` llega del servidor y es la misma constante de marca.ts; se sigue
+// recibiendo para no cambiarle la firma al que la usa.
+export function Portal({ clinica = CLINICA }: { clinica?: string }) {
   const [correo, setCorreo] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,10 +87,8 @@ export function Portal({ clinica }: { clinica: string }) {
 
   const cabecera = (
     <header className="mb-6 text-center">
-      <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--texto-3)]">
-        {clinica}
-      </p>
-      <h1 className="mt-1 font-serif text-[26px] leading-tight text-[var(--texto)]">
+      <Logo alto={84} className="mx-auto" />
+      <h1 className="mt-3 font-serif text-[26px] leading-tight text-[var(--texto)]">
         Portal del paciente
       </h1>
     </header>
@@ -208,8 +210,10 @@ function TarjetaReceta({ receta, varias }: { receta: RecetaDelPortal; varias: bo
   return (
     <article className="documento px-5 py-5">
       <header className="membrete flex items-start justify-between gap-3 pb-3">
-        <div className="min-w-0">
-          <p className="font-serif text-[18px] leading-tight text-[var(--texto)]">Receta médica</p>
+        <Logo alto={38} simbolo className="shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="font-serif text-[16px] leading-tight text-[var(--texto)]">{CLINICA}</p>
+          <p className="mt-0.5 font-serif text-[15px] leading-tight text-[var(--texto-2)]">Receta médica</p>
           <p className="mt-0.5 text-[13px] text-[var(--texto-2)]">
             {receta.doctor.nombre} · {fechaLarga(receta.fecha)}
           </p>
@@ -255,12 +259,16 @@ function TarjetaReceta({ receta, varias }: { receta: RecetaDelPortal; varias: bo
 function TarjetaOrden({ orden, varias }: { orden: OrdenDelPortal; varias: boolean }) {
   return (
     <article className="documento px-5 py-5">
-      <header className="membrete pb-3">
-        <p className="font-serif text-[18px] leading-tight text-[var(--texto)]">{orden.titulo}</p>
+      <header className="membrete flex items-start gap-3 pb-3">
+        <Logo alto={38} simbolo className="shrink-0" />
+        <div className="min-w-0 flex-1">
+        <p className="font-serif text-[16px] leading-tight text-[var(--texto)]">{CLINICA}</p>
+        <p className="mt-0.5 font-serif text-[15px] leading-tight text-[var(--texto-2)]">{orden.titulo}</p>
         <p className="mt-0.5 text-[13px] text-[var(--texto-2)]">
           {orden.doctor.nombre} · {fechaLarga(orden.fecha)}
         </p>
         {varias && <p className="text-[13px] text-[var(--texto-2)]">Para {orden.paciente}</p>}
+        </div>
       </header>
 
       <CodigoParaDar codigo={orden.codigo} donde={DONDE[orden.tipo]} />

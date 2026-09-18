@@ -64,6 +64,20 @@ export interface TenantBrand {
   logoComponent?: "promerica" | "yali";
   wordmark?: {
     icon: "HeartPulse" | "CarFront" | "Bot" | "Hotel" | "Building2" | "Stethoscope";
+    /**
+     * El simbolo REAL del cliente, en lugar del icono generico.
+     *
+     * Va aparte de `logoSrc` porque resuelve otra cosa: `logoSrc` reemplaza
+     * toda la marca por una imagen, y un logotipo vertical (simbolo arriba,
+     * nombre abajo) metido en los 44 px de alto de la barra deja el nombre
+     * ilegible. Asi se usa el simbolo al tamano que aguanta y el nombre se
+     * sigue escribiendo con la tipografia de la app.
+     *
+     * OJO: la barra lateral es CLARA en casi todos los clientes (bg-card) y
+     * oscura solo donde el tema lo es. El archivo tiene que estar en el color
+     * que corresponda a esa barra.
+     */
+    logoSrc?: string;
     titulo: string;
     subtitulo: string;
   };

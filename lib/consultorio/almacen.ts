@@ -34,7 +34,7 @@ const DOCTORES: Doctor[] = [
     especialidad: "Medicina interna",
     registro: "JVPM 12458",
     telefono: "+503 2245 8890",
-    correo: "alejandra.moran@sanbenito.com",
+    correo: "alejandra.moran@centroginecologico.com",
     codigo: "AM4K2P",
   },
   {
@@ -43,7 +43,7 @@ const DOCTORES: Doctor[] = [
     especialidad: "Cardiología",
     registro: "JVPM 10932",
     telefono: "+503 2245 8891",
-    correo: "ernesto.rivas@sanbenito.com",
+    correo: "ernesto.rivas@centroginecologico.com",
     codigo: "ER7T9M",
   },
 ];

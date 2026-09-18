@@ -1,4 +1,4 @@
-// El tenant del Centro Médico San Benito y su módulo clínico.
+// El tenant del Centro Ginecológico y su módulo clínico.
 //
 // Lo que se cuida acá no es la pantalla, es lo que se rompería sin ruido: que
 // la contraseña nueva no le robe el dashboard a otro cliente, que un examen que
@@ -63,7 +63,7 @@ describe("tenant consultorio", () => {
 
   it("está registrado como cliente de verdad", () => {
     expect(isTenantId("consultorio")).toBe(true);
-    expect(TENANTS.consultorio.brand.nombre).toBe("Centro Médico San Benito");
+    expect(TENANTS.consultorio.brand.nombre).toBe("Centro Ginecológico");
     expect(TENANTS.consultorio.labels.contacto).toBe("paciente");
   });
 

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ClipboardList, Download, Printer, Receipt, Search, Timer } from "lucide-react";
 import { TODOS, agruparDe, conLado, valorTotal, type TipoOrden } from "@/lib/consultorio/catalogos";
 import type { Sucursal, Turno } from "@/lib/consultorio/tipos";
+import { Logo } from "@/components/consultorio/Logo";
 
 /** Lo que devuelve el mostrador al buscar el código que trae el paciente. */
 interface Orden {
@@ -167,6 +168,8 @@ export function Mostrador({
     <div>
       <header className="no-imprimir bg-[var(--barra)] text-white">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-4">
+          {/* La barra es oscura: acá el símbolo va en blanco. */}
+          <Logo alto={34} variante="blanco" simbolo className="shrink-0" />
           <span className="min-w-0">
             <span className="block font-serif text-[19px] leading-tight">{unidad.nombre}</span>
             <span className="block text-[12.5px] text-white/60">
@@ -505,6 +508,9 @@ export function Mostrador({
           </div>
 
           <aside className="documento self-start px-6 py-6 text-center">
+            {/* Esta tarjeta se imprime y se pega en la entrada: es de lo poco
+                del módulo que lo ve gente de la calle. */}
+            <Logo alto={104} className="mx-auto mb-4" />
             <p className="font-serif text-[14px] text-[var(--texto-2)]">{unidad.nombre}</p>
             <h2 className="mt-2 font-serif text-[21px] leading-snug text-[var(--texto)]">
               Escaneá para tomar turno

@@ -35,6 +35,8 @@ import {
   type Medicamento,
   type Paciente,
 } from "@/lib/consultorio/tipos";
+import { Logo } from "@/components/consultorio/Logo";
+import { CLINICA } from "@/lib/consultorio/marca";
 
 type Pestana = TipoOrden | "receta";
 
@@ -384,12 +386,22 @@ export function Expediente({
               {documentos.map((d) => (
                 <article key={d.id} className="documento px-6 py-5">
                   <header className="membrete flex flex-wrap items-start justify-between gap-3 pb-3">
-                    <span>
+                    <span className="flex items-center gap-3">
+                      {/* El papel es de la clínica y la firma es del doctor, en
+                          ese orden. Va el símbolo y no el logotipo completo:
+                          a esta altura el nombre de abajo no se leería, así que
+                          lo escribe la tipografía del documento. */}
+                      <Logo alto={40} simbolo className="shrink-0" />
+                      <span>
                       <span className="block font-serif text-[19px] text-[var(--texto)]">
+                        {CLINICA}
+                      </span>
+                      <span className="block font-serif text-[15px] text-[var(--texto-2)]">
                         {doctor.nombre}
                       </span>
                       <span className="block font-sans text-[12.5px] text-[var(--texto-2)]">
                         {doctor.especialidad} · {doctor.registro} · {doctor.telefono}
+                      </span>
                       </span>
                     </span>
                     <span className="text-right">

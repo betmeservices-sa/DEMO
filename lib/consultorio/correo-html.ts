@@ -8,11 +8,15 @@
 //   - Estilos EN LÍNEA, no <style>: Gmail recorta la cabecera y Outlook ignora
 //     buena parte del CSS externo.
 //   - Tablas para el ancho, no flex ni grid: Outlook usa el motor de Word.
-//   - Nada de fuentes web ni imágenes remotas: la receta tiene que leerse
-//     aunque el cliente de correo bloquee todo.
+//   - Nada de fuentes web, y la única imagen es el logotipo: la receta tiene
+//     que leerse entera aunque el cliente de correo bloquee las imágenes, así
+//     que el membrete sigue escrito en texto y el logo va encima como adorno.
+//   - El logo va en PNG y con URL absoluta: Gmail no pinta SVG, y una ruta
+//     relativa dentro de un correo no apunta a ninguna parte.
 //   - Ancho máximo de 600 px, que es lo que cabe sin zoom.
 
 import { NOMBRE_TIPO, agruparDe, conLado } from "./catalogos";
+import { LOGO_CORREO } from "./marca";
 import type { Doctor, Documento, Paciente } from "./tipos";
 
 const TINTA = "#10202a";
@@ -87,6 +91,15 @@ export function armarHtml(
 ): string {
   const titulo = doc.tipo === "receta" ? "Receta médica" : NOMBRE_TIPO[doc.tipo];
 
+  // El logotipo sale del mismo dominio desde el que se envió (el del portal),
+  // así demo y producción mandan cada uno el suyo y nadie tiene que configurar
+  // una URL a mano. Sin portal no hay dominio confiable, y entonces el correo
+  // sale sin logo antes que con una imagen rota.
+  const origen = portal ? portal.replace(/\/portal\/?$/, "") : "";
+  const logo = origen
+    ? `<img src="${escapar(origen + LOGO_CORREO)}" alt="${escapar(clinica)}" width="120" style="display:block;width:120px;height:auto;border:0;margin-bottom:14px;">`
+    : "";
+
   const siSePierde = portal
     ? `<br>Si pierde este correo, entre a <a href="${escapar(portal)}" style="color:${VERDE};">${escapar(portal.replace(/^https?:\/\//, ""))}</a> con ${escapar(paciente.correo)} y ahí lo encuentra.`
     : "";
@@ -146,6 +159,7 @@ export function armarHtml(
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1.5px solid ${TINTA};padding-bottom:12px;">
                 <tr>
                   <td style="vertical-align:top;">
+                    ${logo}
                     <div style="font:400 20px ${FUENTE};color:${TINTA};">${escapar(doctor.nombre)}</div>
                     <div style="margin-top:2px;font:400 12.5px ${SANS};color:${SUAVE};">${escapar(doctor.especialidad)} · ${escapar(doctor.registro)}</div>
                   </td>
