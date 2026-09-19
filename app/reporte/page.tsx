@@ -23,8 +23,11 @@ import {
   ARRANQUE,
   CASOS,
   CORTE,
+  DESCARTADO,
   HALLAZGOS,
   POR_CANAL,
+  REGLA,
+  SIN_AUDITAR,
   TOTAL,
   UNIVERSO,
   type CasoChat,
@@ -168,6 +171,13 @@ export default function ReportePage() {
           <p className="mt-2 text-[12.5px] text-[var(--text-2)]">
             Es el {pctRes}% de las reservas y el {pctMonto}% del dinero.
           </p>
+          <p className="mt-3 rounded-xl border border-line bg-[var(--text-3)]/[0.06] px-3.5 py-2.5 text-[12px] leading-relaxed text-[var(--text-2)]">
+            El cruce automático daba <b className="text-[var(--text)]">{REGLA.reservas}</b> y{" "}
+            {dinero(REGLA.monto)}. Al leer los chats se cayeron{" "}
+            <b className="text-[var(--text)]">{DESCARTADO.reservas}</b> ({dinero(DESCARTADO.monto)}):
+            en una Sofía solo saludó, en otra la reserva ya existía y en otra vendió el equipo del
+            hotel. El titular usa lo auditado.
+          </p>
           <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-line pt-3 text-[12px] text-[var(--text-3)]">
             {ARRANQUE.map((a) => (
               <span key={a.canal}>
@@ -260,11 +270,17 @@ export default function ReportePage() {
         {/* Los chats */}
         <div>
           <h2 className="mb-1 text-[15px] font-bold text-[var(--text)]">
-            Los {CASOS.length} chats donde el hotel tecleó la reserva
+            Los {CASOS.length} de WhatsApp, leídos uno por uno
           </h2>
           <p className="mb-3 max-w-3xl text-[12.5px] text-[var(--text-2)]">
-            Leídos uno por uno. Clic para ver el chat y el veredicto. Tres de los seis no cuentan
-            para Sofía: decirlo acá evita defender un número que no se sostiene.
+            Clic para ver el chat y el veredicto. Tres de los seis no cuentan para Sofía: decirlo
+            acá evita defender un número que no se sostiene.
+          </p>
+          <p className="mb-3 max-w-3xl rounded-xl border border-amber-600/40 bg-amber-600/10 px-3.5 py-2.5 text-[12px] leading-relaxed text-[var(--text-2)]">
+            <b className="text-[var(--text)]">Faltan {SIN_AUDITAR.reservas} por auditar.</b> De las{" "}
+            {totTecleo} tecleadas que cuentan, 3 salen de estos 6 chats de WhatsApp. Las otras{" "}
+            {SIN_AUDITAR.reservas} ({dinero(SIN_AUDITAR.monto)}) son de {SIN_AUDITAR.canales} y
+            todavía nadie abrió esos chats.
           </p>
           <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-sm">
             {CASOS.map((c) => (

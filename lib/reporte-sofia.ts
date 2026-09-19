@@ -32,13 +32,39 @@ export interface FilaCanal {
   tecleo: { n: number; monto: number };
 }
 
+/**
+ * La tabla lleva lo AUDITADO. WhatsApp tecleadas son 3 y no 6: de los seis chats
+ * leídos, tres no cuentan (un saludo, una reserva que ya existía y una que
+ * vendió el equipo). Los $295 de esos tres salieron de acá.
+ */
 export const POR_CANAL: FilaCanal[] = [
   { canal: "Instagram", escribio: { n: 10, monto: 1005 }, tecleo: { n: 7, monto: 830 } },
-  { canal: "WhatsApp", escribio: { n: 8, monto: 710 }, tecleo: { n: 6, monto: 515 } },
+  { canal: "WhatsApp", escribio: { n: 8, monto: 710 }, tecleo: { n: 3, monto: 220 } },
   { canal: "Facebook", escribio: { n: 1, monto: 150 }, tecleo: { n: 1, monto: 75 } },
 ];
 
-export const TOTAL = { reservas: 33, monto: 3285 };
+/**
+ * Dos totales, a proposito.
+ *
+ * `REGLA` es lo que da el cruce automatico: reserva en Cloudbeds cuyo telefono
+ * hablo con Sofia menos de 24 h antes. `AUDITADO` es lo que queda despues de
+ * leer los chats uno por uno. La diferencia no es un ajuste: es que la regla
+ * cuenta como venta un "buenos dias" (Amadeo), una reserva que ya existia
+ * (Eliezer) y una que vendio el equipo (Reynaldo).
+ *
+ * El titular usa AUDITADO. Si se usara REGLA, la pagina se contradiria sola:
+ * diria 33 arriba y "no cuenta" tres veces abajo.
+ */
+export const REGLA = { reservas: 33, monto: 3285 };
+
+/** Se calcula, no se escribe: si se escribe a mano, un día deja de cuadrar con
+ *  la tabla y la página se contradice sola. Ya pasó. */
+export const TOTAL = {
+  reservas: POR_CANAL.reduce((n, f) => n + f.escribio.n + f.tecleo.n, 0),
+  monto: POR_CANAL.reduce((n, f) => n + f.escribio.monto + f.tecleo.monto, 0),
+};
+/** Lo que la lectura de los chats saco de la cuenta. */
+export const DESCARTADO = { reservas: 3, monto: 295 };
 
 /** Lo que hizo Sofía, en contadores sueltos. NO es un embudo: de las 73 */
 /** conversaciones que terminaron en apartado, solo 49 recibieron los datos */
@@ -75,6 +101,11 @@ export interface CasoChat {
   /** Por qué ese veredicto, con el dato que lo sostiene. */
   porque: string[];
 }
+
+/** Cuantas reservas tecleadas a mano quedan sin leer. La tabla por canal dice
+ *  14 tecleadas y aca hay 6: las otras 8 son de Instagram y Facebook y todavia
+ *  nadie las abrio. Sin este numero la pagina parece que no cuadra. */
+export const SIN_AUDITAR = { reservas: 8, monto: 905, canales: "Instagram y Facebook" };
 
 export const CASOS: CasoChat[] = [
   {
