@@ -53,6 +53,10 @@ export type ModuleId =
   // Probar a Sofía: un chat de prueba contra el guion real (solo Yali).
   | "sofia"
   | "dashboard"
+  // El reporte de desempeno de Sofia: que reservas son suyas y por que. Es la
+  // vista de la AGENCIA sobre el cliente (dice "este caso no cuenta" y nombra
+  // de quien fue cada error), asi que no va en el menu del hotel.
+  | "reporte"
   | "llamadas"
   // Escuchar lo que dijo el agente. Va aparte de "llamadas" (que es el tablero
   // de costo y volumen) porque quien hace QA no viene a mirar cifras.
@@ -100,7 +104,7 @@ export interface RoleDef {
 // marketing no gestiona casos, asi que no lo ve.
 // "mis-chats" lo ve todo el mundo: es donde caen los chats que el agente pasa a
 // una persona, y quien atiende tiene que verlos sin depender de su rol.
-const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "llamadas", "qa", "agentes", "settings"];
+const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "llamadas", "qa", "agentes", "settings"];
 export const VE: Record<RoleId, ModuleId[]> = {
   // Recepcion del consultorio es quien recibe al paciente y quien mueve la
   // fila del laboratorio: los dos modulos del modulo clinico son suyos.
@@ -151,6 +155,7 @@ export const MODULO_RUTA: Record<ModuleId, string> = {
   perfil: "/perfil",
   sofia: "/sofia",
   dashboard: "/dashboard",
+  reporte: "/reporte",
   llamadas: "/llamadas",
   qa: "/qa",
   agentes: "/agentes",
@@ -168,6 +173,7 @@ export function moduloDeRuta(pathname: string): ModuleId | null {
   if (pathname.startsWith("/calendario")) return "calendario";
   if (pathname.startsWith("/pipeline")) return "pipeline";
   if (pathname.startsWith("/ventas")) return "ventas";
+  if (pathname.startsWith("/reporte")) return "reporte";
   if (pathname.startsWith("/visitas")) return "visitas";
   if (pathname.startsWith("/cartera")) return "cartera";
   if (pathname.startsWith("/publicacion")) return "publicacion";
