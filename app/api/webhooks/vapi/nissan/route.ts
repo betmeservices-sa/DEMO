@@ -6,6 +6,7 @@ import {
   type OpcionesMemoria,
 } from "@/lib/memoria-webhook";
 import { decidirSeguimiento } from "@/lib/plantilla-nissan";
+import { anotarLlamadaEnEmbudo } from "@/lib/llamada-a-oportunidad";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,6 +50,19 @@ const OPCIONES: OpcionesMemoria = {
   // que seguir. Las razones para no mandar están en lib/plantilla-nissan.ts.
   seguimientoAgendado: (e, telefono) =>
     decidirSeguimiento({ nombre: e.nombre, modelos: e.modelos, telefono }),
+  // Y el carro que dijo entra al EMBUDO, no solo a la memoria del agente.
+  //
+  // Sin esto, alguien llamaba, decía que anda viendo la Frontier y en el
+  // tablero de ventas no aparecía por ningún lado; o aparecía sin modelo y sin
+  // valor, que para el gerente es lo mismo que no existir.
+  alColgar: ({ telefono, extracto, tenant }) =>
+    anotarLlamadaEnEmbudo({
+      tenant,
+      telefono,
+      nombre: extracto.nombre,
+      modelos: extracto.modelos,
+      actor: "llamada",
+    }).then((r) => r.resumen),
 };
 
 export const GET = (req: Request) => diagnosticoMemoria(req);

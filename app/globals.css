@@ -389,6 +389,51 @@ body {
   animation: ccg-pop 0.22s ease-out;
 }
 
+/* Las barras de los gráficos se DESPLIEGAN, no aparecen ya dibujadas.
+   El crecimiento es lo que deja ver la forma del embudo: cuánto se cae entre
+   una etapa y la siguiente se lee en el movimiento antes que en los números.
+
+   Va como animación y no como transición a propósito: la transición de esos
+   mismos elementos ya está ocupada por la interacción (seleccionar una etapa
+   cambia ancho y opacidad), y mezclarlas hacía que un clic volviera a
+   desplegar la barra.
+
+   El origen es el borde izquierdo, salvo en el embudo centrado de la sala de
+   ventas, que crece desde el eje. El ajuste de "reducir movimiento" ya lo
+   cubre la regla global de más abajo. */
+@keyframes ccg-barra {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.ccg-barra {
+  animation: ccg-barra 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  transform-origin: left center;
+}
+.ccg-barra-centro {
+  transform-origin: center;
+}
+
+/* El gajo de la dona se DIBUJA: arranca en cero y da la vuelta hasta su tamaño.
+   Que el aro se cierre es lo que dice de un vistazo cuánto pesa cada categoría;
+   pintado de golpe hay que leer los números para saberlo.
+
+   Solo se declara el fotograma inicial: el final es el valor que ya trae el
+   elemento (su strokeDasharray real), así el tamaño de cada gajo sigue
+   viviendo en el componente y no hay que duplicarlo acá. `--ccg-vuelta` es el
+   perímetro, que es contra lo que se mide el hueco. */
+@keyframes ccg-gajo {
+  from {
+    stroke-dasharray: 0 var(--ccg-vuelta);
+  }
+}
+.ccg-gajo {
+  animation: ccg-gajo 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
 /* Puntos de "escribiendo" mientras el agente redacta la respuesta */
 @keyframes ccg-punto {
   0%,

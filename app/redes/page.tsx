@@ -11,6 +11,7 @@ import { SocialStats } from "@/components/social/SocialStats";
 import { PreviewModal } from "@/components/social/PreviewModal";
 import { imagenesDe, ordenarCuentas } from "@/lib/social";
 import { activeTenant, activeTenantId } from "@/lib/tenants/active";
+import { soloMiraRedes } from "@/lib/tenants/redes";
 import type { SocialPost, SocialStats as SocialStatsT } from "@/lib/data/types";
 
 export default function RedesPage() {
@@ -20,10 +21,10 @@ export default function RedesPage() {
   // El banco no publica en redes: su tablero es de cobranza. El menú ya no
   // muestra el módulo, y esto cierra la puerta de escribir la URL a mano.
   const vePublicacion = activeTenantId() !== "promerica";
-  // Grupo Q no programa contenido acá: su mercadeo publica por su cuenta y a
-  // este panel viene a MIRAR cómo va la semana. Sin composer y sin botón de
-  // vista previa, porque la publicación ya se ve como se ve en la red.
-  const soloMira = activeTenantId() === "grupoq";
+  // Hay clientes que no programan contenido acá: su mercadeo publica por su
+  // cuenta y a este panel vienen a MIRAR cómo va la semana. Sin composer y sin
+  // botón de vista previa, porque la publicación ya se ve como se ve en la red.
+  const soloMira = soloMiraRedes(activeTenantId());
   useEffect(() => {
     if (!vePublicacion) router.replace("/");
   }, [vePublicacion, router]);

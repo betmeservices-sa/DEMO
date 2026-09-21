@@ -77,11 +77,15 @@ export function Embudo({
             </span>
             <span className="relative h-6 flex-1 overflow-hidden rounded">
               <span
-                className="absolute inset-y-0 left-0 rounded transition-all"
+                className="ccg-barra absolute inset-y-0 left-0 rounded transition-all"
                 style={{
                   width: `${ancho}%`,
                   backgroundColor: RAMPA[Math.min(i, RAMPA.length - 1)],
                   opacity: activo || seleccion === null ? 1 : 0.45,
+                  // Escalonado: las etapas se despliegan en el orden en que se
+                  // recorren, que es lo que hace legible la caída entre una y
+                  // la siguiente. Con todas a la vez no se lee nada.
+                  animationDelay: `${i * 70}ms`,
                 }}
               />
             </span>
@@ -135,7 +139,14 @@ export function Dona({ datos }: { datos: Rebanada[] }) {
               strokeDashoffset={a.offset}
               onMouseEnter={() => setEncima(a.i)}
               onMouseLeave={() => setEncima(null)}
-              className="cursor-default transition-[stroke-width]"
+              className="ccg-gajo cursor-default transition-[stroke-width]"
+              style={{
+                // El perímetro, que es lo que el fotograma inicial usa de hueco.
+                ["--ccg-vuelta" as string]: C,
+                // Uno detrás de otro, en el orden del aro: así se ve cuál es el
+                // grande sin tener que compararlos ya dibujados.
+                animationDelay: `${a.i * 90}ms`,
+              }}
             />
           ))}
         </g>

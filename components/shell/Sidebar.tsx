@@ -10,6 +10,7 @@ import { useStore } from "@/lib/store";
 import { sinLeerPorCanal, useInterno } from "@/lib/interno-bridge";
 import { activeTenantId } from "@/lib/tenants/active";
 import { veModuloVoz } from "@/lib/tenants/voz";
+import { soloMiraRedes } from "@/lib/tenants/redes";
 import { veTickets } from "@/lib/tickets-tenant";
 import { staff, ME } from "@/lib/data/seed";
 import { Avatar, inicialesDe } from "@/components/ui/Avatar";
@@ -125,7 +126,10 @@ export function Sidebar({
   // Los comentarios de Facebook e Instagram son la otra mitad de la bandeja,
   // pero Grupo Q no los trabaja desde aca: su mercadeo lleva las redes por su
   // cuenta y la pestana solo metia ruido en un panel de credito.
-  const veComentarios = veRedes && tenant !== "grupoq";
+  // Comentarios es para contestar lo que escriben debajo del post. Quien no
+  // publica desde acá no modera desde acá: es la misma pregunta que decide la
+  // forma de Redes, y por eso sale del mismo lugar.
+  const veComentarios = veRedes && !soloMiraRedes(tenant);
   // La clinica NO es un centro de comunicacion: son tres vistas y nada mas
   // (el doctor, el laboratorio y lo que ve el paciente). Bandeja, contactos,
   // redes, comentarios y dashboard son de los otros clientes y aca solo hacen

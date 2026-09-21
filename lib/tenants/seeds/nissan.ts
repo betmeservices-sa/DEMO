@@ -118,11 +118,11 @@ export const nissanSeed: TenantSeed = {
     { id: "im7", channelId: "dm1", staffId: ME, texto: "Va antes del mediodía. Anoche quedaron tres sin tomar.", ts: "2026-06-23T09:55:00" },
   ],
   socialPosts: [
-    { id: "sp1", red: "instagram", estado: "publicado", texto: "La nueva Frontier ya está en sala. Agendá tu prueba de manejo esta semana.", fecha: haceDias(1, 9), engagement: { alcance: 9120, meGusta: 648, comentarios: 41, compartidos: 52, guardados: 133 } },
-    { id: "sp2", red: "facebook", estado: "publicado", texto: "X-Trail e-POWER: la híbrida que no se enchufa. Te contamos cómo funciona en dos minutos.", fecha: haceDias(2, 15), engagement: { alcance: 12400, meGusta: 512, comentarios: 77, compartidos: 141 } },
-    { id: "sp3", red: "instagram", estado: "programado", texto: "Tu usado vale más de lo que creés. Traelo, te lo valuamos sin costo y lo dejás de prima.", fecha: haceDias(-1, 10) },
-    { id: "sp4", red: "facebook", estado: "programado", texto: "Fin de semana de puertas abiertas: pruebas de manejo sin cita, sábado y domingo.", fecha: haceDias(-2, 8) },
-    { id: "sp5", red: "instagram", estado: "publicado", texto: "Otra familia estrenando Kicks. Gracias por dejarnos ser parte.", fecha: haceDias(4, 17), engagement: { alcance: 8300, meGusta: 455, comentarios: 22, compartidos: 37 } },
+    { id: "sp1", red: "instagram", estado: "publicado", texto: "La nueva Frontier ya está en sala. Agendá tu prueba de manejo esta semana.", fecha: haceDias(1, 9), imagenes: ["/nissan/post-frontier.svg"], engagement: { alcance: 9120, meGusta: 648, comentarios: 41, compartidos: 52, guardados: 133 } },
+    { id: "sp2", red: "facebook", estado: "publicado", texto: "X-Trail e-POWER: la híbrida que no se enchufa. Te contamos cómo funciona en dos minutos.", fecha: haceDias(2, 15), imagenes: ["/nissan/post-xtrail.svg"], engagement: { alcance: 12400, meGusta: 512, comentarios: 77, compartidos: 141 } },
+    { id: "sp3", red: "instagram", estado: "programado", texto: "Tu usado vale más de lo que creés. Traelo, te lo valuamos sin costo y lo dejás de prima.", fecha: haceDias(-1, 10), imagenes: ["/nissan/post-usados.svg"] },
+    { id: "sp4", red: "facebook", estado: "programado", texto: "Fin de semana de puertas abiertas: pruebas de manejo sin cita, sábado y domingo.", fecha: haceDias(-2, 8), imagenes: ["/nissan/post-puertas-abiertas.svg"] },
+    { id: "sp5", red: "instagram", estado: "publicado", texto: "Otra familia estrenando Kicks. Gracias por dejarnos ser parte.", fecha: haceDias(4, 17), imagenes: ["/nissan/post-kicks.svg"], engagement: { alcance: 8300, meGusta: 455, comentarios: 22, compartidos: 37 } },
     { id: "sp6", red: "instagram", estado: "borrador", texto: "5 cosas que nadie te dice antes de comprar tu primer carro.", fecha: haceDias(3, 12) },
   ],
   socialStats: [

@@ -174,6 +174,14 @@ export interface OpcionesMemoria {
     telefono: string;
     extracto: ExtractoLlamada;
     callId?: string;
+    /**
+     * En qué tablero se anota, resuelto POR AGENTE (ver `tenantPanel`).
+     *
+     * Va en el payload y no escrito en la ruta porque un mismo endpoint atiende
+     * a dos clientes: con el nombre a mano, la llamada de uno le habría
+     * escrito el embudo al otro, que es el mismo error que tenían las fichas.
+     */
+    tenant: string;
   }) => Promise<string | undefined>;
 }
 
@@ -397,7 +405,7 @@ export async function manejarMemoria(req: Request, op: OpcionesMemoria) {
     let anotado: string | undefined;
     if (op.alColgar) {
       try {
-        anotado = await op.alColgar({ telefono, extracto, callId: msg.call?.id });
+        anotado = await op.alColgar({ telefono, extracto, callId: msg.call?.id, tenant: tenantPanel ?? op.tenant });
       } catch (err) {
         // Un 5xx haría que Vapi reintentara y la llamada se contaría dos veces.
         console.error(`[alColgar ${op.tenant}] no se pudo anotar:`, err);

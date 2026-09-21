@@ -77,11 +77,13 @@ export function Embudo({
                 </span>
                 <span className="relative h-7 flex-1">
                   <span
-                    className="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center justify-between rounded px-2 text-white transition-all"
+                    className="ccg-barra ccg-barra-centro absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center justify-between rounded px-2 text-white transition-all"
                     style={{
                       width: `${anchoEn(i, vivas.length)}%`,
                       backgroundColor: e.color,
                       opacity: activo || abierta === null ? 1 : 0.4,
+                      // Se abre de arriba hacia abajo, en el orden del embudo.
+                      animationDelay: `${i * 70}ms`,
                     }}
                   >
                     <span className="text-[12px] font-extrabold tabular-nums">{e.n}</span>

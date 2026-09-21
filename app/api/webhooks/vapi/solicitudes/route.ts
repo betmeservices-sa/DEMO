@@ -29,9 +29,9 @@ const OPCIONES: OpcionesMemoria = {
   // embudo. El monto y el vehículo se guardaban en la memoria del agente y en
   // la nota de la ficha, pero no en la solicitud, que es de donde sale la plata
   // del tablero: había leads en cero dólares de gente que sí lo había dicho.
-  alColgar: ({ telefono, extracto }) =>
+  alColgar: ({ telefono, extracto, tenant }) =>
     anotarLlamadaEnSolicitud({
-      tenant: "grupoq",
+      tenant,
       telefono,
       nombre: extracto.nombre,
       vehiculo: extracto.modelos?.[0] ?? null,
