@@ -257,13 +257,29 @@ export function resumirFilas(filas: FilaConsumo[]): ResumenConsumo {
  * total del mes; esto sirve para la pregunta que aparece siempre en cuanto se
  * mira el gasto en serio: cuánto costó ESTA respuesta.
  */
-export async function detalleConsumo(tenant?: string, tope = 50): Promise<FilaConsumo[]> {
+/**
+ * Las filas de consumo de un cliente, opcionalmente acotadas a una ventana.
+ *
+ * `desde`/`hasta` son ISO UTC y van A LA CONSULTA, no a un filtro posterior.
+ * Sin ellos, esto lee las `tope` filas MÁS RECIENTES y quien pida un periodo
+ * viejo recibe el pedazo equivocado. Ya pasó dos veces: primero con un tope de
+ * 1.000 y después con uno de 5.000, y las dos veces el número se quedó clavado
+ * en el tope en vez de avisar que faltaban filas.
+ */
+export async function detalleConsumo(
+  tenant?: string,
+  tope = 50,
+  desde?: string,
+  hasta?: string,
+): Promise<FilaConsumo[]> {
   const sb = getSupabase();
   if (!sb) {
-    return mem.filter((f) => !tenant || f.tenant === tenant).slice(0, tope);
+    return mem
+      .filter((f) => !tenant || f.tenant === tenant)
+      .filter((f) => (!desde || f.ts >= desde) && (!hasta || f.ts < hasta))
+      .slice(0, tope);
   }
-  const filas = await leerFilas(tenant, tope);
-  return filas;
+  return leerFilas(tenant, tope, desde, hasta);
 }
 
 export async function resumenConsumo(tenant?: string): Promise<ResumenConsumo> {
@@ -287,14 +303,19 @@ const COLS = `${COLS_BASE}, tipo`;
 // Un cliente con esquema propio (Yali) tiene filas en su esquema Y en public:
 // registrarConsumo escribió en public hasta el 27 de agosto de 2026. Se leen
 // las dos y se juntan; así el consumo del cliente sale completo.
-async function leerFilas(tenant: string | undefined, tope: number): Promise<FilaConsumo[]> {
+async function leerFilas(
+  tenant: string | undefined,
+  tope: number,
+  desde?: string,
+  hasta?: string,
+): Promise<FilaConsumo[]> {
   const sb = getSupabase(tenant);
   if (!sb) return mem.filter((f) => !tenant || f.tenant === tenant).slice(0, tope);
-  const propias = await leerFilasEn(sb, tenant, tope);
+  const propias = await leerFilasEn(sb, tenant, tope, desde, hasta);
   if (!tenant || esquemaDeTenant(tenant) === "public") return propias;
   const pub = getSupabase();
   if (!pub) return propias;
-  const enPublic = await leerFilasEn(pub, tenant, tope);
+  const enPublic = await leerFilasEn(pub, tenant, tope, desde, hasta);
   const vistas = new Set(propias.map((f) => `${f.ts}|${f.waId ?? ""}|${f.waFrom}`));
   const todas = [...propias, ...enPublic.filter((f) => !vistas.has(`${f.ts}|${f.waId ?? ""}|${f.waFrom}`))];
   todas.sort((x, y) => y.ts.localeCompare(x.ts));
@@ -304,7 +325,13 @@ async function leerFilas(tenant: string | undefined, tope: number): Promise<Fila
 /** Tope duro de PostgREST por respuesta. No se puede subir desde el cliente. */
 const PAGINA = 1000;
 
-async function leerFilasEn(sb: NonNullable<ReturnType<typeof getSupabase>>, tenant: string | undefined, tope: number): Promise<FilaConsumo[]> {
+async function leerFilasEn(
+  sb: NonNullable<ReturnType<typeof getSupabase>>,
+  tenant: string | undefined,
+  tope: number,
+  desde?: string,
+  hasta?: string,
+): Promise<FilaConsumo[]> {
   // SE PIDE DE A MIL, PORQUE `.limit(5000)` NO TRAE CINCO MIL.
   //
   // PostgREST corta en 1.000 filas por respuesta y devuelve esas sin avisar.
@@ -318,14 +345,19 @@ async function leerFilasEn(sb: NonNullable<ReturnType<typeof getSupabase>>, tena
   // periodo, cualquier corte más viejo que esas mil filas salía casi vacío.
   const bruto: Record<string, unknown>[] = [];
   let cols = COLS;
-  for (let desde = 0; desde < tope; desde += PAGINA) {
-    const hasta = Math.min(desde + PAGINA, tope) - 1;
+  for (let inicio = 0; inicio < tope; inicio += PAGINA) {
+    const fin = Math.min(inicio + PAGINA, tope) - 1;
     // El filtro va ANTES del rango: `.range()` cierra la consulta y después ya
     // no se le puede colgar un `.eq()`.
     const armar = (seleccion: string) => {
       const base = sb.from("ai_uso_tokens").select(seleccion);
       const conTenant = tenant ? base.eq("tenant", tenant) : base;
-      return conTenant.order("ts", { ascending: false }).range(desde, hasta);
+      // LA VENTANA VA ACÁ, no en un filtro posterior: si se leen las N más
+      // recientes y después se recorta por periodo, el periodo viejo sale
+      // vacío y el reciente sale clavado en N.
+      const conDesde = desde ? conTenant.gte("ts", desde) : conTenant;
+      const conVentana = hasta ? conDesde.lt("ts", hasta) : conDesde;
+      return conVentana.order("ts", { ascending: false }).range(inicio, fin);
     };
     let res = await armar(cols);
     if (res.error && columnaFaltante(res.error)) {
@@ -343,7 +375,7 @@ async function leerFilasEn(sb: NonNullable<ReturnType<typeof getSupabase>>, tena
     }
     const pagina = (res.data ?? []) as unknown as Record<string, unknown>[];
     bruto.push(...pagina);
-    if (pagina.length < hasta - desde + 1) break;
+    if (pagina.length < fin - inicio + 1) break;
   }
   const data = bruto;
 

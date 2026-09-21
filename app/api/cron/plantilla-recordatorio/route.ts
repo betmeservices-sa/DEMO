@@ -5,13 +5,21 @@
 // `crediq_continuar_solicitud`, que no repite la lista y le baja el escalón:
 // "empiece por el que tenga a la mano".
 //
-// POR QUÉ UN CRON Y NO UN TEMPORIZADOR. El webhook de fin de llamada vive 30
-// segundos; esperar cinco minutos ahí no es una opción. Y un temporizador en
-// memoria se pierde en el siguiente despliegue, justo con la gente que estaba
-// esperando.
+// YA NO ES UN BARRIDO. Antes corría cada minuto desde Vercel y recorría TODAS
+// las conversaciones de Grupo Q preguntando quién cumplía la espera; casi
+// siempre no era nadie. Ahora lee la cola de lib/recordatorios-agenda.ts, que
+// llena el webhook de fin de llamada con la hora exacta de cada cita, y a esta
+// ruta la despierta Postgres SOLO cuando hay citas vencidas. Sin llamadas, no
+// se ejecuta.
 //
-// Corre cada 2 minutos, así que el recordatorio cae entre los 5 y los 7 minutos.
-// La decisión de a quién le toca es pura y está en lib/plantilla-tras-llamada.ts.
+// POR QUÉ NO UN TEMPORIZADOR EN EL WEBHOOK. El webhook de fin de llamada vive
+// 30 segundos y un temporizador en memoria se pierde en el siguiente
+// despliegue, justo con la gente que estaba esperando. Por eso la cita se
+// guarda en la base.
+//
+// LA DECISIÓN NO CAMBIÓ: sigue siendo pura y vive en lib/plantilla-tras-llamada.ts.
+// Que la cita esté vencida no basta para mandar; si la persona contestó en el
+// minuto, `decidirRecordatorio` lo frena igual que antes.
 //
 // SE PUEDE MIRAR SIN MANDAR NADA: ?seco=1 dice a quién le tocaría y por qué.
 
@@ -19,10 +27,11 @@ import { NextResponse } from "next/server";
 import { getContacto } from "@/lib/contacts-store";
 import { normalizarTelefono } from "@/lib/memoria-llamadas";
 import { normalizarDestinoSV } from "@/lib/phone";
-import { CONTINUAR, REQUISITOS, decidirRecordatorio } from "@/lib/plantilla-tras-llamada";
+import { CONTINUAR, decidirRecordatorio } from "@/lib/plantilla-tras-llamada";
 import { enviarPlantilla } from "@/lib/wa-send";
 import { encenderIaSiNadieDecidio } from "@/lib/ai-store";
-import { addOutbound, mensajesAnteriores, ultimoPorConversacion } from "@/lib/wa-store";
+import { addOutbound, mensajesAnteriores } from "@/lib/wa-store";
+import { cerrarCita, citasVencidas } from "@/lib/recordatorios-agenda";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,22 +52,14 @@ export async function GET(req: Request) {
   const seco = new URL(req.url).searchParams.get("seco") === "1";
   const ahora = new Date();
 
-  // OJO: devuelve { ultimos, cursor }, no la lista. Iterar el objeto en vez de
-  // `.ultimos` recorre el array entero como si fuera UN elemento y el cursor
-  // como si fuera otro, no encuentra `texto` en ninguno, y el barrido sale
-  // limpio sin haber mirado a nadie. Paso, y no lo vio ninguna prueba.
-  const { ultimos } = await ultimoPorConversacion(TENANT);
+  const citas = await citasVencidas(TENANT, ahora);
   const enviados: string[] = [];
   const saltados: Record<string, number> = {};
   let errores = 0;
 
-  for (const c of ultimos) {
-    const telefono = c.from;
+  for (const cita of citas) {
+    const telefono = cita.telefono;
     try {
-      // Descarte barato antes de ir a buscar el hilo: si el último mensaje no
-      // es nuestro, o no es la plantilla de requisitos, no hay nada que hacer.
-      if (!c.texto?.includes(REQUISITOS.marca)) continue;
-
       const { mensajes } = await mensajesAnteriores(telefono, null, HILO, TENANT);
       const ficha = await getContacto(normalizarTelefono(telefono)).catch(() => null);
 
@@ -71,6 +72,9 @@ export async function GET(req: Request) {
 
       if (!decision.enviar) {
         saltados[decision.motivo] = (saltados[decision.motivo] ?? 0) + 1;
+        // La cita se cierra igual: descartada tambien es atendida. Si no, queda
+        // vencida para siempre y se vuelve a mirar en cada pasada.
+        if (!seco) await cerrarCita(TENANT, cita.id, `no: ${decision.motivo}`);
         continue;
       }
 
@@ -86,6 +90,9 @@ export async function GET(req: Request) {
       if (!env.ok) {
         errores++;
         console.error(`[recordatorio] ${telefono}: ${env.error}`);
+        // NO se cierra: un fallo de Meta puede ser pasajero y la siguiente
+        // pasada lo reintenta. El tope de horas de la decision evita que quede
+        // reintentando para siempre.
         continue;
       }
       if (env.id) {
@@ -99,6 +106,7 @@ export async function GET(req: Request) {
       }
       // Cuando conteste, que le responda Sofía.
       await encenderIaSiNadieDecidio(destino);
+      await cerrarCita(TENANT, cita.id, "enviado");
       enviados.push(telefono);
       console.log(`[recordatorio] ${telefono}: enviado ${CONTINUAR.nombre}.`);
     } catch (e) {
@@ -110,10 +118,12 @@ export async function GET(req: Request) {
   return NextResponse.json({
     ok: true,
     seco,
-    revisadas: ultimos.length,
+    // Cuantas citas habia vencidas, no cuantas conversaciones existen: si esto
+    // da 0 es que no hubo llamadas, y esta corrida no costo nada.
+    citas: citas.length,
     enviados: enviados.length,
     detalle: enviados,
-    // Por qué NO se le escribió al resto. Un barrido que no explica sus
+    // Por qué NO se le escribió al resto. Una corrida que no explica sus
     // silencios no se puede depurar.
     saltados,
     errores,

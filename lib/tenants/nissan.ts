@@ -171,4 +171,22 @@ export const nissanTenant: TenantConfig = {
     },
   ],
   whatsapp: {},
+  // Agente de voz "Sofia Nissan".
+  //
+  // SIN ESTE BLOQUE el demo de Nissan perdia CUATRO cosas de un golpe, porque
+  // todas cuelgan de `veModuloVoz`: Llamadas, QA, Agentes y la tanda de
+  // llamadas desde Contactos (/api/ventas/llamar-tanda responde 403 sin esto).
+  // Se veia como cuatro funciones faltantes y era una sola linea que faltaba.
+  //
+  // EL AGENTE YA EXISTIA, colgado del tenant de Grupo Q: alla es el principal
+  // porque Grupo Q vende Nissan, y "Sofia Nissan" nacio antes de que Nissan
+  // fuera su propio demo. Acá se DECLARA el mismo, no se mueve: sacarlo de
+  // Grupo Q le quitaria a ese demo las llamadas entrantes. Los dos lo ven.
+  voz: {
+    assistantId: "f4e60d15-31f9-4278-b014-fb1e0ab1eaff",
+    // Las tandas salen con el mismo: Sofia Nissan vende, que es lo que hace
+    // este demo. Los agentes de CrediQ (solicitudes y reactivacion) son de
+    // credito y no tienen nada que ofrecerle a quien viene a ver un carro.
+    assistantIdCampanas: "f4e60d15-31f9-4278-b014-fb1e0ab1eaff",
+  },
 };

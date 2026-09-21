@@ -17,7 +17,8 @@ import {
 import { diagnostico, guardarMemoria, leerMemoria } from "./memoria-store";
 import { getContacto, upsertContacto } from "./contacts-store";
 import { secretoVapiValido as secretoValido } from "./vapi-secreto";
-import { decidirPlantilla } from "./plantilla-tras-llamada";
+import { decidirPlantilla, ESPERA_MIN } from "./plantilla-tras-llamada";
+import { agendarRecordatorio } from "./recordatorios-agenda";
 import { enviarPlantilla } from "./wa-send";
 import { addOutbound, mensajesAnteriores } from "./wa-store";
 import { normalizarDestinoSV } from "./phone";
@@ -220,6 +221,17 @@ async function mandarPlantillaTrasLlamada(
   }
   // Cuando conteste, que le responda Sofía.
   await encenderIaSiNadieDecidio(paraWhatsApp);
+
+  // El recordatorio se AGENDA acá, que es el único momento en que sabemos que
+  // hay uno que esperar. Antes lo buscaba un barrido cada minuto sobre todas
+  // las conversaciones; ahora la llamada deja la cita y nadie mira el reloj
+  // hasta que vence. Si falla el agendado, el mensaje que ya salió vale igual:
+  // lo único que se pierde es el segundo, y queda dicho en el log.
+  try {
+    await agendarRecordatorio(tenant, paraWhatsApp, ESPERA_MIN);
+  } catch (e) {
+    console.error("[memoria-webhook] no se agendó el recordatorio:", e instanceof Error ? e.message : e);
+  }
   return "enviada";
 }
 
