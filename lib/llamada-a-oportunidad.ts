@@ -18,7 +18,7 @@
 // queda en la bitácora del caso, así que no se pierde lo anterior.
 
 import { modeloDe } from "./autos-catalogo";
-import { asegurarOportunidad, fijarModelo, marcarContactado } from "./autos-store";
+import { asegurarOportunidad, fijarModelo, leerOportunidad, marcarContactado } from "./autos-store";
 import { vendedoresDe } from "./ventas-equipo";
 
 export interface LlamadaEnEmbudo {
@@ -83,17 +83,22 @@ export async function anotarLlamadaEnEmbudo(opciones: {
   const modelo = modeloDicho(opciones.modelos);
   const nombre = opciones.nombre?.trim() || undefined;
 
+  // Se mira ANTES de asegurar: después ya no se puede distinguir el caso que
+  // existía del que acaba de crearse, y las dos cosas se cuentan distinto.
+  const antes = await leerOportunidad(tenant, telefono);
+
   // Si la persona nunca pasó por el CSV ni escribió, la llamada la mete al
   // embudo, con dueño y todo: un caso sin vendedor no sale en las barras por
   // vendedor ni cuenta para los plazos, o sea que existe y no lo ve nadie.
-  const previa = await asegurarOportunidad(tenant, telefono, { nombre, modelo }, vendedoresDe(tenant));
+  const caso = await asegurarOportunidad(tenant, telefono, { nombre, modelo }, vendedoresDe(tenant));
 
   const cambios: string[] = [];
 
-  // `asegurarOportunidad` solo escribe el modelo cuando CREA el caso. Si ya
-  // existía, hay que ponerlo acá, y de paso esto es lo que le pone el precio de
-  // lista al caso que venía en cero.
-  if (modelo && !mismoModelo(previa.modelo, modelo)) {
+  // `fijarModelo` no es solo para cuando el modelo CAMBIA: es lo único que le
+  // pone al caso el precio de lista. El caso recién creado ya trae el modelo
+  // escrito (lo pone `asegurarOportunidad`) y venía quedando en cero dólares,
+  // o sea existiendo sin contar para nada de lo que el gerente proyecta.
+  if (modelo && (!mismoModelo(caso.modelo, modelo) || caso.monto == null)) {
     await fijarModelo(tenant, telefono, modelo, actor);
     cambios.push(`modelo ${modeloDe(modelo)?.nombre ?? modelo}`);
   }
@@ -102,8 +107,10 @@ export async function anotarLlamadaEnEmbudo(opciones: {
   // mueve la fecha.
   await marcarContactado(tenant, telefono, actor);
 
-  const resumen =
-    cambios.length > 0
+  const nombreModelo = modelo ? (modeloDe(modelo)?.nombre ?? modelo) : null;
+  const resumen = !antes
+    ? `entró al embudo${nombreModelo ? ` con ${nombreModelo}` : " sin modelo"}`
+    : cambios.length > 0
       ? `anotado en el embudo: ${cambios.join(" · ")}`
       : modelo
         ? "el caso ya tenía ese modelo"

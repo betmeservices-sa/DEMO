@@ -14,9 +14,10 @@ import { telefonoBonito } from "@/lib/phone";
 import { CATEGORIA, modeloDe, nombreDeModelo } from "@/lib/autos-catalogo";
 import { HORAS_AVISO, HORAS_VENCIDO, type Vendedor } from "@/lib/autos-pipeline";
 import { Dona } from "@/components/ventas/Graficos";
-import type { RespuestaReporte } from "./tipos";
+import type { RespuestaReporte, Venta } from "./tipos";
 import { Embudo } from "./Embudo";
 import { Enfriandose } from "./Enfriandose";
+import { BarrasVendedor } from "./BarrasVendedor";
 
 // La dona va con los colores de la marca: rojo, negro y gris. Ademas de ser lo
 // que corresponde en este panel, los tres se separan por LUMINOSIDAD y no solo
@@ -52,7 +53,7 @@ function nombreCorto(vendedores: Vendedor[], id: string | null): string {
   return vendedores.find((v) => v.id === id)?.nombre ?? id;
 }
 
-export function ReporteGerente({ r }: { r: RespuestaReporte }) {
+export function ReporteGerente({ r, casos = [] }: { r: RespuestaReporte; casos?: Venta[] }) {
   const vendedores = r.vendedores.map((v) => ({ id: v.id, nombre: v.nombre, iniciales: v.iniciales }));
   const vencidos = r.alertas.filter((a) => a.nivel === "vencido").length;
   const separados = r.embudo.find((e) => e.etapa === "separados");
@@ -192,6 +193,8 @@ export function ReporteGerente({ r }: { r: RespuestaReporte }) {
           </ul>
         </section>
       )}
+
+      <BarrasVendedor casos={casos} vendedores={vendedores} />
 
       <section className="rounded-2xl border border-line bg-card p-4">
         <h3 className="text-[14px] font-bold text-[var(--text)]">Cómo va el equipo</h3>

@@ -255,6 +255,32 @@ export const CANAL: Record<CanalLead, { id: CanalLead; nombre: string; color: st
   CANALES.map((c) => [c.id, c]),
 ) as Record<CanalLead, { id: CanalLead; nombre: string; color: string }>;
 
+/**
+ * Los prospectos repartidos por el canal del que vinieron.
+ *
+ * El gris de "sin marcar" es un grupo propio y nunca se reparte a ojo entre los
+ * demas: el canal lo pone el vendedor a mano en la ficha, y adivinarlo seria
+ * inventarle al gerente de donde le esta entrando la venta.
+ */
+export function porCanal(oportunidades: Pick<Oportunidad, "canal" | "monto">[]): {
+  canal: CanalLead | null;
+  nombre: string;
+  color: string;
+  n: number;
+  monto: number;
+}[] {
+  const grupos: { canal: CanalLead | null; nombre: string; color: string }[] = [
+    ...CANALES.map((c) => ({ canal: c.id as CanalLead | null, nombre: c.nombre, color: c.color })),
+    { canal: null, nombre: "Sin marcar", color: "#cbd5e1" },
+  ];
+  return grupos
+    .map((g) => {
+      const suyos = oportunidades.filter((o) => (o.canal ?? null) === g.canal);
+      return { ...g, n: suyos.length, monto: suyos.reduce((m, o) => m + (o.monto ?? 0), 0) };
+    })
+    .filter((g) => g.n > 0);
+}
+
 export function esCanal(v: unknown): v is CanalLead {
   return typeof v === "string" && CANALES.some((c) => c.id === v);
 }
