@@ -66,7 +66,7 @@ export function NissanDashboard() {
               {totalAbiertas} prospectos vivos por {usd(abiertas.reduce((m, e) => m + e.monto, 0))}
             </p>
             <div className="space-y-3">
-              {abiertas.map((e) => {
+              {abiertas.map((e, i) => {
                 const pct = totalAbiertas === 0 ? 0 : Math.round((e.n / totalAbiertas) * 100);
                 return (
                   <div key={e.etapa}>
@@ -81,8 +81,8 @@ export function NissanDashboard() {
                     </div>
                     <div className="h-2.5 overflow-hidden rounded-full bg-surface">
                       <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, backgroundColor: e.color }}
+                        className="ccg-barra h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, backgroundColor: e.color, animationDelay: `${i * 70}ms` }}
                       />
                     </div>
                   </div>
@@ -96,7 +96,7 @@ export function NissanDashboard() {
             <p className="mb-4 text-[12px] text-[var(--text-3)]">Modelos que están viendo los prospectos vivos</p>
             <div className="space-y-3">
               {modelos.length === 0 && <p className="text-[12.5px] text-[var(--text-3)]">Todavía no hay prospectos.</p>}
-              {modelos.map((m) => (
+              {modelos.map((m, i) => (
                 <div key={m.id}>
                   <div className="mb-1 flex items-center justify-between gap-2 text-[12.5px]">
                     <span className="min-w-0 truncate font-medium text-[var(--text-2)]">{m.nombre}</span>
@@ -111,8 +111,11 @@ export function NissanDashboard() {
                   </div>
                   <div className="h-2.5 overflow-hidden rounded-full bg-surface">
                     <div
-                      className="h-full rounded-full bg-brand transition-all duration-500"
-                      style={{ width: `${Math.round((m.interesados / topModelo) * 100)}%` }}
+                      className="ccg-barra h-full rounded-full bg-brand transition-all duration-500"
+                      style={{
+                        width: `${Math.round((m.interesados / topModelo) * 100)}%`,
+                        animationDelay: `${i * 70}ms`,
+                      }}
                     />
                   </div>
                 </div>
