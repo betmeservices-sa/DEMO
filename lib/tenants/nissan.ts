@@ -142,6 +142,32 @@ export const nissanTenant: TenantConfig = {
     { label: "Sin asignar", icon: "Inbox", kind: "sinAsignar" },
   ],
   waTemplates: [
+    // La que sale SOLA, al minuto de colgar. Las otras dos las manda una
+    // persona cuando ya hay una cita o una entrega; esta es el puente entre la
+    // llamada y el chat, y por eso no da por hecho nada de lo que se habló.
+    //
+    // DOS VARIABLES Y NO MÁS. Meta exige que TODAS vengan llenas: si la
+    // plantilla pidiera la fecha de la prueba de manejo, una llamada donde no
+    // se llegó a agendar no podría mandarla. El modelo cae en "su consulta"
+    // cuando la llamada no alcanzó a capturarlo (ver lib/plantilla-nissan.ts).
+    //
+    // ESTA LISTA ES LA DE RESPALDO: con credenciales de Meta, Plantillas lee la
+    // WABA de verdad. Los nombres y los textos se copian de allá para que el
+    // demo sin credenciales muestre lo mismo que se manda en producción.
+    {
+      name: "nissan_seguimiento_llamada",
+      language: "es",
+      category: "UTILITY",
+      status: "APPROVED",
+      components: [
+        {
+          type: "BODY",
+          text: "Hola {{1}}, le saluda Sofía de Nissan. Gracias por su llamada: sigo por acá con lo de {{2}}. Con gusto le mando fotos y precios, o le agendo una prueba de manejo cuando guste.",
+          example: { body_text: [["Ana", "la X-Trail"]] },
+        },
+        { type: "FOOTER", text: "Nissan El Salvador" },
+      ],
+    },
     {
       name: "recordatorio_prueba_manejo",
       language: "es",
@@ -178,15 +204,22 @@ export const nissanTenant: TenantConfig = {
   // llamadas desde Contactos (/api/ventas/llamar-tanda responde 403 sin esto).
   // Se veia como cuatro funciones faltantes y era una sola linea que faltaba.
   //
-  // EL AGENTE YA EXISTIA, colgado del tenant de Grupo Q: alla es el principal
-  // porque Grupo Q vende Nissan, y "Sofia Nissan" nacio antes de que Nissan
-  // fuera su propio demo. Acá se DECLARA el mismo, no se mueve: sacarlo de
-  // Grupo Q le quitaria a ese demo las llamadas entrantes. Los dos lo ven.
+  // AGENTE PROPIO, y no el de Grupo Q, aunque los dos vendan Nissan.
+  //
+  // Primero se declaro aqui el mismo "Sofia Nissan" (f4e60d15) que usa Grupo Q.
+  // Funcionaba, pero rompia el saludo de la llamada de vuelta: el webhook solo
+  // recibe el assistantId, y un agente declarado por DOS clientes no dice de
+  // cual de los dos demos vino. El de Nissan terminaba saludando "Sofia de
+  // Grupo Q". Compartir el agente y esperar marca propia son incompatibles.
+  //
+  // Asi que Nissan tiene el suyo (copia de f4e60d15, mismas tools y mismo
+  // webhook). Ademas de arreglar el saludo, ahora se le puede tocar el guion a
+  // uno sin mover el del otro.
   voz: {
-    assistantId: "f4e60d15-31f9-4278-b014-fb1e0ab1eaff",
-    // Las tandas salen con el mismo: Sofia Nissan vende, que es lo que hace
-    // este demo. Los agentes de CrediQ (solicitudes y reactivacion) son de
-    // credito y no tienen nada que ofrecerle a quien viene a ver un carro.
-    assistantIdCampanas: "f4e60d15-31f9-4278-b014-fb1e0ab1eaff",
+    assistantId: "cdcac0e6-f47b-4979-9113-b315946caaf7",
+    // Las tandas salen con el mismo: Sofia vende, que es lo que hace este demo.
+    // Los agentes de CrediQ (solicitudes y reactivacion) son de credito y no
+    // tienen nada que ofrecerle a quien viene a ver un carro.
+    assistantIdCampanas: "cdcac0e6-f47b-4979-9113-b315946caaf7",
   },
 };

@@ -1,4 +1,11 @@
-import { comoLista, comoTexto, diagnosticoMemoria, manejarMemoria } from "@/lib/memoria-webhook";
+import {
+  comoLista,
+  comoTexto,
+  diagnosticoMemoria,
+  manejarMemoria,
+  type OpcionesMemoria,
+} from "@/lib/memoria-webhook";
+import { decidirSeguimiento } from "@/lib/plantilla-nissan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,10 +21,15 @@ export const maxDuration = 30;
 // para que las dos marcas no se pisen la memoria del mismo teléfono: la misma
 // persona puede haber llamado a las dos.
 //
+// POR ACÁ ENTRAN DOS AGENTES: "Sofia Nissan", que es de Grupo Q, y "Sofia
+// Nissan El Salvador", que es del demo de Nissan. En qué tablero cae cada
+// ficha lo decide el agente de la llamada (lib/tenants/voz.ts); `tenantFicha`
+// es solo el respaldo para un agente que nadie declaró.
+//
 // La ruta es PÚBLICA (la llama Vapi desde sus servidores) y valida el secreto
 // compartido.
 
-const OPCIONES = {
+const OPCIONES: OpcionesMemoria = {
   tenant: "nissan",
   tenantFicha: "grupoq",
   extraer: (d: Record<string, unknown>, resumen?: string) => ({
@@ -28,6 +40,15 @@ const OPCIONES = {
     agendo: d.agendo === true,
     resumen: comoTexto(d.resumen) ?? comoTexto(resumen),
   }),
+  // Al minuto de colgar sale el WhatsApp. Sofía cierra la llamada diciendo que
+  // sigue por ahí, y hasta ahora no le escribía nadie.
+  //
+  // NO SE LE PASA `agendo`. En este agente eso significa "quedó una prueba de
+  // manejo agendada", no "acepta que le escribamos": tomarlo como permiso
+  // dejaría sin mensaje justo a quien no llegó a agendar, que es a quien hay
+  // que seguir. Las razones para no mandar están en lib/plantilla-nissan.ts.
+  seguimientoAgendado: (e, telefono) =>
+    decidirSeguimiento({ nombre: e.nombre, modelos: e.modelos, telefono }),
 };
 
 export const GET = (req: Request) => diagnosticoMemoria(req);

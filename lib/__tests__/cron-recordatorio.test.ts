@@ -53,7 +53,10 @@ beforeEach(async () => {
   process.env.CRON_SECRET = SECRETO;
   const g = globalThis as unknown as { __wa?: unknown };
   g.__wa = undefined;
-  await import("@/lib/wa-store").then((m) => m.clearHistory("grupoq"));
+  await import("@/lib/wa-store").then(async (m) => {
+    m.clearHistory("grupoq");
+    m.clearHistory("nissan");
+  });
   limpiarAgendaEnMemoria();
   await upsertContacto({ from: "70020001", tenant: "grupoq", nombre: "Karla", apellido: "Menjívar" });
 });
@@ -198,5 +201,93 @@ describe("las dos puertas", () => {
     expect(d.detalle[0]).toContain("[SECO]");
     expect(enviadas, "en seco NO se manda").toHaveLength(0);
     expect(await citasVencidas("grupoq", new Date()), "en seco la cita NO se cierra").toHaveLength(1);
+  });
+});
+
+// ── El otro camino: la cita trae el mensaje adentro ──
+//
+// El seguimiento de Nissan nombra el carro por el que la persona preguntó, y
+// eso solo se sabe al colgar. Así que el webhook decide el texto y lo deja
+// escrito en la cita; acá lo único que se decide es si todavía hace falta.
+describe("cuando el mensaje viene en la cita", () => {
+  const NISSAN = "50370020002";
+  const datosNissan = {
+    plantilla: "nissan_seguimiento_llamada",
+    idioma: "es",
+    variables: ["Ana", "X-Trail"],
+    texto: "Hola Ana, le saluda Sofía de Nissan.",
+  };
+
+  it("manda ESA plantilla, con ESAS variables", async () => {
+    await agendarRecordatorio("nissan", NISSAN, -1, "plantilla", datosNissan);
+
+    const d = (await (await pedir()).json()) as { enviados: number };
+    expect(d.enviados).toBe(1);
+    expect(enviadas[0].name).toBe("nissan_seguimiento_llamada");
+    expect(enviadas[0].variables).toEqual(["Ana", "X-Trail"]);
+  });
+
+  it("no le escribe al que ya escribió él DESPUÉS de colgar", async () => {
+    await agendarRecordatorio("nissan", NISSAN, -1, "plantilla", datosNissan);
+    await addInbound({
+      waId: "wamid.ya",
+      from: NISSAN,
+      texto: "sigo interesado",
+      ts: new Date().toISOString(),
+      tenant: "nissan",
+    });
+
+    const d = (await (await pedir()).json()) as { enviados: number };
+    expect(d.enviados).toBe(0);
+    expect(enviadas).toHaveLength(0);
+  });
+
+  it("pero lo que escribió ANTES de la llamada no lo frena", async () => {
+    // Si el corte fuera "¿tiene algún mensaje?", a quien ya había escrito
+    // alguna vez nunca le llegaría el seguimiento de su llamada.
+    await addInbound({
+      waId: "wamid.viejo",
+      from: NISSAN,
+      texto: "buenas, precio de la X-Trail?",
+      ts: haceMin(45),
+      tenant: "nissan",
+    });
+    await agendarRecordatorio("nissan", NISSAN, -1, "plantilla", datosNissan);
+
+    const d = (await (await pedir()).json()) as { enviados: number };
+    expect(d.enviados).toBe(1);
+  });
+
+  it("una cita vencida hace horas se CIERRA sin mandar nada", async () => {
+    // "Gracias por su llamada" nueve horas tarde no es un seguimiento.
+    await agendarRecordatorio("nissan", NISSAN, -9 * 60, "plantilla", datosNissan);
+
+    const d = (await (await pedir()).json()) as { enviados: number; citas: number };
+    expect(d.citas).toBe(1);
+    expect(d.enviados).toBe(0);
+    expect(enviadas).toHaveLength(0);
+    expect(await citasVencidas(undefined, new Date()), "quedó abierta").toHaveLength(0);
+  });
+
+  it("atiende a los DOS clientes en la misma pasada", async () => {
+    // La cola es una sola tabla con el cliente como columna. Si el barrido
+    // fuera por cliente, cada cliente nuevo sería otro reloj que mantener.
+    await addOutbound({
+      waId: "wamid.req",
+      to: TEL,
+      texto: REQUISITOS.texto("Karla"),
+      ts: haceMin(6),
+      tenant: "grupoq",
+    });
+    await citaVencida();
+    await agendarRecordatorio("nissan", NISSAN, -1, "plantilla", datosNissan);
+
+    const d = (await (await pedir()).json()) as { citas: number; enviados: number };
+    expect(d.citas).toBe(2);
+    expect(d.enviados).toBe(2);
+    expect(enviadas.map((e) => e.name).sort()).toEqual([
+      "crediq_continuar_solicitud",
+      "nissan_seguimiento_llamada",
+    ]);
   });
 });

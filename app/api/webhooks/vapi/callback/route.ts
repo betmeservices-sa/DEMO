@@ -7,6 +7,8 @@ import {
   minutosPedidos,
 } from "@/lib/callback-llamada";
 import { fetchVapiAgentes, hayLlaveVapi, lanzarLlamadaVapi } from "@/lib/vapi";
+import { tenantDeAssistant } from "@/lib/tenants/voz";
+import { TENANTS } from "@/lib/tenants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,11 +43,25 @@ interface CuerpoVapi {
   };
 }
 
-/** Cómo entra la de vuelta. Presentarse de cero después de hablar es delatarse. */
-const SALUDO_DE_VUELTA =
-  "{% if nombre and nombre != \"no disponible\" %}Buenas {{nombre}}, le saluda Sofía de CrediQ otra vez. " +
-  "Le devuelvo la llamada como quedamos, ¿le queda bien ahora?{% else %}Buenas, le saluda Sofía de CrediQ. " +
-  "Le devuelvo la llamada como quedamos, ¿le queda bien ahora?{% endif %}";
+/**
+ * Cómo entra la de vuelta. Presentarse de cero después de hablar es delatarse.
+ *
+ * LA MARCA SALE DEL AGENTE QUE LLAMÓ, no de una constante. Estaba escrita a
+ * mano como "Sofía de CrediQ", así que a quien preguntaba por una X-Trail con
+ * Sofia Nissan le devolvía la llamada un agente de créditos. El comentario de
+ * arriba ya decía que quién llama sale del payload; faltaba que el saludo
+ * también.
+ */
+function saludoDeVuelta(assistantId: string): string {
+  const tenant = tenantDeAssistant(assistantId);
+  const marca = tenant ? TENANTS[tenant].brand.nombreCorto : null;
+  const de = marca ? ` de ${marca}` : "";
+  return (
+    `{% if nombre and nombre != "no disponible" %}Buenas {{nombre}}, le saluda Sofía${de} otra vez. ` +
+    `Le devuelvo la llamada como quedamos, ¿le queda bien ahora?{% else %}Buenas, le saluda Sofía${de}. ` +
+    `Le devuelvo la llamada como quedamos, ¿le queda bien ahora?{% endif %}`
+  );
+};
 
 /** Solo texto: las variables de Vapi no aceptan otra cosa. */
 function variablesDe(v: Record<string, unknown> | undefined): Record<string, string> | undefined {
@@ -114,7 +130,7 @@ export async function POST(req: Request) {
       numero,
       programadaPara: cuandoLlamar(minutos),
       variables: variablesDe(msg?.call?.assistantOverrides?.variableValues),
-      primerMensaje: SALUDO_DE_VUELTA,
+      primerMensaje: saludoDeVuelta(assistantId),
     });
     console.log(
       `[callback] de vuelta en ${minutos} min a ${numero} (agente ${assistantId}, llamada ${ll.id})` +

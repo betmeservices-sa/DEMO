@@ -19,6 +19,7 @@ import { getContacto, upsertContacto } from "./contacts-store";
 import { secretoVapiValido as secretoValido } from "./vapi-secreto";
 import { decidirPlantilla, ESPERA_MIN } from "./plantilla-tras-llamada";
 import { agendarRecordatorio } from "./recordatorios-agenda";
+import { tenantDeAssistant } from "./tenants/voz";
 import { enviarPlantilla } from "./wa-send";
 import { addOutbound, mensajesAnteriores } from "./wa-store";
 import { normalizarDestinoSV } from "./phone";
@@ -81,7 +82,7 @@ async function crearOActualizarFicha(
 export interface CuerpoVapi {
   message?: {
     type?: string;
-    call?: { id?: string; customer?: { number?: string } };
+    call?: { id?: string; assistantId?: string; customer?: { number?: string } };
     customer?: { number?: string };
     toolCalls?: { id?: string; function?: { name?: string; arguments?: unknown } }[];
     toolCallList?: { id?: string; name?: string }[];
@@ -89,6 +90,22 @@ export interface CuerpoVapi {
     transcript?: string;
   };
 }
+
+/**
+ * Lo que decide un `seguimientoAgendado`. Vive acá porque es el contrato entre
+ * el webhook y la decisión de cada cliente (lib/plantilla-nissan.ts es la
+ * primera), y las decisiones tienen que poder probarse sin importar el webhook.
+ */
+export type Seguimiento =
+  | { enviar: false; motivo: string }
+  | {
+      enviar: true;
+      minutos: number;
+      plantilla: string;
+      idioma: string;
+      variables: string[];
+      texto: string;
+    };
 
 export interface OpcionesMemoria {
   tenant: string;
@@ -129,6 +146,19 @@ export interface OpcionesMemoria {
    * puro y probado, porque cada envío es un WhatsApp a una persona real.
    */
   plantillaAlColgar?: boolean;
+  /**
+   * El WhatsApp que sale UN RATO DESPUÉS de colgar, no al colgar.
+   *
+   * `plantillaAlColgar` manda en el acto; esto deja una cita en la cola y el
+   * mensaje sale cuando vence. La diferencia no es cosmética: al colgar, la
+   * persona todavía está guardando el teléfono; al minuto ya lo tiene en la
+   * mano. Y como la cita vive en la base, sobrevive al despliegue.
+   *
+   * Devuelve la decisión completa (qué plantilla, con qué variables, en cuántos
+   * minutos) o el motivo por el que no se manda nada, que es lo que uno busca
+   * cuando alguien reclama que no le llegó el mensaje.
+   */
+  seguimientoAgendado?: (e: ExtractoLlamada, telefono: string) => Seguimiento;
   /**
    * Qué más se hace con lo que dejó la llamada, además de la memoria, la ficha
    * y la plantilla.
@@ -235,6 +265,47 @@ async function mandarPlantillaTrasLlamada(
   return "enviada";
 }
 
+/**
+ * Deja la cita del WhatsApp de seguimiento. NO manda nada todavía.
+ *
+ * Devuelve una frase corta para el log del webhook, igual que la plantilla que
+ * sale en el acto: sin esto, "no le llegó nada" no se puede distinguir de "no
+ * se agendó nada".
+ */
+async function agendarSeguimiento(
+  tenant: string,
+  telefono: string,
+  extracto: ExtractoLlamada,
+  decidir: (e: ExtractoLlamada, telefono: string) => Seguimiento,
+): Promise<string> {
+  // Las dos formas del número, igual que en la plantilla al colgar: `telefono`
+  // son los últimos ocho dígitos (la llave de la ficha), y WhatsApp necesita el
+  // completo con país. Mandando el corto se abre un hilo paralelo.
+  const e164 = normalizarDestinoSV(telefono);
+  if (!e164) return `no se agendó: el número ${telefono} no es marcable`;
+  const paraWhatsApp = e164.replace(/\D/g, "");
+
+  // El nombre puede no haber salido en la llamada y sí estar en la ficha. La
+  // plantilla lo exige, así que vale la pena ir a buscarlo.
+  let conNombre = extracto;
+  if (!extracto.nombre) {
+    const ficha = await getContacto(telefono).catch(() => null);
+    const nombre = [ficha?.nombre, ficha?.apellido].filter(Boolean).join(" ").trim();
+    if (nombre) conNombre = { ...extracto, nombre };
+  }
+
+  const d = decidir(conNombre, paraWhatsApp);
+  if (!d.enviar) return `no se agendó: ${d.motivo}`;
+
+  await agendarRecordatorio(tenant, paraWhatsApp, d.minutos, "plantilla", {
+    plantilla: d.plantilla,
+    idioma: d.idioma,
+    variables: d.variables,
+    texto: d.texto,
+  });
+  return `agendada para dentro de ${d.minutos} min`;
+}
+
 export async function diagnosticoMemoria(req: Request) {
   if (!secretoValido(req)) return NextResponse.json({ ok: false }, { status: 401 });
   return NextResponse.json({ ok: true, ...(await diagnostico()) });
@@ -277,23 +348,45 @@ export async function manejarMemoria(req: Request, op: OpcionesMemoria) {
 
     const extracto = op.extraer(msg.analysis?.structuredData ?? {}, msg.analysis?.summary);
 
+    // DE QUÉ CLIENTE ES ESTA LLAMADA, y no es `op.tenantFicha` sin más.
+    //
+    // Un mismo endpoint atiende a varios agentes: por /nissan entran "Sofia
+    // Nissan" (de Grupo Q) y "Sofia Nissan El Salvador" (del demo de Nissan).
+    // Con el cliente escrito a mano en la ruta, las fichas de los dos caían en
+    // el mismo tablero y el demo de Nissan no veía sus propios contactos. El
+    // agente sí distingue, así que el cliente sale de él; la constante queda de
+    // respaldo para los agentes que nadie declaró.
+    const tenantPanel = tenantDeAssistant(msg.call?.assistantId) ?? op.tenantFicha;
+
     // Primero la ficha, y a propósito ANTES del corte por "nada que recordar":
     // el contacto se crea aunque la llamada no haya dejado dato alguno.
-    if (op.tenantFicha)
-      await crearOActualizarFicha(op.tenantFicha, telefono, extracto, op.nota ?? notaDeLlamada);
+    if (tenantPanel) await crearOActualizarFicha(tenantPanel, telefono, extracto, op.nota ?? notaDeLlamada);
 
     // La plantilla va ANTES del corte por "nada que recordar" y en su propio
     // try: una llamada donde solo se aceptó el WhatsApp no deja dato que
     // guardar, y es justo la que hay que seguir por escrito.
     let plantilla: string | undefined;
-    if (op.plantillaAlColgar && op.tenantFicha) {
+    if (op.plantillaAlColgar && tenantPanel) {
       try {
-        plantilla = await mandarPlantillaTrasLlamada(op.tenantFicha, telefono, extracto);
+        plantilla = await mandarPlantillaTrasLlamada(tenantPanel, telefono, extracto);
       } catch (err) {
         // Nunca se rompe el webhook por esto: un 5xx haría que Vapi reintentara
         // y la persona recibiría el mismo mensaje dos veces.
         console.error(`[plantilla ${op.tenant}] no se pudo mandar:`, err);
         plantilla = "falló el envío";
+      }
+    }
+
+    // El WhatsApp que sale después, en su propio try por lo mismo: una llamada
+    // donde no se sacó ningún dato es justamente la que hay que seguir por
+    // escrito, y si el agendado falla la llamada ya pasó igual.
+    let seguimiento: string | undefined;
+    if (op.seguimientoAgendado && tenantPanel) {
+      try {
+        seguimiento = await agendarSeguimiento(tenantPanel, telefono, extracto, op.seguimientoAgendado);
+      } catch (err) {
+        console.error(`[seguimiento ${op.tenant}] no se pudo agendar:`, err);
+        seguimiento = "falló el agendado";
       }
     }
 
@@ -319,6 +412,7 @@ export async function manejarMemoria(req: Request, op: OpcionesMemoria) {
         ok: true,
         ignorado: "sin nada que recordar",
         ...(plantilla ? { plantilla } : {}),
+        ...(seguimiento ? { seguimiento } : {}),
         ...(anotado ? { anotado } : {}),
       });
 
@@ -332,6 +426,7 @@ export async function manejarMemoria(req: Request, op: OpcionesMemoria) {
         guardado: r.ok,
         donde: r.donde,
         ...(plantilla ? { plantilla } : {}),
+        ...(seguimiento ? { seguimiento } : {}),
         ...(anotado ? { anotado } : {}),
         ...(r.error ? { error: r.error } : {}),
       });

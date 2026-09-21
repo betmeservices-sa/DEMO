@@ -78,6 +78,30 @@ export function esDelTenant(assistantId: string | null | undefined, tenant: Tena
 }
 
 /** true si al tenant le corresponde el módulo (agencia o con agente propio). */
+/**
+ * De qué cliente es un agente, o null si no lo declara nadie.
+ *
+ * Es la vuelta de `assistantIdsDeTenant`, y existe para que quien recibe un
+ * webhook de Vapi (que solo trae el assistantId) pueda hablar como el cliente
+ * correcto. Sin esto hay que escribir el nombre a mano, y el día que un
+ * segundo cliente use el mismo endpoint se presenta con la marca del primero:
+ * exactamente lo que pasaba en el callback, que saludaba "Sofía de CrediQ" a
+ * quien venía preguntando por un carro.
+ *
+ * Un agente declarado por DOS clientes devuelve el primero que lo declare, y
+ * eso ya no alcanza: además del saludo, de esto sale en qué tablero cae la
+ * ficha del contacto (lib/memoria-webhook.ts). Por eso Nissan tiene agente
+ * propio en vez de compartir el de Grupo Q. Si un día vuelve a declararse uno
+ * en dos lados, lo que hay que arreglar es la declaración, no esta función.
+ */
+export function tenantDeAssistant(assistantId: string | null | undefined): TenantId | null {
+  if (!assistantId) return null;
+  for (const id of Object.keys(TENANTS) as TenantId[]) {
+    if (assistantIdsDeTenant(id).includes(assistantId)) return id;
+  }
+  return null;
+}
+
 export function veModuloVoz(tenant: TenantId): boolean {
   return esAgencia(tenant) || assistantIdsDeTenant(tenant).length > 0;
 }
