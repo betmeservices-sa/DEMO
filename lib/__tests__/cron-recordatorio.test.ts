@@ -18,8 +18,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/supabase", () => ({ getSupabase: () => null }));
 
 const enviadas: { to: string; name: string; variables: string[] }[] = [];
+const SIN_NUMERO = "Este cliente no tiene un número de WhatsApp conectado.";
+/** Lo que contesta Meta en la próxima llamada. `null` = salió bien. */
+let falla: string | null = null;
 vi.mock("@/lib/wa-send", () => ({
+  SIN_NUMERO,
   enviarPlantilla: async (to: string, name: string, _idioma: string, variables: string[]) => {
+    if (falla) return { ok: false, error: falla };
     enviadas.push({ to, name, variables });
     return { ok: true, id: `wamid.${enviadas.length}` };
   },
@@ -50,6 +55,7 @@ const citaVencida = (tel = TEL) => agendarRecordatorio("grupoq", tel, -1);
 
 beforeEach(async () => {
   enviadas.length = 0;
+  falla = null;
   process.env.CRON_SECRET = SECRETO;
   const g = globalThis as unknown as { __wa?: unknown };
   g.__wa = undefined;
@@ -289,5 +295,44 @@ describe("cuando el mensaje viene en la cita", () => {
       "crediq_continuar_solicitud",
       "nissan_seguimiento_llamada",
     ]);
+  });
+});
+
+// ── Cuando Meta dice que no ──
+//
+// Los dos "no" se parecen en el JSON y no se parecen en nada más: uno se pasa
+// solo y el otro no se pasa nunca.
+describe("qué se reintenta y qué no", () => {
+  it("el cliente SIN NÚMERO conectado cierra la cita: reintentar no lo arregla", async () => {
+    // Y cada reintento despierta a Vercel, que es lo que esta cola vino a
+    // evitar: seis horas de esto son 360 invocaciones por una llamada.
+    falla = SIN_NUMERO;
+    await agendarRecordatorio("nissan", "50370020003", -1, "plantilla", {
+      plantilla: "nissan_seguimiento_llamada",
+      idioma: "es",
+      variables: ["Ana", "X-Trail"],
+      texto: "Hola Ana.",
+    });
+
+    const d = (await (await pedir()).json()) as { enviados: number; errores: number };
+    expect(d.enviados).toBe(0);
+    expect(d.errores, "no es un error nuestro, es configuración").toBe(0);
+    expect(await citasVencidas(undefined, new Date()), "quedó abierta").toHaveLength(0);
+  });
+
+  it("un fallo cualquiera de Meta DEJA la cita viva para el siguiente intento", async () => {
+    falla = "(#131047) Re-engagement message";
+    await citaVencida();
+    await addOutbound({
+      waId: "wamid.req",
+      to: TEL,
+      texto: REQUISITOS.texto("Karla"),
+      ts: haceMin(6),
+      tenant: "grupoq",
+    });
+
+    const d = (await (await pedir()).json()) as { errores: number };
+    expect(d.errores).toBe(1);
+    expect(await citasVencidas("grupoq", new Date()), "se cerró y no debía").toHaveLength(1);
   });
 });

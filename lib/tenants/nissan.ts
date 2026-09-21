@@ -157,7 +157,11 @@ export const nissanTenant: TenantConfig = {
     {
       name: "nissan_seguimiento_llamada",
       language: "es",
-      category: "UTILITY",
+      // MARKETING porque así la reclasificó Meta al enviarla: ofrecer fotos,
+      // precios y una prueba de manejo es promoción aunque salga de una llamada
+      // que pidió la persona. Se acepta a propósito (allow_category_change): la
+      // alternativa era el rechazo.
+      category: "MARKETING",
       status: "APPROVED",
       components: [
         {

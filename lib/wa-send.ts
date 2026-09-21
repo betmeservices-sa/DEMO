@@ -14,7 +14,14 @@ export interface OpcionesEnvio {
   tenant?: string;
 }
 
-const SIN_NUMERO = "Este cliente no tiene un número de WhatsApp conectado.";
+/**
+ * El "no" de configuración, no de red.
+ *
+ * Se exporta porque quien reintenta necesita distinguirlo: un 500 de Meta se
+ * reintenta y se resuelve solo; esto no se resuelve nunca hasta que alguien
+ * conecte un número, y reintentarlo cada minuto es puro gasto.
+ */
+export const SIN_NUMERO = "Este cliente no tiene un número de WhatsApp conectado.";
 
 export async function enviarTextoWa(
   to: string,

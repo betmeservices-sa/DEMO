@@ -36,7 +36,7 @@ import { getContacto } from "@/lib/contacts-store";
 import { normalizarTelefono } from "@/lib/memoria-llamadas";
 import { normalizarDestinoSV } from "@/lib/phone";
 import { decidirRecordatorio } from "@/lib/plantilla-tras-llamada";
-import { enviarPlantilla } from "@/lib/wa-send";
+import { SIN_NUMERO, enviarPlantilla } from "@/lib/wa-send";
 import { encenderIaSiNadieDecidio } from "@/lib/ai-store";
 import { addOutbound, mensajesAnteriores } from "@/lib/wa-store";
 import { cerrarCita, citasVencidas, type CitaRecordatorio } from "@/lib/recordatorios-agenda";
@@ -210,6 +210,15 @@ export async function GET(req: Request) {
         tenant,
       });
       if (!env.ok) {
+        // Que el cliente no tenga número conectado NO es un fallo pasajero: es
+        // configuración, y reintentar cada minuto durante seis horas no la
+        // arregla. Peor: cada reintento despierta a Vercel, que es justo lo que
+        // esta cola vino a evitar. Se cierra y queda dicho en el resultado.
+        if (env.error === SIN_NUMERO) {
+          saltar("el cliente no tiene número de WhatsApp conectado");
+          await cerrarCita(tenant, cita.id, "no: sin número conectado");
+          continue;
+        }
         errores++;
         console.error(`[recordatorio] ${tenant} ${telefono}: ${env.error}`);
         // NO se cierra: un fallo de Meta puede ser pasajero y la siguiente
