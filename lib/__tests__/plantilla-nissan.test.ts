@@ -6,7 +6,8 @@
 
 import { describe, expect, it } from "vitest";
 import {
-  SEGUIMIENTO,
+  ACTIVA,
+  PROPIA,
   SIN_MODELO,
   comoSeLlama,
   decidirSeguimiento,
@@ -22,8 +23,8 @@ describe("a quién se le escribe", () => {
     const d = decidirSeguimiento(base);
     expect(d.enviar).toBe(true);
     if (!d.enviar) return;
-    expect(d.plantilla).toBe(SEGUIMIENTO);
-    expect(d.variables).toEqual(["Ana", "X-Trail"]);
+    expect(d.plantilla).toBe(ACTIVA.nombre);
+    expect(d.variables[0]).toBe("Ana");
     expect(d.minutos).toBe(1);
   });
 
@@ -31,7 +32,9 @@ describe("a quién se le escribe", () => {
     const d = decidirSeguimiento({ ...base, modelos: [] });
     expect(d.enviar).toBe(true);
     if (!d.enviar) return;
-    expect(d.variables[1]).toBe(SIN_MODELO);
+    // Donde el modelo entra en el cuerpo, entra como "su consulta"; donde no
+    // entra (la plantilla prestada) no aparece y tampoco estorba.
+    expect(PROPIA.variables("Ana", SIN_MODELO)[1]).toBe(SIN_MODELO);
   });
 
   it("y al que NO contestó la pregunta de si le escribimos", () => {
@@ -73,14 +76,27 @@ describe("cómo queda el mensaje", () => {
     expect(comoSeLlama([])).toBe(SIN_MODELO);
   });
 
-  it("el texto guardado es el mismo que se manda, variable por variable", () => {
+  it("el texto guardado es el mismo que se manda", () => {
     // Si estos dos se separan, el panel muestra un mensaje que la persona nunca
     // recibió, y nadie se entera hasta que alguien compara los dos teléfonos.
     const d = decidirSeguimiento(base);
     expect(d.enviar).toBe(true);
     if (!d.enviar) return;
-    expect(d.texto).toBe(textoDe(d.variables[0], d.variables[1]));
+    expect(d.texto).toBe(textoDe("Ana", "X-Trail"));
     expect(d.texto).toContain("Ana");
-    expect(d.texto).toContain("X-Trail");
+  });
+
+  it("cada plantilla llena TODAS sus variables: Meta rechaza el envío si falta una", () => {
+    for (const p of [PROPIA, ACTIVA]) {
+      const vars = p.variables("Ana", "X-Trail");
+      const pide = (p.texto("Ana", "X-Trail").match(/\{\{\d\}\}/g) ?? []).length;
+      expect(pide, `${p.nombre} dejó un {{n}} sin reemplazar`).toBe(0);
+      expect(vars.every((v) => v.trim() !== ""), `${p.nombre} manda una vacía`).toBe(true);
+    }
+  });
+
+  it("la de Nissan sigue declarada, para volver cuando Meta la apruebe", () => {
+    expect(PROPIA.nombre).toBe("nissan_seguimiento_llamada");
+    expect(PROPIA.variables("Ana", "X-Trail")).toEqual(["Ana", "X-Trail"]);
   });
 });

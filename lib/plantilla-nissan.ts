@@ -16,14 +16,69 @@
 // están escritas una por una.
 
 /**
- * Nombre de la plantilla aprobada en Meta (WABA de la demo, id 1274453414764609).
+ * Una plantilla de Meta, con su texto al lado.
  *
- * Lleva el cliente adelante como las de CrediQ: la WABA es UNA sola para todos
- * los demos, y un "seguimiento_llamada" a secas se lo queda el primero que lo
- * pida.
+ * El texto va acá y no en el que la manda porque el que se guarda en el hilo
+ * del panel tiene que ser PALABRA POR PALABRA el que Meta aprobó. Si se separan,
+ * el chat muestra un mensaje que nadie recibió y nadie se entera hasta que
+ * alguien compara los dos teléfonos.
  */
-export const SEGUIMIENTO = "nissan_seguimiento_llamada";
-export const IDIOMA = "es";
+interface Plantilla {
+  nombre: string;
+  idioma: string;
+  /** Meta rechaza el envío entero si falta una. El orden es el de los {{n}}. */
+  variables: (nombre: string, que: string) => string[];
+  texto: (nombre: string, que: string) => string;
+}
+
+/**
+ * La de Nissan. Enviada a Meta el 21 de septiembre de 2026 (id
+ * 1274453414764609) y todavía en revisión.
+ *
+ * Lleva el cliente adelante en el nombre como las de CrediQ: la WABA es UNA
+ * sola para todos los demos, y un "seguimiento_llamada" a secas se lo queda el
+ * primero que lo pida.
+ */
+export const PROPIA: Plantilla = {
+  nombre: "nissan_seguimiento_llamada",
+  idioma: "es",
+  variables: (nombre, que) => [nombre, que],
+  texto: (nombre, que) =>
+    `Hola ${nombre}, le saluda Sofía de Nissan. Gracias por su llamada: sigo por acá ` +
+    `con lo de ${que}. Con gusto le mando fotos y precios, o le agendo una prueba de ` +
+    `manejo cuando guste.`,
+};
+
+/**
+ * La prestada, que es la que sale HOY.
+ *
+ * Mientras Meta no apruebe la de arriba, el seguimiento no existe: un envío con
+ * plantilla sin aprobar devuelve "Template name does not exist in the
+ * translation" y no llega nada. Esta ya está aprobada y sale.
+ *
+ * EL TEXTO NO ES EL DE NISSAN y hay que saberlo: dice "Soy Sofia de CrediQ" y
+ * pide documentos. En el demo se va a leer fuera de lugar para quien acaba de
+ * preguntar por una X-Trail. Es a propósito y es temporal.
+ *
+ * UNA SOLA VARIABLE: el cuerpo aprobado no tiene dónde poner el modelo, así que
+ * eso se pierde hasta volver a PROPIA.
+ */
+export const PRESTADA: Plantilla = {
+  nombre: "crediq_continuar_solicitud",
+  idioma: "es",
+  variables: (nombre) => [nombre],
+  // Sin tildes y con el salto de línea a la mitad, tal como está aprobada.
+  texto: (nombre) =>
+    `Hola ${nombre}! Soy Sofia de CrediQ, le hablo continuando con su solicitud.\n\n` +
+    `Por aqui me puede enviar los documentos que le comente en la llamada. Empiece ` +
+    `por el que tenga a la mano y yo le voy diciendo cual falta.`,
+};
+
+/**
+ * La que sale. Cuando Meta apruebe la de Nissan, acá se cambia PRESTADA por
+ * PROPIA y no hay que tocar nada más.
+ */
+export const ACTIVA: Plantilla = PRESTADA;
 
 /** Minutos entre colgar y el mensaje. */
 export const ESPERA_MIN = 1;
@@ -62,7 +117,7 @@ export type Decision =
       minutos: number;
       plantilla: string;
       idioma: string;
-      variables: [string, string];
+      variables: string[];
       texto: string;
     };
 
@@ -82,19 +137,9 @@ export function comoSeLlama(modelos?: string[]): string {
   return primero;
 }
 
-/**
- * El texto que de verdad le llega.
- *
- * Es el cuerpo aprobado con las variables ya puestas, PALABRA POR PALABRA: se
- * guarda en el hilo del panel, y si acá dijera otra cosa, el chat mostraría un
- * mensaje que nadie recibió. Si se edita la plantilla en Meta, se edita acá.
- */
+/** El texto que de verdad le llega, con la plantilla que esté activa. */
 export function textoDe(nombre: string, que: string): string {
-  return (
-    `Hola ${nombre}, le saluda Sofía de Nissan. Gracias por su llamada: sigo por acá ` +
-    `con lo de ${que}. Con gusto le mando fotos y precios, o le agendo una prueba de ` +
-    `manejo cuando guste.`
-  );
+  return ACTIVA.texto(nombre, que);
 }
 
 /**
@@ -117,9 +162,9 @@ export function decidirSeguimiento(e: EntradaSeguimiento): Decision {
   return {
     enviar: true,
     minutos: ESPERA_MIN,
-    plantilla: SEGUIMIENTO,
-    idioma: IDIOMA,
-    variables: [nombre, que],
-    texto: textoDe(nombre, que),
+    plantilla: ACTIVA.nombre,
+    idioma: ACTIVA.idioma,
+    variables: ACTIVA.variables(nombre, que),
+    texto: ACTIVA.texto(nombre, que),
   };
 }
