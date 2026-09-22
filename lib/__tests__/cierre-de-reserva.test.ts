@@ -90,16 +90,41 @@ describe("quién se lleva el trato", () => {
     expect(c.cerro).toBe("persona");
   });
 
-  it("un hilo vacío no rompe", () => {
+  // El bug de las reservas de WhatsApp: el hilo no se leía, llegaba vacío y
+  // el trato se le daba a Sofía por descarte.
+  it("un hilo vacío no rompe y NO se le da a Sofía", () => {
     const c = comoSeCerro([], T(9, 10));
-    expect(c.cerro).toBe("sofia");
+    expect(c.cerro).toBe("sin_datos");
     expect(c.inicio).toBeNull();
     expect(c.mensajesAgente).toBe(0);
   });
 });
 
+describe("cuando no se sabe quién mandó", () => {
+  // WhatsApp guarda quién mandó cada saliente desde el 17 de septiembre de
+  // 2026. Antes de eso el saliente viene sin id y sin nombre.
+  const sinMarca = (ts: string) => ({ direction: "out" as const, ts, staffId: null, staffNombre: null });
+
+  it("con salientes sin marca y ninguna persona identificada, no se sabe", () => {
+    const c = comoSeCerro([huesped(T(9, 9)), sinMarca(T(9, 10)), sofia(T(9, 11))], T(9, 12));
+    expect(c.cerro).toBe("sin_datos");
+  });
+
+  it("si una persona identificada se metió, es de la persona aunque haya salientes sin marca", () => {
+    const c = comoSeCerro([huesped(T(9, 9)), sinMarca(T(9, 10)), vero(T(9, 11))], T(9, 12));
+    expect(c.cerro).toBe("persona");
+  });
+
+  it("'Equipo' sin id (desde la app de Facebook) es una persona", () => {
+    const equipo = { direction: "out" as const, ts: T(9, 10), staffId: null, staffNombre: "Equipo" };
+    const c = comoSeCerro([huesped(T(9, 9)), sofia(T(9, 9, 30)), equipo], T(9, 12));
+    expect(c.cerro).toBe("persona");
+    expect(c.persona).toBe("Equipo");
+  });
+});
+
 describe("el titular", () => {
-  const cierre = (cerro: "sofia" | "persona", persona: string | null, minutos: number | null) => ({
+  const cierre = (cerro: "sofia" | "persona" | "sin_datos", persona: string | null, minutos: number | null) => ({
     inicio: T(9, 9),
     pasoAPersona: persona ? T(9, 10) : null,
     persona,
@@ -134,6 +159,13 @@ describe("el titular", () => {
 
   it("la mediana de lo que tarda un trato", () => {
     expect(resumirCierres(reservas).medianaMinutos).toBe(120);
+  });
+
+  it("las que no se sabe se cuentan aparte, no se reparten", () => {
+    const r = resumirCierres([...reservas, { total: 80, cierre: cierre("sin_datos", null, null) }]);
+    expect(r.total).toBe(5);
+    expect(r.sofia).toEqual({ n: 1, total: 65 });
+    expect(r.sinDatos).toEqual({ n: 1, total: 80 });
   });
 
   it("sin reservas no inventa nada", () => {

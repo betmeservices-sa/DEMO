@@ -32,7 +32,14 @@ export interface MensajeDelHilo {
 
 export const ID_AGENTE = "ia";
 
-export type Cerro = "sofia" | "persona";
+/**
+ * "sin_datos" = no hay con qué decirlo: la reserva no tiene chat que leer, o
+ * los mensajes del hotel no dicen quién los mandó (WhatsApp antes del 17 de
+ * septiembre de 2026). Antes eso caía en "sofia" por descarte, y las 21
+ * reservas de WhatsApp de un mes salían como cerradas por el agente sin que se
+ * hubiera leído un solo mensaje.
+ */
+export type Cerro = "sofia" | "persona" | "sin_datos";
 
 export interface Cierre {
   /** Cuándo arrancó la tanda que terminó en la reserva. */
@@ -98,8 +105,14 @@ export function tandaDelCierre<T extends MensajeDelHilo>(mensajes: readonly T[],
 export function comoSeCerro(mensajes: MensajeDelHilo[], confirmadaTs?: string | null): Cierre {
   const tanda = tandaDelCierre(mensajes, confirmadaTs);
   const salientes = tanda.filter((m) => m.direction === "out");
-  const dePersona = salientes.filter((m) => m.staffId && m.staffId !== ID_AGENTE);
+  // Una persona es cualquier saliente que no sea del agente y diga quién lo
+  // mandó: por id, o solo por nombre ("Equipo" = desde la app de Facebook).
+  const dePersona = salientes.filter(
+    (m) => m.staffId !== ID_AGENTE && (m.staffId || m.staffNombre?.trim()),
+  );
   const delAgente = salientes.filter((m) => m.staffId === ID_AGENTE);
+  // Salientes que no dicen quién los mandó: pudo ser cualquiera.
+  const sinMarca = salientes.filter((m) => !m.staffId && !m.staffNombre?.trim());
 
   const primera = dePersona[0] ?? null;
   const inicio = tanda[0]?.ts ?? null;
@@ -109,8 +122,14 @@ export function comoSeCerro(mensajes: MensajeDelHilo[], confirmadaTs?: string | 
     pasoAPersona: primera?.ts ?? null,
     persona: primera?.staffNombre?.trim() || null,
     // Si nadie del hotel escribió antes del cierre, el trato lo hizo Sofía,
-    // aunque después alguien le diera al botón de confirmar.
-    cerro: dePersona.length > 0 ? "persona" : "sofia",
+    // aunque después alguien le diera al botón de confirmar. Pero solo si se
+    // puede afirmar: sin hilo, o con salientes sin marca, no se sabe.
+    cerro:
+      dePersona.length > 0
+        ? "persona"
+        : tanda.length === 0 || sinMarca.length > 0
+          ? "sin_datos"
+          : "sofia",
     mensajesAgente: delAgente.length,
     mensajesPersona: dePersona.length,
     minutosTotales: entre(inicio, confirmadaTs),
@@ -123,6 +142,8 @@ export interface ResumenCierres {
   /** Cuántas cerró el agente sin que nadie se metiera, y cuánto dinero. */
   sofia: { n: number; total: number };
   persona: { n: number; total: number };
+  /** Las que no se puede decir quién cerró. Se cuentan, no se reparten. */
+  sinDatos: { n: number; total: number };
   /** Quiénes cerraron, de la que más cerró a la que menos. */
   porPersona: { nombre: string; n: number; total: number }[];
   /** La mediana de lo que tarda un trato en cerrarse, en minutos. */
@@ -157,6 +178,7 @@ export function resumirCierres(reservas: readonly ReservaConCierre[]): ResumenCi
     total: reservas.length,
     sofia: suma(reservas.filter((r) => r.cierre.cerro === "sofia")),
     persona: suma(reservas.filter((r) => r.cierre.cerro === "persona")),
+    sinDatos: suma(reservas.filter((r) => r.cierre.cerro === "sin_datos")),
     porPersona: [...porNombre.entries()]
       .map(([nombre, rs]) => ({ nombre, ...suma(rs) }))
       .sort((a, b) => b.n - a.n || b.total - a.total),

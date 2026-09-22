@@ -47,7 +47,8 @@ interface Cierre {
   inicio: string | null;
   pasoAPersona: string | null;
   persona: string | null;
-  cerro: "sofia" | "persona";
+  /** "sin_datos": no hay chat, o sus mensajes no dicen quién los mandó. */
+  cerro: "sofia" | "persona" | "sin_datos";
   mensajesAgente: number;
   mensajesPersona: number;
   minutosTotales: number | null;
@@ -74,6 +75,7 @@ interface Cierres {
     total: number;
     sofia: { n: number; total: number };
     persona: { n: number; total: number };
+    sinDatos: { n: number; total: number };
     porPersona: { nombre: string; n: number; total: number }[];
     medianaMinutos: number | null;
   };
@@ -854,6 +856,13 @@ function ComoSeCerraron({
             </div>
           </div>
 
+          {resumen.sinDatos.n > 0 && (
+            <p className="mt-3 text-[12px] text-[var(--text-3)]">
+              {resumen.sinDatos.n} ({dinero(resumen.sinDatos.total)}) sin datos para saber quién cerró: sin chat, o de
+              WhatsApp antes del 17 de septiembre, cuando no se guardaba quién mandaba cada mensaje.
+            </p>
+          )}
+
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-[12.5px]">
               <thead className="text-[11px] uppercase tracking-wide text-[var(--text-3)]">
@@ -895,6 +904,8 @@ function ComoSeCerraron({
                               ` · a los ${duracion(c.cierre.minutosHastaPersona)}`}
                           </span>
                         </>
+                      ) : c.cierre.cerro === "sin_datos" ? (
+                        <span className="text-[var(--text-3)]">sin datos</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 font-semibold text-brand">
                           <Bot size={12} /> nunca
