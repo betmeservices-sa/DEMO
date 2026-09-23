@@ -78,7 +78,9 @@ export const betmeTenant: TenantConfig = {
   ],
   seed: betmeSeed,
   simulacion: betmeSimulacion,
-  ai: { systemPrompt: SYSTEM_PROMPT, nombre: "Sara" },
+  // Número real de BetMe: los candidatos los atiende una persona hasta que el
+  // cliente apruebe al agente.
+  ai: { systemPrompt: SYSTEM_PROMPT, nombre: "Sara", respondeSolo: false },
   dashboard: [
     { label: "Conversaciones hoy", icon: "MessageSquare", kind: "metric", metricLabel: "Conversaciones hoy", fallback: 0 },
     { label: "Tiempo de respuesta", icon: "Clock", kind: "metric", metricLabel: "Tiempo de respuesta", fallback: "6 min" },

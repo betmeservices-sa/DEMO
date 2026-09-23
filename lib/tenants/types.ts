@@ -199,6 +199,11 @@ export interface TenantAi {
   // Tope DURO de mensajes que el agente manda en una conversación. Al llegar,
   // se envía un cierre y el chat pasa a una persona. Default: LIMITE_MENSAJES_IA_DEFAULT.
   limiteMensajes?: number;
+  // false = el agente no contesta solo por WhatsApp aunque el interruptor
+  // global esté encendido: los mensajes llegan y los atiende una persona.
+  // Para clientes con número real que todavía no aprobaron al agente.
+  // Default: true.
+  respondeSolo?: boolean;
   // Si el agente puede VER las imágenes que le mandan por WhatsApp. Cuesta
   // tokens de entrada, y el guion del tenant tiene que decirlo (los guiones que
   // hoy dicen "no puedo abrir archivos" seguirían mintiendo). Default: false.
