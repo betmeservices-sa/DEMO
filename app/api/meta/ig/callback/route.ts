@@ -42,11 +42,17 @@ export async function GET(req: Request) {
   const code = url.searchParams.get("code");
   if (!code) return volver("meta=error&motivo=sin-codigo");
 
+  // En qué paso se cayó: Meta devuelve el mismo error genérico en varios.
+  let paso = "codigo";
   try {
     const corto = await intercambiarCodigoIg(code, redirectUriIg(req.url));
+    paso = "token-largo";
     const largo = await tokenLargoIg(corto.token);
+    paso = "perfil";
     const perfil = await perfilIg(largo.token);
+    paso = "webhooks";
     const campos = await suscribirIg(perfil.igId, largo.token);
+    paso = "guardar";
     const donde = await guardarLoginIg(v.tenant, {
       igId: perfil.igId,
       igUsername: perfil.username,
@@ -64,7 +70,7 @@ export async function GET(req: Request) {
     return volver(p.toString());
   } catch (e) {
     const motivo = e instanceof Error ? e.message : "desconocido";
-    console.error("[ig-login] callback falló:", motivo);
+    console.error(`[ig-login] callback falló en ${paso}:`, motivo);
     return volver(`meta=error&motivo=${encodeURIComponent(motivo)}`);
   }
 }
