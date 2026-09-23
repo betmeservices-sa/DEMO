@@ -99,7 +99,7 @@ export default function SettingsPage() {
   const [metaPlist, setMetaPlist] = useState<string | null>(null);
   const [metaPerror, setMetaPerror] = useState<string | null>(null);
   const [metaNombres, setMetaNombres] = useState<string | null>(null);
-  // Páginas que se rechazaron por ser de otro cliente.
+  const [metaCuentaIg, setMetaCuentaIg] = useState<string | null>(null);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     setMetaEstado(p.get("meta"));
@@ -108,6 +108,7 @@ export default function SettingsPage() {
     setMetaPlist(p.get("plist"));
     setMetaPerror(p.get("perror"));
     setMetaNombres(p.get("nombres"));
+    setMetaCuentaIg(p.get("cuenta"));
   }, []);
 
   // Estado PERMANENTE de la conexión (qué páginas tiene conectadas el tenant),
@@ -374,6 +375,12 @@ export default function SettingsPage() {
             <p className="mt-3 flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-[12.5px] font-medium text-[#2f9e2f] ring-1 ring-[#00c040]/30">
               <CheckCircle2 size={14} />
               Páginas conectadas: {metaNombres ?? metaDetalle}
+            </p>
+          )}
+          {metaEstado === "ig-conectado" && (
+            <p className="mt-3 flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-[12.5px] font-medium text-[#2f9e2f] ring-1 ring-[#00c040]/30">
+              <CheckCircle2 size={14} />
+              Instagram conectado: @{metaCuentaIg}
             </p>
           )}
           {metaEstado === "conectado" && metaDetalle === "0" && (
