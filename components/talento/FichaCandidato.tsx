@@ -10,7 +10,6 @@ import {
   Languages,
   MapPin,
   MessageCircle,
-  Mic,
   Plus,
   Wallet,
   Clock,
@@ -38,6 +37,8 @@ import { fechaCortaSv, haceSv, horaSv } from "@/lib/talento/fechas";
 import { despachar } from "@/lib/talento/store";
 import { idNuevo } from "@/lib/talento/operaciones";
 import type { Candidato, EstadoTalento, Etapa } from "@/lib/talento/tipos";
+import { AudioPresentacion } from "./AudioPresentacion";
+import { DecisionCandidato } from "./DecisionCandidato";
 import { Boton, EtapaPill, INPUT, ScoreBadge, SkillChip, nombreStaff } from "./ui";
 
 type Pestana = "cv" | "proceso" | "conversaciones" | "notas";
@@ -128,7 +129,7 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
           <p className="text-[13px] font-semibold text-[var(--brand-accent)]">{c.titular}</p>
           <p className="mt-1 text-[12px] text-[var(--text-3)]">
             {c.telefono} · {c.correo} · {nombreFuente(c.fuente)}
-            {c.referidoPor ? ` (${c.referidoPor})` : ""} · {haceSv(c.creado)}
+            {c.referidoPor ? ` (${c.referidoPor})` : ""} · ingresó {fechaCortaSv(c.creado)} ({haceSv(c.creado)})
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -141,6 +142,8 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
             </Boton>
           )}
         </div>
+        <AudioPresentacion key={`a-${c.id}`} c={c} />
+        <DecisionCandidato key={`d-${c.id}-${c.decision?.ts ?? "p"}`} c={c} estado={estado} />
         <div className="flex gap-1">
           {(
             [
@@ -185,7 +188,6 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
                 valor={c.disc ? `${c.disc.primario}${c.disc.secundario ? `/${c.disc.secundario}` : ""} (${DISC.find((d) => d.id === c.disc!.primario)?.nombre})` : "Sin evaluar"}
               />
               <Dato Icon={GraduationCap} label="Educación" valor={c.educacion} />
-              <Dato Icon={Mic} label="Grabación en inglés" valor={c.grabacion ? "Recibida (60 s)" : "Pendiente"} />
             </div>
             <div>
               <p className="mb-2 text-[11.5px] font-bold text-[var(--text-2)]">Skills</p>

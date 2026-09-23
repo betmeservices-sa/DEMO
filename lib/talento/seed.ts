@@ -29,7 +29,7 @@ import type {
   Vacante,
 } from "./tipos";
 
-export const VERSION_TALENTO = 1;
+export const VERSION_TALENTO = 2;
 
 // El equipo de talento de BetMe (ids del staff del tenant).
 export const EQUIPO = {
@@ -58,8 +58,11 @@ interface FilaCandidato {
   disc?: [Disc, Disc?];
   fuente: Fuente;
   referido?: string;
+  /** Mando su grabacion de 60 s (link de Vocaroo). */
   grabacion: boolean;
   hace: number;
+  /** Entro hace pocas horas: gana sobre `hace`, para que el demo tenga "nuevos". */
+  horas?: number;
   educacion: string;
   exp: Experiencia[];
   resumen: string;
@@ -383,7 +386,7 @@ const FILAS: FilaCandidato[] = [
     id: "c33", nombre: "Ana Belén Durán", tel: "+506 8810 5533", pais: "CR",
     titular: "Operations Coordinator", anios: 4,
     skills: ["proyectos", "clickup", "workspace", "atencion_cliente", "redaccion_en"], ingles: "C1", pretension: 1300,
-    jornada: "completo", horarios: ["central", "pacifico"], disp: "1_mes", disc: ["C", "S"], fuente: "linkedin", grabacion: true, hace: 6,
+    jornada: "completo", horarios: ["central", "pacifico"], disp: "1_mes", disc: ["C", "S"], fuente: "linkedin", grabacion: true, hace: 0, horas: 4,
     educacion: "Administración de Negocios, Universidad de Costa Rica",
     exp: [{ puesto: "Operations Coordinator", empresa: "Empresa de software en Colorado", desde: "2022-01" }],
     resumen: "Procesos, tableros y comunicación con equipos en tres zonas horarias.",
@@ -392,7 +395,7 @@ const FILAS: FilaCandidato[] = [
     id: "c34", nombre: "Kathya Guevara", tel: "+503 7410 2234", pais: "SV", dep: "San Salvador", mun: "San Salvador",
     titular: "Social Media & Email Marketing", anios: 4,
     skills: ["redes", "canva", "email_marketing", "crm_ghl", "ia", "workspace", "atencion_cliente"], ingles: "C1", pretension: 900,
-    jornada: "completo", horarios: ["central", "este"], disp: "2_semanas", disc: ["I", "S"], fuente: "carreras", grabacion: true, hace: 2,
+    jornada: "completo", horarios: ["central", "este"], disp: "2_semanas", disc: ["I", "S"], fuente: "carreras", grabacion: true, hace: 0, horas: 18,
     educacion: "Licenciatura en Comunicaciones, UCA",
     exp: [{ puesto: "Marketing Coordinator (remoto)", empresa: "Consultorio de ortodoncia en Texas", desde: "2022-09", descripcion: "Contenido, campañas en GoHighLevel y respuesta a pacientes." }],
     resumen: "Ya trabajó con una clínica dental de Texas: sabe qué contenido llena la agenda.",
@@ -416,6 +419,18 @@ const FILAS: FilaCandidato[] = [
     resumen: "Medio tiempo por las tardes. Facturación y conciliaciones.",
   },
 ];
+
+// Ids de ejemplo con las dos formas del link que manda el formulario. Son de
+// muestra: el reproductor carga, pero la grabacion no existe en Vocaroo.
+const VOCAROO = [
+  "1hQeB7vFzK2m", "12nYt6RzLx4W", "1cPa8Wq3JmVd", "1kR5sTz9HbNe", "1vG2yLp7QwXa", "1mD4fJ8sKtRc",
+  "1zX6nB3qWpLe", "1aT9hM2vCyFk", "1sW7eK4rNdGb", "1fL3pZ8xVmQh", "1bJ5cY6tRnWs", "1eN8gH2kPzTd",
+  "1qV4mX7wLcBa", "1rK9dF3sGyUe", "1uP2zT6bMhWn", "1wC5jQ8vNrKf", "1xH7aL4eSdPm", "1yB3tR9gFkZc",
+  "1gM6wD2hQnVb", "1iS8kE5pXtLa", "1jF4rN7cWyGd", "1lZ9vB3mHsQe", "1nT2qK6dPwRf", "1oG5hX8jLbMc",
+  "1pW7cS4fVkNa", "1tR3mJ9eQzHd", "1dY6bP2wKsGe", "1hL8nF5tXrBc",
+];
+const linkDemo = (i: number) =>
+  i % 2 ? `https://voca.ro/${VOCAROO[i % VOCAROO.length]}` : `https://vocaroo.com/${VOCAROO[i % VOCAROO.length]}`;
 
 function correoDe(nombre: string): string {
   const base = nombre
@@ -559,7 +574,7 @@ export function sembrarTalento(ahora: Date = new Date()): EstadoTalento {
   const hoy = diaSv(ahora);
   const hace = (n: number, hora = 10, minuto = 0) => isoDesdeSv(sumarDias(hoy, -n), hora, minuto);
 
-  const candidatos: Candidato[] = FILAS.map((f) => ({
+  const candidatos: Candidato[] = FILAS.map((f, i) => ({
     id: f.id,
     nombre: f.nombre,
     telefono: f.tel,
@@ -580,8 +595,8 @@ export function sembrarTalento(ahora: Date = new Date()): EstadoTalento {
     disc: f.disc ? { primario: f.disc[0], secundario: f.disc[1] } : undefined,
     fuente: f.fuente,
     referidoPor: f.referido,
-    grabacion: f.grabacion,
-    creado: hace(f.hace, 9),
+    audioUrl: f.grabacion ? linkDemo(i) : undefined,
+    creado: f.horas !== undefined ? new Date(ahora.getTime() - f.horas * 3600_000).toISOString() : hace(f.hace, 9),
     notas: [],
   }));
 
@@ -620,6 +635,24 @@ export function sembrarTalento(ahora: Date = new Date()): EstadoTalento {
     motivoDescarte: motivo,
     creada: hace(pasos[0][1], 9),
   }));
+
+  // Las decisiones que ya se tomaron: quien paso de Nuevo en alguna vacante
+  // fue aprobado el dia que lo filtraron; quien quedo descartado en todas,
+  // rechazado con su motivo. El resto (banco o solo en Nuevo) espera revision.
+  for (const c of candidatos) {
+    const suyas = postulaciones.filter((p) => p.candidatoId === c.id);
+    if (suyas.length === 0) continue;
+    const avanzo = suyas
+      .map((p) => p.historial.find((h) => h.etapa !== "nuevo" && h.etapa !== "descartado"))
+      .filter((h): h is { etapa: Etapa; ts: string } => Boolean(h))
+      .sort((a, b) => a.ts.localeCompare(b.ts))[0];
+    if (avanzo) {
+      c.decision = { resultado: "aprobado", por: EQUIPO.josue, ts: avanzo.ts, movimientos: [] };
+    } else if (suyas.every((p) => p.etapa === "descartado")) {
+      const p = suyas[0];
+      c.decision = { resultado: "rechazado", por: EQUIPO.josue, ts: p.historial.at(-1)!.ts, motivo: p.motivoDescarte, movimientos: [] };
+    }
+  }
 
   const entrevistas: Entrevista[] = ENTREVISTAS.map(
     ([id, postulacionId, tipo, entrevistador, dia, hora, minuto, modalidad, estado, puntos, recomendacion, comentario]) => {

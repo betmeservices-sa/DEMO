@@ -25,9 +25,27 @@ import { despachar, useTalento } from "@/lib/talento/store";
 import type { Candidato, Disponibilidad, Fuente, Horario, Jornada, NivelIngles, Pais } from "@/lib/talento/tipos";
 import { Boton, Campo, Capa, Encabezado, INPUT, Pastillas, ScoreBadge, Seccion, SkillChip, useSoloBetme } from "@/components/talento/ui";
 import { FichaCandidato } from "@/components/talento/FichaCandidato";
+import { esNuevo, ordenarPerfiles, pasaFecha, type FiltroFecha, type OrdenPerfiles } from "@/lib/talento/perfiles";
+import { vocarooId } from "@/lib/talento/audio";
+import { diaSv, fechaCortaSv, sumarDias } from "@/lib/talento/fechas";
 import { BarraComparar, BotonComparar } from "@/components/talento/Comparar";
 
-type Filtro = "todos" | "disponibles" | "en_proceso" | "colocados";
+type Filtro = "todos" | "pendientes" | "disponibles" | "en_proceso" | "colocados";
+
+const ORDENES: { valor: OrdenPerfiles; etiqueta: string }[] = [
+  { valor: "recientes", etiqueta: "Más recientes" },
+  { valor: "antiguos", etiqueta: "Más antiguos" },
+  { valor: "nombre", etiqueta: "Nombre" },
+  { valor: "match", etiqueta: "Mejor match" },
+];
+
+const FECHAS: { valor: FiltroFecha["tipo"]; etiqueta: string }[] = [
+  { valor: "todos", etiqueta: "Cualquier fecha" },
+  { valor: "hoy", etiqueta: "Hoy" },
+  { valor: "7", etiqueta: "Últimos 7 días" },
+  { valor: "30", etiqueta: "Últimos 30 días" },
+  { valor: "rango", etiqueta: "Rango de fechas" },
+];
 
 export default function PerfilesPage() {
   const es = useSoloBetme();
@@ -36,6 +54,8 @@ export default function PerfilesPage() {
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [inglesMin, setInglesMin] = useState<string>("");
   const [skill, setSkill] = useState<string>("");
+  const [orden, setOrden] = useState<OrdenPerfiles>("recientes");
+  const [fecha, setFecha] = useState<FiltroFecha>({ tipo: "todos" });
   const [fichaId, setFichaId] = useState<string | null>(null);
   const [agregando, setAgregando] = useState(false);
 
@@ -47,8 +67,10 @@ export default function PerfilesPage() {
     );
     const abiertas = estado.vacantes.filter((v) => v.estado === "abierta");
     const t = q.trim().toLowerCase();
-    return estado.candidatos
+    const filtrados = estado.candidatos
       .filter((c) => {
+        if (filtro === "pendientes" && c.decision) return false;
+        if (!pasaFecha(c, fecha)) return false;
         if (filtro === "colocados" && !col.has(c.id)) return false;
         if (filtro === "en_proceso" && !enProceso.has(c.id)) return false;
         if (filtro === "disponibles" && (col.has(c.id) || enProceso.has(c.id))) return false;
@@ -64,10 +86,10 @@ export default function PerfilesPage() {
         const mejor = abiertas
           .map((v) => ({ v, score: calcularMatch(c, v.requisitos).score }))
           .sort((a, b) => b.score - a.score)[0];
-        return { c, mejor, colocado: col.has(c.id), enProceso: enProceso.has(c.id) };
-      })
-      .sort((a, b) => b.c.creado.localeCompare(a.c.creado));
-  }, [estado, q, filtro, inglesMin, skill]);
+        return { c, mejor, match: mejor?.score, colocado: col.has(c.id), enProceso: enProceso.has(c.id) };
+      });
+    return ordenarPerfiles(filtrados, orden);
+  }, [estado, q, filtro, inglesMin, skill, orden, fecha]);
 
   if (!es) return <div className="flex-1 bg-surface" />;
   if (!estado) return <div className="flex-1 animate-pulse bg-surface" />;
@@ -90,6 +112,7 @@ export default function PerfilesPage() {
         <Pastillas
           opciones={[
             { id: "todos", nombre: "Todos" },
+            { id: "pendientes", nombre: "Pendientes de revisión" },
             { id: "disponibles", nombre: "Disponibles" },
             { id: "en_proceso", nombre: "En proceso" },
             { id: "colocados", nombre: "Colocados" },
@@ -111,6 +134,21 @@ export default function PerfilesPage() {
           etiquetaAria="Skill"
           className="w-48"
         />
+        <Desplegable
+          valor={fecha.tipo}
+          opciones={FECHAS}
+          onChange={(v) => setFecha(v === "rango" ? { tipo: "rango", desde: sumarDias(diaSv(new Date()), -13), hasta: diaSv(new Date()) } : ({ tipo: v } as FiltroFecha))}
+          etiquetaAria="Fecha de ingreso"
+          className="w-44"
+        />
+        {fecha.tipo === "rango" && (
+          <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-3)]">
+            <input type="date" aria-label="Desde" className={cn(INPUT, "w-36")} value={fecha.desde ?? ""} onChange={(e) => setFecha({ ...fecha, desde: e.target.value || undefined })} />
+            <span>a</span>
+            <input type="date" aria-label="Hasta" className={cn(INPUT, "w-36")} value={fecha.hasta ?? ""} onChange={(e) => setFecha({ ...fecha, hasta: e.target.value || undefined })} />
+          </div>
+        )}
+        <Desplegable valor={orden} opciones={ORDENES} onChange={(v) => setOrden(v as OrdenPerfiles)} etiquetaAria="Orden" className="ml-auto w-44" />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-24">
@@ -129,7 +167,10 @@ export default function PerfilesPage() {
               <div className="flex items-start gap-3">
                 <Avatar iniciales={inicialesDe(c.nombre)} size={40} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-bold text-[var(--text)]">{c.nombre}</p>
+                  <p className="flex items-center gap-1.5 truncate text-[14px] font-bold text-[var(--text)]">
+                    {esNuevo(c) && <span data-nuevo className="h-2 w-2 shrink-0 rounded-full bg-[var(--brand-accent)]" title="Entró en las últimas 24 horas" />}
+                    <span className="truncate">{c.nombre}</span>
+                  </p>
                   <p className="truncate text-[12.5px] font-semibold text-[var(--brand-accent)]">{c.titular}</p>
                   <p className="truncate text-[11.5px] text-[var(--text-3)]">
                     {c.ubicacion.departamento ?? nombrePais(c.ubicacion.pais)} · Inglés {c.ingles} · {c.aniosExperiencia} años · ${c.pretension}
@@ -137,7 +178,7 @@ export default function PerfilesPage() {
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
                   <BotonComparar id={c.id} />
-                  {c.grabacion && <Mic size={14} className="text-[var(--text-3)]" aria-label="Grabación en inglés recibida" />}
+                  {c.audioUrl && <Mic size={14} className="text-[var(--text-3)]" aria-label="Tiene audio de presentación" />}
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-1">
@@ -147,13 +188,22 @@ export default function PerfilesPage() {
                 {c.skills.length > 5 && <span className="px-1 text-[11px] text-[var(--text-3)]">+{c.skills.length - 5}</span>}
               </div>
               <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-2.5 text-[11.5px]">
-                <span
-                  className={cn(
-                    "font-semibold",
-                    colocado ? "text-[var(--brand-green)]" : enProceso ? "text-[var(--brand-accent)]" : "text-[var(--text-3)]",
-                  )}
-                >
-                  {colocado ? "Colocado" : enProceso ? "En proceso" : "Disponible"}
+                <span className="min-w-0 truncate">
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      c.decision?.resultado === "rechazado"
+                        ? "text-[var(--brand-red)]"
+                        : colocado
+                          ? "text-[var(--brand-green)]"
+                          : enProceso
+                            ? "text-[var(--brand-accent)]"
+                            : "text-[var(--text-3)]",
+                    )}
+                  >
+                    {c.decision?.resultado === "rechazado" ? "Rechazado" : colocado ? "Colocado" : enProceso ? "En proceso" : "Disponible"}
+                  </span>
+                  <span className="text-[var(--text-3)]"> · {fechaCortaSv(c.creado)}</span>
                 </span>
                 {mejor && !colocado && (
                   <span className="flex min-w-0 items-center gap-1.5 text-[var(--text-3)]">
@@ -208,6 +258,7 @@ function NuevoPerfil({ onCrear }: { onCrear: (c: Candidato) => void }) {
   const [fuente, setFuente] = useState<Fuente>("whatsapp");
   const [skills, setSkills] = useState<string[]>([]);
   const [leido, setLeido] = useState(false);
+  const [audio, setAudio] = useState("");
 
   function leer() {
     const l = leerCv(texto);
@@ -222,6 +273,8 @@ function NuevoPerfil({ onCrear }: { onCrear: (c: Candidato) => void }) {
     if (l.jornada) setJornada(l.jornada);
     if (l.horarios.length) setHorarios(l.horarios);
     setSkills(l.skills);
+    const voc = texto.match(/(?:https?:\/\/)?(?:www\.)?(?:vocaroo\.com|voca\.ro)\/[^\s,;)]+/i)?.[0];
+    if (voc && vocarooId(voc)) setAudio(voc);
     const linea = texto.split(/[\n.]/).map((x) => x.trim()).find((x) => /(assistant|asistente|coordinator|coordinador|analyst|analista|paralegal|setter|manager)/i.test(x));
     if (linea) setTitular(linea.replace(/\s+con\s+\d+.*$/i, "").slice(0, 60));
     setLeido(true);
@@ -270,6 +323,9 @@ function NuevoPerfil({ onCrear }: { onCrear: (c: Candidato) => void }) {
           )}
           <Campo label="Años de experiencia">
             <input type="number" min={0} className={INPUT} value={anios} onChange={(e) => setAnios(Math.max(0, Number(e.target.value) || 0))} />
+          </Campo>
+          <Campo label="Audio de presentación (Vocaroo)">
+            <input className={INPUT} value={audio} onChange={(e) => setAudio(e.target.value)} placeholder="vocaroo.com/... o voca.ro/..." />
           </Campo>
           <Campo label="Pretensión (USD al mes)">
             <input type="number" min={0} step={50} className={INPUT} value={pretension} onChange={(e) => setPretension(Math.max(0, Number(e.target.value) || 0))} />
@@ -322,7 +378,7 @@ function NuevoPerfil({ onCrear }: { onCrear: (c: Candidato) => void }) {
               horarios,
               disponibilidad: disp,
               fuente,
-              grabacion: false,
+              audioUrl: vocarooId(audio) ? audio.trim() : undefined,
               creado: new Date().toISOString(),
               notas: [],
             })

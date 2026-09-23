@@ -64,10 +64,33 @@ export interface Candidato {
   disc?: { primario: Disc; secundario?: Disc };
   fuente: Fuente;
   referidoPor?: string;
-  /** Grabacion de presentacion de 60 segundos en ingles (la pide el formulario de carreras). */
-  grabacion: boolean;
+  /**
+   * Grabacion de presentacion de 60 segundos en ingles, como la manda el
+   * formulario de carreras: un link de Vocaroo (vocaroo.com/ID o voca.ro/ID).
+   */
+  audioUrl?: string;
+  /** Aprobado o rechazado por el equipo. Sin esto, esta pendiente de revision. */
+  decision?: Decision;
+  /** Fecha de ingreso al banco de talento. */
   creado: string;
   notas: Nota[];
+}
+
+/** Un cambio que hizo la decision sobre el candidato, para poder deshacerlo. */
+export interface MovimientoDecision {
+  postulacionId: string;
+  /** La postulacion no existia: la creo la aprobacion. Deshacer la borra. */
+  creada: boolean;
+  etapaPrevia?: Etapa;
+  motivoPrevio?: string;
+}
+
+export interface Decision {
+  resultado: "aprobado" | "rechazado";
+  por: string;
+  ts: string;
+  motivo?: string;
+  movimientos: MovimientoDecision[];
 }
 
 export interface Requisitos {

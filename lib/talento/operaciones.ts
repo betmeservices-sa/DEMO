@@ -2,6 +2,7 @@
 // despacha acciones y las pruebas verifican lo mismo sin navegador.
 
 import { TAREAS_ONBOARDING } from "./catalogo";
+import { cambiarMotivo, decidir, deshacerDecision } from "./decision";
 import { correrIso, diaSv, sumarDias } from "./fechas";
 import type {
   Candidato,
@@ -25,6 +26,10 @@ export type AccionTalento =
   | { type: "ESTADO_ENTREVISTA"; entrevistaId: string; estado: Entrevista["estado"] }
   | { type: "SCORECARD"; entrevistaId: string; scorecard: Scorecard }
   | { type: "TAREA_ONBOARDING"; postulacionId: string; tareaId: string }
+  | { type: "DECIDIR"; candidatoId: string; resultado: "aprobado" | "rechazado"; por: string; ts: string; idNueva: string; motivo?: string }
+  | { type: "DECISION_MOTIVO"; candidatoId: string; motivo: string }
+  | { type: "DECISION_DESHACER"; candidatoId: string }
+  | { type: "AUDIO_LINK"; candidatoId: string; url: string }
   | { type: "RESTABLECER"; estado: EstadoTalento };
 
 export function nuevoOnboarding(postulacionId: string, ts: string) {
@@ -122,6 +127,14 @@ export function reducirTalento(s: EstadoTalento, a: AccionTalento): EstadoTalent
             : o,
         ),
       };
+    case "DECIDIR":
+      return decidir(s, a.candidatoId, a.resultado, a.por, a.ts, a.idNueva, a.motivo);
+    case "DECISION_MOTIVO":
+      return cambiarMotivo(s, a.candidatoId, a.motivo);
+    case "DECISION_DESHACER":
+      return deshacerDecision(s, a.candidatoId);
+    case "AUDIO_LINK":
+      return { ...s, candidatos: s.candidatos.map((c) => (c.id === a.candidatoId ? { ...c, audioUrl: a.url.trim() } : c)) };
     case "RESTABLECER":
       return a.estado;
     default:
@@ -148,6 +161,7 @@ export function desplazar(s: EstadoTalento, dias: number): EstadoTalento {
       ...c,
       creado: iso(c.creado),
       notas: c.notas.map((n) => ({ ...n, ts: iso(n.ts) })),
+      decision: c.decision ? { ...c.decision, ts: iso(c.decision.ts) } : undefined,
     })),
     vacantes: s.vacantes.map((v) => ({ ...v, creada: iso(v.creada), cerrada: v.cerrada ? iso(v.cerrada) : undefined })),
     postulaciones: s.postulaciones.map((p) => ({
