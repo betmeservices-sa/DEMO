@@ -287,7 +287,12 @@ export async function POST(req: Request) {
       if (TENANTS[tenantActivo].ai.respondeSolo !== false) {
         await Promise.all(
           entrantes.map((t) =>
-            programarRespuestaIA({ from: t.from, triggerWamid: t.wamid, tenant: tenantActivo }),
+            programarRespuestaIA({
+              from: t.from,
+              triggerWamid: t.wamid,
+              tenant: tenantActivo,
+              iaDelNumero: conexion?.iaActiva ?? null,
+            }),
           ),
         );
       }

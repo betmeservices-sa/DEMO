@@ -22,13 +22,21 @@ export interface WaConnection {
   /** PIN de registro del número en la Cloud API. */
   pin?: string | null;
   connectedAt?: string;
+  /**
+   * El interruptor de la IA de ESTE número. null = sigue el global del panel,
+   * como siempre. true/false manda por encima del global, así un cliente con
+   * número propio se enciende sin prender a los agentes de todos los demás
+   * (el global es uno solo para todo el panel). Igual que `ia_activa` de las
+   * páginas de Meta.
+   */
+  iaActiva?: boolean | null;
 }
 
 const g = globalThis as unknown as { __waConexiones?: Map<string, WaConnection[]> };
 const memoria: Map<string, WaConnection[]> = (g.__waConexiones ??= new Map());
 
 const COLUMNAS =
-  "tenant,waba_id,phone_number_id,display_phone,verified_name,access_token,pin,connected_at";
+  "tenant,waba_id,phone_number_id,display_phone,verified_name,access_token,pin,connected_at,ia_activa";
 
 function deFila(r: Record<string, unknown>): WaConnection {
   return {
@@ -40,7 +48,19 @@ function deFila(r: Record<string, unknown>): WaConnection {
     accessToken: r.access_token as string,
     pin: (r.pin as string | null) ?? null,
     connectedAt: (r.connected_at as string | null) ?? undefined,
+    iaActiva: typeof r.ia_activa === "boolean" ? r.ia_activa : null,
   };
+}
+
+/**
+ * El interruptor de IA de los números de un cliente: true si alguno está
+ * encendido, false si alguno está apagado y ninguno encendido, null si todos
+ * siguen el global (o no tiene número propio).
+ */
+export async function iaDeLosNumerosDe(tenant: string): Promise<boolean | null> {
+  const valores = (await conexionesWaDe(tenant)).map((c) => c.iaActiva ?? null).filter((v) => v !== null);
+  if (valores.length === 0) return null;
+  return valores.includes(true);
 }
 
 /** Guarda o actualiza un número. No lanza: si la base falla, queda en memoria. */

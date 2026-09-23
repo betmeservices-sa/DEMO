@@ -65,8 +65,12 @@ export async function encenderIaSiNadieDecidio(from: string): Promise<void> {
   if ((await getChatOverride(from)) === null) await setChatOverride(from, true);
 }
 
-// La IA esta activa para este chat? Usa el override si existe; si no, el global.
-export async function getChatAiActiva(from: string): Promise<boolean> {
+// La IA esta activa para este chat? Usa el override del chat si existe; si
+// no, el interruptor del NUMERO al que escribieron (wa_connections.ia_activa)
+// si lo tiene; y si no, el global.
+export async function getChatAiActiva(from: string, delNumero: boolean | null = null): Promise<boolean> {
   const ov = await getChatOverride(from);
-  return ov !== null ? ov : getAiEnabled();
+  if (ov !== null) return ov;
+  if (delNumero !== null) return delNumero;
+  return getAiEnabled();
 }

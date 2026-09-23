@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
 import { getChatAiActiva, getChatOverride, setChatOverride } from "@/lib/ai-store";
+import { tenantFromRequest } from "@/lib/tenants/server";
+import { iaDeLosNumerosDe } from "@/lib/wa-conexiones-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Estado EFECTIVO de la IA para una conversacion (lo lee el toggle del hilo).
 // GET ?from=<wa_from> -> { activa, overridden }
-//   activa: si la IA respondera ese chat (su override si existe; si no, el global)
+//   activa: si la IA respondera ese chat (su override si existe; si no, el
+//           interruptor del numero propio del cliente; si no, el global)
 //   overridden: si el chat tiene un estado propio distinto del global
 export async function GET(req: Request) {
   const from = new URL(req.url).searchParams.get("from")?.trim() || "";
   if (!from) return NextResponse.json({ activa: false, overridden: false });
   const ov = await getChatOverride(from);
-  const activa = await getChatAiActiva(from);
+  const activa = await getChatAiActiva(from, await iaDeLosNumerosDe(tenantFromRequest(req)));
   return NextResponse.json({ activa, overridden: ov !== null });
 }
 

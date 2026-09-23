@@ -116,13 +116,15 @@ export async function programarRespuestaIA(opts: {
   from: string;
   triggerWamid: string;
   tenant?: TenantId;
+  /** El interruptor de IA del número al que llegó (null = sigue el global). */
+  iaDelNumero?: boolean | null;
 }): Promise<void> {
   const tenantId: TenantId = opts.tenant ?? DEFAULT_TENANT;
   const cfg = TENANTS[tenantId];
 
   try {
     // Activa si: override del chat (si existe) o, si no, el interruptor global.
-    if (!(await getChatAiActiva(opts.from))) return;
+    if (!(await getChatAiActiva(opts.from, opts.iaDelNumero ?? null))) return;
 
     // Tramo 1: silencio. Le damos tiempo a que termine sin mostrarle nada.
     await sleep(DELAY_MIN_MS);
