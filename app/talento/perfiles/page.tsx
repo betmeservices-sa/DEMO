@@ -25,6 +25,7 @@ import { despachar, useTalento } from "@/lib/talento/store";
 import type { Candidato, Disponibilidad, Fuente, Horario, Jornada, NivelIngles, Pais } from "@/lib/talento/tipos";
 import { Boton, Campo, Capa, Encabezado, INPUT, Pastillas, ScoreBadge, Seccion, SkillChip, useSoloBetme } from "@/components/talento/ui";
 import { FichaCandidato } from "@/components/talento/FichaCandidato";
+import { BarraComparar, BotonComparar } from "@/components/talento/Comparar";
 
 type Filtro = "todos" | "disponibles" | "en_proceso" | "colocados";
 
@@ -112,16 +113,18 @@ export default function PerfilesPage() {
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-5">
+      <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-24">
         {lista.length === 0 && <p className="py-10 text-center text-[13px] text-[var(--text-3)]">Nadie cumple esos filtros.</p>}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {lista.map(({ c, mejor, colocado, enProceso }) => (
-            <button
+            <div
               key={c.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               data-candidato={c.id}
               onClick={() => setFichaId(c.id)}
-              className="rounded-2xl border border-line bg-card p-4 text-left shadow-sm transition hover:border-[var(--border-2)]"
+              onKeyDown={(e) => e.key === "Enter" && setFichaId(c.id)}
+              className="cursor-pointer rounded-2xl border border-line bg-card p-4 text-left shadow-sm transition hover:border-[var(--border-2)]"
             >
               <div className="flex items-start gap-3">
                 <Avatar iniciales={inicialesDe(c.nombre)} size={40} />
@@ -132,7 +135,10 @@ export default function PerfilesPage() {
                     {c.ubicacion.departamento ?? nombrePais(c.ubicacion.pais)} · Inglés {c.ingles} · {c.aniosExperiencia} años · ${c.pretension}
                   </p>
                 </div>
-                {c.grabacion && <Mic size={14} className="mt-1 shrink-0 text-[var(--text-3)]" aria-label="Grabación en inglés recibida" />}
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  <BotonComparar id={c.id} />
+                  {c.grabacion && <Mic size={14} className="text-[var(--text-3)]" aria-label="Grabación en inglés recibida" />}
+                </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-1">
                 {c.skills.slice(0, 5).map((s) => (
@@ -156,10 +162,12 @@ export default function PerfilesPage() {
                   </span>
                 )}
               </div>
-            </button>
+            </div>
           ))}
         </div>
       </div>
+
+      <BarraComparar />
 
       <Capa abierta={Boolean(ficha)} onCerrar={() => setFichaId(null)} titulo="Perfil del candidato">
         {ficha && <FichaCandidato candidato={ficha} estado={estado} />}

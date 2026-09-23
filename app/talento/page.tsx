@@ -12,6 +12,7 @@ import { despachar, restablecerTalento, useTalento } from "@/lib/talento/store";
 import type { Etapa, Postulacion } from "@/lib/talento/tipos";
 import { Boton, Capa, Encabezado, ScoreBadge, useSoloBetme } from "@/components/talento/ui";
 import { FichaCandidato } from "@/components/talento/FichaCandidato";
+import { BarraComparar, BotonComparar } from "@/components/talento/Comparar";
 
 export default function PipelinePage() {
   const es = useSoloBetme();
@@ -132,7 +133,7 @@ export default function PipelinePage() {
                     {col.length}
                   </span>
                 </div>
-                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-2 pb-2">
+                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-2 pb-20">
                   {col.map(({ p, v, c, score, proxima }) => {
                     const dias = diasEnEtapa(p);
                     return (
@@ -171,6 +172,7 @@ export default function PipelinePage() {
                           <span>${c.pretension}</span>
                           <span>·</span>
                           <span>{nombreFuente(c.fuente)}</span>
+                          <BotonComparar id={c.id} vacanteId={p.vacanteId} className="ml-auto" />
                         </div>
                         {proxima && (
                           <p className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-[var(--brand-accent)]">
@@ -192,6 +194,8 @@ export default function PipelinePage() {
           })}
         </div>
       </div>
+
+      <BarraComparar />
 
       <Capa abierta={Boolean(descartando)} onCerrar={() => setDescartando(null)} titulo="Motivo del descarte" ancho="max-w-md">
         <div className="space-y-2 p-5">

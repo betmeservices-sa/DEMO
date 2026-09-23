@@ -8,6 +8,7 @@ import { nombrePais } from "@/lib/talento/catalogo";
 import { PESOS, type CriterioMatch, type ResultadoMatch } from "@/lib/talento/matching";
 import type { Candidato } from "@/lib/talento/tipos";
 import { Boton, ScoreBadge } from "./ui";
+import { BotonComparar } from "./Comparar";
 
 const NOMBRE_CRITERIO: Record<CriterioMatch, string> = {
   skills: "Skills requeridas",
@@ -29,7 +30,9 @@ export function MatchLista({
   candidatos,
   onEnviar,
   onAbrir,
+  vacanteId,
 }: {
+  vacanteId?: string;
   resultados: ResultadoMatch[];
   candidatos: Map<string, Candidato>;
   onEnviar?: (ids: string[]) => void;
@@ -118,6 +121,7 @@ export function MatchLista({
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">
+                {vacanteId && <BotonComparar id={c.id} vacanteId={vacanteId} />}
                 {onEnviar && (
                   <Boton onClick={() => onEnviar([c.id])} title="Mandar al pipeline de esta vacante">
                     <Send size={13} />

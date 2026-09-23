@@ -24,6 +24,7 @@ import { Boton, Campo, Capa, Encabezado, INPUT, Seccion, SkillChip, nombreStaff,
 import { EditorRequisitos } from "@/components/talento/EditorRequisitos";
 import { MatchLista } from "@/components/talento/MatchLista";
 import { FichaCandidato } from "@/components/talento/FichaCandidato";
+import { BarraComparar } from "@/components/talento/Comparar";
 
 const EJEMPLO = `Executive Assistant bilingüe
 Cliente: Firma de abogados de familia, Chicago IL
@@ -117,7 +118,7 @@ export default function VacantesPage() {
         </aside>
 
         {sel && (
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 pb-24">
             <Seccion>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -168,6 +169,7 @@ export default function VacantesPage() {
               )}
               <MatchLista
                 key={sel.id}
+                vacanteId={sel.id}
                 resultados={top}
                 candidatos={candidatosPorId}
                 onAbrir={setFichaId}
@@ -184,6 +186,8 @@ export default function VacantesPage() {
           </div>
         )}
       </div>
+
+      <BarraComparar />
 
       <Capa abierta={creando} onCerrar={() => setCreando(false)} titulo="Nueva vacante" ancho="max-w-3xl">
         {creando && (
