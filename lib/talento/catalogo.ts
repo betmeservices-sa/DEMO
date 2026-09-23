@@ -79,7 +79,7 @@ export function rangoIngles(n: NivelIngles): number {
 
 export const ETAPAS: { id: Etapa; nombre: string; color: string }[] = [
   { id: "nuevo", nombre: "Nuevo", color: "#5a6a82" },
-  { id: "filtrado", nombre: "Filtrado", color: "#1f7a93" },
+  { id: "filtrado", nombre: "Preselección", color: "#1f7a93" },
   { id: "entrevista", nombre: "Entrevista", color: "#2a5d8f" },
   { id: "prueba", nombre: "Prueba", color: "#6d4bb8" },
   { id: "oferta", nombre: "Oferta", color: "#a86400" },

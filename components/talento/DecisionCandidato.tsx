@@ -4,8 +4,7 @@ import { useState } from "react";
 import { Check, Undo2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { ME } from "@/lib/data/seed";
-import { destinoAprobado, estadoRevision } from "@/lib/talento/decision";
-import { nombreEtapa } from "@/lib/talento/catalogo";
+import { estadoRevision } from "@/lib/talento/decision";
 import { fechaCortaSv, horaSv } from "@/lib/talento/fechas";
 import { idNuevo } from "@/lib/talento/operaciones";
 import { despachar, marcarGhl } from "@/lib/talento/store";
@@ -16,16 +15,6 @@ import { Boton, INPUT, nombreStaff } from "./ui";
 export function DecisionCandidato({ c, estado }: { c: Candidato; estado: EstadoTalento }) {
   const est = estadoRevision(c);
   const [motivo, setMotivo] = useState(c.decision?.motivo ?? "");
-
-  // Lo que va a pasar al aprobar, dicho antes de apretar.
-  const destino = est === "pendiente" ? destinoAprobado(estado, c.id) : null;
-  const vac = (vid: string) => estado.vacantes.find((v) => v.id === vid)?.titulo ?? "";
-  const aviso =
-    destino?.tipo === "mover"
-      ? `${vac(destino.vacanteId)}: pasa a ${nombreEtapa(destino.etapa)}`
-      : destino?.tipo === "crear"
-        ? `Entra a ${vac(destino.vacanteId)} en ${nombreEtapa(destino.etapa)}`
-        : null;
 
   const decidir = (resultado: "aprobado" | "rechazado") =>
     despachar({ type: "DECIDIR", candidatoId: c.id, resultado, por: ME, ts: new Date().toISOString(), idNueva: idNuevo("p") });
@@ -49,7 +38,6 @@ export function DecisionCandidato({ c, estado }: { c: Candidato; estado: EstadoT
             <X size={18} strokeWidth={3} /> Rechazado
           </button>
         </div>
-        {aviso && <p className="mt-1.5 text-[11.5px] text-[var(--text-3)]">{aviso}</p>}
         <MarcaGhl c={c} />
       </div>
     );

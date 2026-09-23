@@ -31,9 +31,9 @@ export type DestinoAprobado =
 /**
  * A donde va al aprobarlo.
  *
- * Si esta en una vacante, un paso adelante (Nuevo pasa a Filtrado). Nunca a
+ * Si esta en una vacante, un paso adelante (Nuevo pasa a Preselección). Nunca a
  * Contratado: eso se cierra con la oferta, no con este boton. Si no esta en
- * ninguna, entra a su mejor vacante abierta por match, ya en Filtrado.
+ * ninguna, entra a su mejor vacante abierta por match, ya en Preselección.
  */
 export function destinoAprobado(s: EstadoTalento, candidatoId: string): DestinoAprobado {
   const vivas = activas(s, candidatoId);
