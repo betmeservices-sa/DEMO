@@ -29,6 +29,7 @@ import { YaliDashboard } from "@/components/dashboard/YaliDashboard";
 import { AgenciaDashboard } from "@/components/dashboard/AgenciaDashboard";
 import { CrediqDashboard } from "@/components/dashboard/CrediqDashboard";
 import { NissanDashboard } from "@/components/dashboard/NissanDashboard";
+import { BetmeDashboard } from "@/components/dashboard/BetmeDashboard";
 import { OrigenCanales } from "@/components/dashboard/OrigenCanales";
 import { ConsumoIA } from "@/components/dashboard/ConsumoIA";
 import { RedesResumen } from "@/components/dashboard/RedesResumen";
@@ -91,6 +92,8 @@ export default function DashboardPage() {
   if (activeTenantId() === "grupoq") return <CrediqDashboard />;
   // Nissan mira si los carros salen del piso, no la actividad de la bandeja.
   if (activeTenantId() === "nissan") return <NissanDashboard />;
+  // BetMe mira su reclutamiento: embudo, fuentes y tiempo para contratar.
+  if (activeTenantId() === "betme") return <BetmeDashboard />;
 
   return (
     <div className="flex h-full flex-col">

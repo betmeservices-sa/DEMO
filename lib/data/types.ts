@@ -46,6 +46,8 @@ export type DepartmentId =
   | "legal"
   // Banco Promerica: gestión de cartera en mora
   | "cobranza"
+  // BetMe Services: reclutamiento de asistentes virtuales bilingues
+  | "reclutamiento"
   // Todavía nadie dijo de qué es. Existe para no tener que mentir: antes toda
   // conversación nueva nacía con el departamento por defecto del cliente, así
   // que en Yali TODO entraba marcado como "Reservas", incluida una queja.

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { MODULOS_CLINICA } from "@/lib/modulos";
@@ -39,6 +39,11 @@ const NAV: NavItem[] = [
   { id: "pipeline", href: "/pipeline", label: "Pipeline", Icon: Filter },
   { id: "crediq", href: "/crediq", label: "Pipeline", Icon: GitBranch },
   { id: "ventas", href: "/ventas", label: "Sala de ventas", Icon: GitBranch },
+  { id: "talento", href: "/talento", label: "Pipeline", Icon: Kanban },
+  { id: "vacantes", href: "/talento/vacantes", label: "Vacantes", Icon: Briefcase },
+  { id: "perfiles", href: "/talento/perfiles", label: "Perfiles", Icon: UserSearch },
+  { id: "entrevistas", href: "/talento/entrevistas", label: "Entrevistas", Icon: CalendarCheck },
+  { id: "onboarding", href: "/talento/onboarding", label: "Onboarding", Icon: Rocket },
   { id: "visitas", href: "/visitas", label: "Visitas", Icon: CalendarClock },
   { id: "cartera", href: "/cartera", label: "Cartera", Icon: Building2 },
   { id: "publicacion", href: "/publicacion", label: "Publicación", Icon: Share2 },
@@ -107,6 +112,11 @@ export function Sidebar({
   // nadie lo ve.
   const veNissan = tenant === "nissan";
   const veCobros = tenant === "promerica";
+  // BetMe: el centro de reclutamiento. Perfiles reemplaza a Contactos (el
+  // candidato ES el contacto, con su CV) y no hay Redes: BetMe no publica
+  // desde aca, solo recibe mensajes y comentarios.
+  const veBetme = tenant === "betme";
+  const TALENTO: ModuleId[] = ["talento", "vacantes", "perfiles", "entrevistas", "onboarding"];
   // El consultorio y el mostrador del laboratorio: los pacientes que se
   // registran escaneando el QR del doctor y la fila de quien llega a hacerse
   // los examenes. Solo la clinica.
@@ -122,14 +132,14 @@ export function Sidebar({
   const tieneTickets = veTickets(tenant);
   // El banco es un centro de COBRANZA: no publica en redes. Recibe mensajes de
   // Instagram y Facebook (eso sigue en la bandeja), pero no programa contenido.
-  const veRedes = tenant !== "promerica";
+  const veRedes = tenant !== "promerica" && tenant !== "betme";
   // Los comentarios de Facebook e Instagram son la otra mitad de la bandeja,
   // pero Grupo Q no los trabaja desde aca: su mercadeo lleva las redes por su
   // cuenta y la pestana solo metia ruido en un panel de credito.
   // Comentarios es para contestar lo que escriben debajo del post. Quien no
   // publica desde acá no modera desde acá: es la misma pregunta que decide la
   // forma de Redes, y por eso sale del mismo lugar.
-  const veComentarios = veRedes && !soloMiraRedes(tenant);
+  const veComentarios = (veRedes && !soloMiraRedes(tenant)) || veBetme;
   // La clinica NO es un centro de comunicacion: son tres vistas y nada mas
   // (el doctor, el laboratorio y lo que ve el paciente). Bandeja, contactos,
   // redes, comentarios y dashboard son de los otros clientes y aca solo hacen
@@ -148,6 +158,8 @@ export function Sidebar({
       (item.id !== "pipeline" || veInmobiliaria) &&
       (item.id !== "crediq" || veCrediq) &&
       (item.id !== "ventas" || veNissan) &&
+      (!TALENTO.includes(item.id) || veBetme) &&
+      (item.id !== "contactos" || !veBetme) &&
       (item.id !== "visitas" || veInmobiliaria) &&
       (item.id !== "cartera" || veInmobiliaria) &&
       (item.id !== "publicacion" || veInmobiliaria) &&
@@ -156,7 +168,7 @@ export function Sidebar({
       (item.id !== "campanas" || veCobros) &&
       (item.id !== "redes" || veRedes) &&
       (item.id !== "comentarios" || veComentarios) &&
-      (item.id !== "mis-chats" || veYali || veCrediq || veNissan) &&
+      (item.id !== "mis-chats" || veYali || veCrediq || veNissan || veBetme) &&
       (item.id !== "tickets" || tieneTickets) &&
       (item.id !== "promociones" || veYali) &&
       (item.id !== "perfil" || veYali) &&

@@ -12,6 +12,7 @@ import { promericaTenant } from "./promerica";
 import { yalyTenant } from "./yaly";
 import { consultorioTenant } from "./consultorio";
 import { nissanTenant } from "./nissan";
+import { betmeTenant } from "./betme";
 
 export type { TenantConfig, TenantId } from "./types";
 
@@ -26,6 +27,7 @@ export const TENANTS: Record<TenantId, TenantConfig> = {
   yaly: yalyTenant,
   consultorio: consultorioTenant,
   nissan: nissanTenant,
+  betme: betmeTenant,
 };
 
 // Tenant por defecto (SSR / antes de login). No es visible: la UI se pinta tras
@@ -43,7 +45,8 @@ export function isTenantId(v: string | null | undefined): v is TenantId {
     v === "promerica" ||
     v === "yaly" ||
     v === "consultorio" ||
-    v === "nissan"
+    v === "nissan" ||
+    v === "betme"
   );
 }
 
@@ -76,6 +79,8 @@ export const DEMO_LOGINS: DemoLogin[] = [
   { usuario: "demoagentia", password: "demol", tenant: "consultorio" },
   // La sala de ventas de Nissan: el tablero de venta de vehiculos.
   { usuario: "demoagentia", password: "demon", tenant: "nissan" },
+  // BetMe Services: el centro de reclutamiento (pipeline, perfiles, vacantes).
+  { usuario: "demoagentia", password: "demob", tenant: "betme" },
   // Acceso directo al dashboard de llamadas (tenant miagentia).
   // OJO: esta clave queda visible mientras el repo sea publico. Para cerrarla,
   // hacer el repo privado o mover las credenciales a la env LOGIN_PASSWORDS.

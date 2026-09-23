@@ -330,6 +330,43 @@
   background: #b4b4b4;
 }
 
+/* BetMe Services: el azul marino, el celeste y el gris claro de su sitio de
+   carreras. Va DESPUÉS del bloque de marca unificada para ganarle con la misma
+   especificidad.
+
+   El celeste de marca (#5BBCD6) no aguanta texto encima ni se lee como texto
+   sobre blanco (2.1:1), así que el acento es ese mismo tono oscurecido. El
+   primario es el marino, que es el que manda en su sitio.
+
+   Contraste medido sobre el fondo #F5F8FC: tinta #111E36 16.3:1, secundario
+   #3C4A62 8.6:1, terciario #56657D 5.6:1, marino #1B2A4A 13.7:1, acento
+   #17657B 6.2:1, rojo #B42318 6.1:1 y verde #157347 5.6:1. Lo cubre
+   betme.test.ts. */
+[data-tenant="betme"] {
+  --brand-blue: #1b2a4a;
+  --brand-blue-dark: #111e36;
+  --brand-green: #157347;
+  --brand-red: #b42318;
+  --brand-accent: #17657b;
+  --brand-accent-soft: #e6f4f9;
+
+  --surface: #f5f8fc;
+  --surface-2: #e9eff6;
+  --card: #ffffff;
+  --border: #d8e4ee;
+  --border-2: #c3d3e2;
+  --text: #111e36;
+  --text-2: #3c4a62;
+  --text-3: #56657d;
+
+  --font-app: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* La barra de scroll clara de BetMe. */
+[data-tenant="betme"] ::-webkit-scrollbar-thumb:hover {
+  background: #a9bccf;
+}
+
 
 @theme inline {
   --font-sans: var(--font-app);
