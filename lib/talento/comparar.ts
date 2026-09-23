@@ -4,7 +4,8 @@
 // son los indices que ganan esa fila (varios si empatan). Si todos empatan, o
 // si hay un solo candidato, no gana nadie: resaltar a todos no dice nada.
 
-import { ETAPAS_EMBUDO, nombreEtapa, nombrePais, nombreSkill, rangoIngles, DISPONIBILIDADES, HORARIOS, JORNADAS } from "./catalogo";
+import { ETAPAS_EMBUDO, nombreEtapa, nombrePais, nombreSkill, rangoIngles, DISPONIBILIDADES } from "./catalogo";
+import { falta, SIN_DATO, textoAnios, textoDisponibilidad } from "./mostrar";
 import { calcularMatch, PESOS, type CriterioMatch, type ResultadoMatch } from "./matching";
 import type { Candidato, EstadoTalento, Etapa, Postulacion, Vacante } from "./tipos";
 
@@ -136,17 +137,26 @@ export function comparar(estado: EstadoTalento, ids: string[], vacante: Vacante)
   fila(
     "ingles",
     "Inglés",
-    candidatos.map((c) => ({ texto: c.ingles, detalle: `Pide ${r.ingles}`, valor: rangoIngles(c.ingles) })),
+    candidatos.map((c) =>
+      falta(c, "ingles")
+        ? { texto: SIN_DATO, detalle: `Pide ${r.ingles}`, valor: null }
+        : { texto: c.ingles, detalle: `Pide ${r.ingles}`, valor: rangoIngles(c.ingles) },
+    ),
   );
   fila(
     "experiencia",
     "Experiencia",
-    candidatos.map((c) => ({ texto: `${c.aniosExperiencia} años`, detalle: `Pide ${r.experiencia}`, valor: c.aniosExperiencia })),
+    candidatos.map((c) => ({
+      texto: textoAnios(c),
+      detalle: `Pide ${r.experiencia}`,
+      valor: falta(c, "experiencia") ? null : c.aniosExperiencia,
+    })),
   );
   fila(
     "pretension",
     "Pretensión",
     candidatos.map((c) => {
+      if (falta(c, "pretension")) return { texto: SIN_DATO, detalle: `Tope $${r.salarioMax}`, valor: null };
       const dif = c.pretension - r.salarioMax;
       return {
         texto: `$${c.pretension.toLocaleString("en-US")}`,
@@ -169,11 +179,11 @@ export function comparar(estado: EstadoTalento, ids: string[], vacante: Vacante)
     "disponibilidad",
     "Disponibilidad",
     candidatos.map((c, i) => ({
-      texto: DISPONIBILIDADES.find((d) => d.id === c.disponibilidad)?.nombre ?? c.disponibilidad,
-      detalle: `${JORNADAS.find((j) => j.id === c.jornada)?.nombre} · ${c.horarios
-        .map((h) => HORARIOS.find((x) => x.id === h)?.nombre.match(/\((.+)\)/)?.[1] ?? h)
-        .join(", ")}`,
-      valor: matches[i].detalle.find((d) => d.criterio === "disponibilidad")!.puntos * 10 + (PRONTITUD[c.disponibilidad] ?? 0),
+      texto: falta(c, "disponibilidad") ? SIN_DATO : (DISPONIBILIDADES.find((d) => d.id === c.disponibilidad)?.nombre ?? c.disponibilidad),
+      detalle: falta(c, "jornada") && falta(c, "horarios") ? undefined : textoDisponibilidad({ ...c, sinDato: [...(c.sinDato ?? []), "disponibilidad"] }),
+      valor: falta(c, "disponibilidad")
+        ? null
+        : matches[i].detalle.find((d) => d.criterio === "disponibilidad")!.puntos * 10 + (PRONTITUD[c.disponibilidad] ?? 0),
     })),
   );
   fila(

@@ -102,6 +102,8 @@ export const FUENTES: { id: Fuente; nombre: string }[] = [
   { id: "instagram", nombre: "Instagram" },
   { id: "facebook", nombre: "Facebook" },
   { id: "feria", nombre: "Feria de empleo" },
+  { id: "google", nombre: "Google" },
+  { id: "otro", nombre: "Otro" },
 ];
 
 export function nombreFuente(f: Fuente): string {
@@ -117,6 +119,7 @@ export const PAISES: { id: Pais; nombre: string; alias: string[] }[] = [
   { id: "PA", nombre: "Panamá", alias: ["panama"] },
   { id: "MX", nombre: "México", alias: ["mexico"] },
   { id: "CO", nombre: "Colombia", alias: ["colombia"] },
+  { id: "OT", nombre: "Otro país", alias: [] },
 ];
 
 export function nombrePais(p: Pais): string {

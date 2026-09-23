@@ -27,6 +27,7 @@ import { Boton, Campo, Capa, Encabezado, INPUT, Pastillas, ScoreBadge, Seccion, 
 import { FichaCandidato } from "@/components/talento/FichaCandidato";
 import { esNuevo, ordenarPerfiles, pasaFecha, type FiltroFecha, type OrdenPerfiles } from "@/lib/talento/perfiles";
 import { vocarooId } from "@/lib/talento/audio";
+import { falta, textoIngles, textoPretension } from "@/lib/talento/mostrar";
 import { diaSv, fechaCortaSv, sumarDias } from "@/lib/talento/fechas";
 import { BarraComparar, BotonComparar } from "@/components/talento/Comparar";
 
@@ -74,7 +75,7 @@ export default function PerfilesPage() {
         if (filtro === "colocados" && !col.has(c.id)) return false;
         if (filtro === "en_proceso" && !enProceso.has(c.id)) return false;
         if (filtro === "disponibles" && (col.has(c.id) || enProceso.has(c.id))) return false;
-        if (inglesMin && rangoIngles(c.ingles) < rangoIngles(inglesMin as NivelIngles)) return false;
+        if (inglesMin && (falta(c, "ingles") || rangoIngles(c.ingles) < rangoIngles(inglesMin as NivelIngles))) return false;
         if (skill && !c.skills.includes(skill)) return false;
         if (!t) return true;
         const texto = `${c.nombre} ${c.titular} ${c.ubicacion.departamento ?? ""} ${c.ubicacion.municipio ?? ""} ${c.skills.map((s) => SKILLS.find((x) => x.id === s)?.nombre).join(" ")}`.toLowerCase();
@@ -173,7 +174,7 @@ export default function PerfilesPage() {
                   </p>
                   <p className="truncate text-[12.5px] font-semibold text-[var(--brand-accent)]">{c.titular}</p>
                   <p className="truncate text-[11.5px] text-[var(--text-3)]">
-                    {c.ubicacion.departamento ?? nombrePais(c.ubicacion.pais)} · Inglés {c.ingles} · {c.aniosExperiencia} años · ${c.pretension}
+                    {c.puesto && c.puesto !== c.titular ? `${c.puesto} · ` : ""}{c.ubicacion.departamento ?? nombrePais(c.ubicacion.pais)} · {textoIngles(c)} · {textoPretension(c)}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">

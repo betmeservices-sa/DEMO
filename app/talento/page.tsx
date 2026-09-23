@@ -12,6 +12,7 @@ import { despachar, restablecerTalento, useTalento } from "@/lib/talento/store";
 import type { Etapa, Postulacion } from "@/lib/talento/tipos";
 import { Boton, Capa, Encabezado, ScoreBadge, useSoloBetme } from "@/components/talento/ui";
 import { FichaCandidato } from "@/components/talento/FichaCandidato";
+import { textoIngles, textoPretension } from "@/lib/talento/mostrar";
 import { BarraComparar, BotonComparar } from "@/components/talento/Comparar";
 
 export default function PipelinePage() {
@@ -167,9 +168,9 @@ export default function PipelinePage() {
                           <ScoreBadge score={score} />
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[var(--text-3)]">
-                          <span>Inglés {c.ingles}</span>
+                          <span>{textoIngles(c)}</span>
                           <span>·</span>
-                          <span>${c.pretension}</span>
+                          <span>{textoPretension(c)}</span>
                           <span>·</span>
                           <span>{nombreFuente(c.fuente)}</span>
                           <BotonComparar id={c.id} vacanteId={p.vacanteId} className="ml-auto" />

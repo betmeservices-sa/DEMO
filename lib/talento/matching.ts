@@ -59,6 +59,7 @@ export function calcularMatch(c: Candidato, r: Requisitos): ResultadoMatch {
     detalle.push({ criterio, puntos: redondear(puntos), maximo: PESOS[criterio] });
 
   const tiene = new Set(c.skills);
+  const sin = new Set(c.sinDato ?? []);
 
   // Skills requeridas: proporcion de las que tiene.
   if (r.skills.length === 0) {
@@ -81,6 +82,11 @@ export function calcularMatch(c: Candidato, r: Requisitos): ResultadoMatch {
   }
 
   // Ingles: completo si alcanza, la mitad si le falta un nivel, nada si mas.
+  // Sin dato no suma: el match no adivina.
+  if (sin.has("ingles")) {
+    falta.push("Inglés sin dato");
+    sumar("ingles", 0);
+  } else {
   const brecha = rangoIngles(r.ingles) - rangoIngles(c.ingles);
   if (brecha <= 0) {
     cumple.push(`Inglés ${c.ingles}`);
@@ -89,9 +95,13 @@ export function calcularMatch(c: Candidato, r: Requisitos): ResultadoMatch {
     falta.push(`Inglés ${r.ingles} (tiene ${c.ingles})`);
     sumar("ingles", brecha === 1 ? PESOS.ingles / 2 : 0);
   }
+  }
 
   // Experiencia: proporcional hasta el minimo pedido.
-  if (r.experiencia <= 0 || c.aniosExperiencia >= r.experiencia) {
+  if (sin.has("experiencia") && r.experiencia > 0) {
+    falta.push("Experiencia sin dato");
+    sumar("experiencia", 0);
+  } else if (r.experiencia <= 0 || c.aniosExperiencia >= r.experiencia) {
     cumple.push(`${c.aniosExperiencia} años de experiencia`);
     sumar("experiencia", PESOS.experiencia);
   } else {
@@ -101,7 +111,10 @@ export function calcularMatch(c: Candidato, r: Requisitos): ResultadoMatch {
 
   // Salario: dentro del tope, completo; hasta 10% arriba se negocia; hasta 20%
   // es cuesta arriba; mas que eso no entra.
-  if (r.salarioMax <= 0 || c.pretension <= r.salarioMax) {
+  if (sin.has("pretension")) {
+    falta.push("Pretensión sin dato");
+    sumar("salario", 0);
+  } else if (r.salarioMax <= 0 || c.pretension <= r.salarioMax) {
     cumple.push(`Pretensión $${c.pretension}`);
     sumar("salario", PESOS.salario);
   } else {
@@ -119,6 +132,9 @@ export function calcularMatch(c: Candidato, r: Requisitos): ResultadoMatch {
       falta.push(`País no aceptado (${nombrePais(c.ubicacion.pais)})`);
       sumar("ubicacion", 0);
     }
+  } else if (sin.has("ubicacion") && r.departamento) {
+    falta.push("Departamento sin dato");
+    sumar("ubicacion", 0);
   } else {
     const dep = c.ubicacion.departamento;
     const oficina = r.departamento;
@@ -136,12 +152,16 @@ export function calcularMatch(c: Candidato, r: Requisitos): ResultadoMatch {
 
   // Jornada (3) y horario del cliente (2).
   let disp = 0;
-  if (c.jornada === r.jornada || (r.jornada === "medio" && c.jornada === "completo")) {
+  if (sin.has("jornada")) {
+    falta.push("Jornada sin dato");
+  } else if (c.jornada === r.jornada || (r.jornada === "medio" && c.jornada === "completo")) {
     disp += 3;
   } else {
     falta.push("Solo medio tiempo");
   }
-  if (c.horarios.includes(r.horario)) {
+  if (sin.has("horarios")) {
+    falta.push("Horario sin dato");
+  } else if (c.horarios.includes(r.horario)) {
     disp += 2;
   } else {
     falta.push("Horario del cliente");

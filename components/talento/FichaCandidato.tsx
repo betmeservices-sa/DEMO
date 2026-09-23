@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Briefcase,
+  FileText,
   Check,
   Copy,
   GraduationCap,
@@ -23,10 +24,7 @@ import { ChannelBadge } from "@/components/ui/ChannelBadge";
 import {
   CRITERIOS,
   DISC,
-  DISPONIBILIDADES,
   ETAPAS,
-  HORARIOS,
-  JORNADAS,
   nombreFuente,
   nombrePais,
   nombreTipoEntrevista,
@@ -38,6 +36,7 @@ import { despachar } from "@/lib/talento/store";
 import { idNuevo } from "@/lib/talento/operaciones";
 import type { Candidato, EstadoTalento, Etapa } from "@/lib/talento/tipos";
 import { AudioPresentacion } from "./AudioPresentacion";
+import { SIN_DATO, textoAnios, textoDisponibilidad, textoIngles, textoPretension } from "@/lib/talento/mostrar";
 import { DecisionCandidato } from "./DecisionCandidato";
 import { Boton, EtapaPill, INPUT, ScoreBadge, SkillChip, nombreStaff } from "./ui";
 
@@ -129,7 +128,7 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
           <p className="text-[13px] font-semibold text-[var(--brand-accent)]">{c.titular}</p>
           <p className="mt-1 text-[12px] text-[var(--text-3)]">
             {c.telefono} · {c.correo} · {nombreFuente(c.fuente)}
-            {c.referidoPor ? ` (${c.referidoPor})` : ""} · ingresó {fechaCortaSv(c.creado)} ({haceSv(c.creado)})
+            {c.referidoPor ? ` (${c.referidoPor})` : ""} · ingresó {fechaCortaSv(c.creado)} {horaSv(c.creado)} ({haceSv(c.creado)})
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -171,23 +170,38 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
       <div className="space-y-4 p-5">
         {pestana === "cv" && (
           <>
-            <p className="text-[13.5px] leading-relaxed text-[var(--text-2)]">{c.resumen}</p>
+            {c.puesto && c.puesto !== c.titular && (
+              <p className="text-[12.5px] text-[var(--text-2)]">
+                Aplicó a <b className="text-[var(--text)]">{c.puesto}</b>
+              </p>
+            )}
+            {c.resumen && <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-[var(--text-2)]">{c.resumen}</p>}
+            {c.cvUrl && (
+              <a
+                href={c.cvUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-[12.5px] font-semibold text-[var(--brand-accent)] hover:bg-surface"
+              >
+                <FileText size={14} /> Ver CV
+              </a>
+            )}
             <div className="grid grid-cols-1 gap-2.5 text-[12.5px] sm:grid-cols-2">
               <Dato Icon={MapPin} label="Ubicación" valor={ubicacion} />
-              <Dato Icon={Languages} label="Idiomas" valor={`Español nativo · Inglés ${c.ingles}${c.otrosIdiomas?.length ? ` · ${c.otrosIdiomas.join(", ")}` : ""}`} />
-              <Dato Icon={Wallet} label="Pretensión" valor={`$${c.pretension.toLocaleString("en-US")} al mes`} />
+              <Dato Icon={Languages} label="Idiomas" valor={`${c.origen === "formulario" ? "" : "Español nativo · "}${textoIngles(c)}${c.otrosIdiomas?.length ? ` · ${c.otrosIdiomas.join(", ")}` : ""}`} />
+              <Dato Icon={Wallet} label="Pretensión" valor={textoPretension(c, true)} />
               <Dato
                 Icon={Clock}
                 label="Disponibilidad"
-                valor={`${JORNADAS.find((j) => j.id === c.jornada)?.nombre} · ${c.horarios.map((h) => HORARIOS.find((x) => x.id === h)?.nombre.match(/\((.+)\)/)?.[1]).join(", ")} · ${DISPONIBILIDADES.find((d) => d.id === c.disponibilidad)?.nombre}`}
+                valor={textoDisponibilidad(c)}
               />
-              <Dato Icon={Briefcase} label="Experiencia" valor={`${c.aniosExperiencia} años`} />
+              <Dato Icon={Briefcase} label="Experiencia" valor={textoAnios(c)} />
               <Dato
                 Icon={Check}
                 label="DISC"
                 valor={c.disc ? `${c.disc.primario}${c.disc.secundario ? `/${c.disc.secundario}` : ""} (${DISC.find((d) => d.id === c.disc!.primario)?.nombre})` : "Sin evaluar"}
               />
-              <Dato Icon={GraduationCap} label="Educación" valor={c.educacion} />
+              <Dato Icon={GraduationCap} label="Educación" valor={c.educacion || SIN_DATO} />
             </div>
             <div>
               <p className="mb-2 text-[11.5px] font-bold text-[var(--text-2)]">Skills</p>
@@ -195,8 +209,10 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
                 {c.skills.map((s) => (
                   <SkillChip key={s} id={s} />
                 ))}
+                {c.skills.length === 0 && <span className="text-[12.5px] text-[var(--text-3)]">No declaró skills.</span>}
               </div>
             </div>
+            {c.experiencia.length > 0 && (
             <div>
               <p className="mb-2 text-[11.5px] font-bold text-[var(--text-2)]">Experiencia</p>
               <ol className="space-y-3 border-l-2 border-line pl-4">
@@ -211,6 +227,7 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
                 ))}
               </ol>
             </div>
+            )}
           </>
         )}
 

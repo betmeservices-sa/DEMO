@@ -9,6 +9,7 @@ import { PESOS, type CriterioMatch, type ResultadoMatch } from "@/lib/talento/ma
 import type { Candidato } from "@/lib/talento/tipos";
 import { Boton, ScoreBadge } from "./ui";
 import { BotonComparar } from "./Comparar";
+import { textoPretension } from "@/lib/talento/mostrar";
 
 const NOMBRE_CRITERIO: Record<CriterioMatch, string> = {
   skills: "Skills requeridas",
@@ -104,7 +105,7 @@ export function MatchLista({
                     {c.nombre}
                   </button>
                   <span className="text-[12px] text-[var(--text-3)]">
-                    {c.titular} · {c.ubicacion.departamento ?? nombrePais(c.ubicacion.pais)} · ${c.pretension}
+                    {c.titular} · {c.ubicacion.departamento ?? nombrePais(c.ubicacion.pais)} · {textoPretension(c)}
                   </span>
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-1">

@@ -11,12 +11,15 @@ export type Jornada = "completo" | "medio";
 export type Horario = "este" | "central" | "pacifico";
 export type Disc = "D" | "I" | "S" | "C";
 export type Modalidad = "remoto" | "hibrido" | "presencial";
-export type Pais = "SV" | "GT" | "HN" | "NI" | "CR" | "PA" | "MX" | "CO";
+export type Pais = "SV" | "GT" | "HN" | "NI" | "CR" | "PA" | "MX" | "CO" | "OT";
 export type Disponibilidad = "inmediata" | "2_semanas" | "1_mes";
 
 export type Etapa = "nuevo" | "filtrado" | "entrevista" | "prueba" | "oferta" | "contratado" | "descartado";
 
-export type Fuente = "carreras" | "referido" | "linkedin" | "whatsapp" | "instagram" | "facebook" | "feria";
+export type Fuente = "carreras" | "referido" | "linkedin" | "whatsapp" | "instagram" | "facebook" | "feria" | "google" | "otro";
+
+/** Datos que el candidato NO dio. El match no los inventa: los cuenta como faltantes. */
+export type DatoFaltante = "ingles" | "experiencia" | "pretension" | "jornada" | "horarios" | "disponibilidad" | "ubicacion";
 
 export interface Ubicacion {
   pais: Pais;
@@ -73,6 +76,14 @@ export interface Candidato {
   decision?: Decision;
   /** Fecha de ingreso al banco de talento. */
   creado: string;
+  /** Puesto al que aplico en el formulario de carreras. */
+  puesto?: string;
+  /** Link publico al CV (PDF en el bucket o Drive). */
+  cvUrl?: string;
+  /** Lo que el formulario no pregunta. Ver DatoFaltante. */
+  sinDato?: DatoFaltante[];
+  /** "formulario" = postulacion real del sitio de BetMe. Sin esto, perfil de ejemplo o cargado a mano. */
+  origen?: "formulario";
   notas: Nota[];
 }
 

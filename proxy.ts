@@ -36,6 +36,10 @@ const PUBLICAS = [
   // Quien escanea no tiene cuenta. Todo lo demas del modulo pide sesion, y por
   // eso lo publico vive bajo su propio prefijo en vez de ir suelto.
   "/api/consultorio/publico/",
+  // El formulario de carreras de BetMe: lo manda el navegador del candidato,
+  // que no tiene cuenta. Se defiende solo (tope, validacion, freno por IP) y
+  // no devuelve datos de nadie.
+  "/api/talento/postulacion",
 ];
 
 function esPublica(pathname: string): boolean {
