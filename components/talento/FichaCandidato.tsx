@@ -67,7 +67,7 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
   const vacantePorId = new Map(estado.vacantes.map((v) => [v.id, v]));
   // Las vacantes abiertas donde todavia no esta, de la que mejor encaja a la peor.
   const encaja = estado.vacantes
-    .filter((v) => v.estado === "abierta" && !postulaciones.some((p) => p.vacanteId === v.id))
+    .filter((v) => v.estado === "abierta" && v.origen !== "formulario" && !postulaciones.some((p) => p.vacanteId === v.id))
     .map((v) => ({ v, m: calcularMatch(c, v.requisitos) }))
     .sort((a, b) => b.m.score - a.m.score);
 
@@ -260,10 +260,11 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
               const v = vacantePorId.get(p.vacanteId);
               if (!v) return null;
               const m = calcularMatch(c, v.requisitos);
+              const conMatch = v.origen !== "formulario";
               return (
                 <div key={p.id} className="rounded-xl border border-line p-3">
                   <div className="flex items-start gap-3">
-                    <ScoreBadge score={m.score} />
+                    {conMatch && <ScoreBadge score={m.score} />}
                     <div className="min-w-0 flex-1">
                       <p className="text-[13.5px] font-bold text-[var(--text)]">{v.titulo}</p>
                       <p className="text-[12px] text-[var(--text-3)]">{v.cliente}</p>
@@ -291,7 +292,7 @@ export function FichaCandidato({ candidato, estado }: { candidato: Candidato; es
                       className="min-w-[150px]"
                     />
                   </div>
-                  {m.falta.length > 0 && (
+                  {conMatch && m.falta.length > 0 && (
                     <p className="mt-2 text-[11.5px] text-[var(--text-3)]">Le falta: {m.falta.join(" · ")}</p>
                   )}
                 </div>

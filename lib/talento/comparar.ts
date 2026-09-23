@@ -218,7 +218,7 @@ export function comparar(estado: EstadoTalento, ids: string[], vacante: Vacante)
 
 /** La vacante abierta donde, en promedio, mejor encajan los elegidos. */
 export function vacanteSugerida(estado: EstadoTalento, ids: string[]): Vacante | null {
-  const abiertas = estado.vacantes.filter((v) => v.estado === "abierta");
+  const abiertas = estado.vacantes.filter((v) => v.estado === "abierta" && v.origen !== "formulario");
   const cands = estado.candidatos.filter((c) => ids.includes(c.id));
   if (abiertas.length === 0) return null;
   if (cands.length === 0) return abiertas[0];

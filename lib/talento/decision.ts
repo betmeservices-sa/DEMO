@@ -47,7 +47,7 @@ export function destinoAprobado(s: EstadoTalento, candidatoId: string): DestinoA
   if (!c) return { tipo: "nada" };
   const yaEsta = new Set(s.postulaciones.filter((p) => p.candidatoId === candidatoId).map((p) => p.vacanteId));
   const mejor = s.vacantes
-    .filter((v) => v.estado === "abierta" && !yaEsta.has(v.id))
+    .filter((v) => v.estado === "abierta" && v.origen !== "formulario" && !yaEsta.has(v.id))
     .map((v) => ({ v, score: calcularMatch(c, v.requisitos).score }))
     .sort((a, b) => b.score - a.score || a.v.id.localeCompare(b.v.id))[0];
   return mejor ? { tipo: "crear", vacanteId: mejor.v.id, etapa: "filtrado" } : { tipo: "nada" };

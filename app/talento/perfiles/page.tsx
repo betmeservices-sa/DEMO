@@ -66,7 +66,7 @@ export default function PerfilesPage() {
     const enProceso = new Set(
       estado.postulaciones.filter((p) => p.etapa !== "descartado" && p.etapa !== "contratado").map((p) => p.candidatoId),
     );
-    const abiertas = estado.vacantes.filter((v) => v.estado === "abierta");
+    const abiertas = estado.vacantes.filter((v) => v.estado === "abierta" && v.origen !== "formulario");
     const t = q.trim().toLowerCase();
     const filtrados = estado.candidatos
       .filter((c) => {

@@ -6,7 +6,9 @@
 // jornada ni horario. Esos campos quedan marcados como "sin dato" y el match
 // los cuenta como faltantes: no se inventan.
 
-import type { Candidato, DatoFaltante, Fuente, Pais } from "./tipos";
+import { normalizar } from "./catalogo";
+import { REQUISITOS_BASE } from "./lector";
+import type { Candidato, DatoFaltante, Fuente, Pais, Vacante } from "./tipos";
 
 export const LIMITE_BYTES = 20_000;
 const MAX_CAMPO = 2000;
@@ -34,6 +36,46 @@ export const VACANTE_DE_PUESTO: Record<string, string> = {
   "Legal Assistant/ Paralegal": "v2",
   "Business Analyst": "v5",
 };
+
+const PREFIJO_FORMULARIO = "f-";
+
+/**
+ * La vacante donde entra una postulacion: la del tablero si el puesto tiene
+ * una, y si no, la del puesto mismo ("f-digital-marketing-specialist").
+ *
+ * Antes los puestos sin vacante no creaban postulacion y la persona quedaba
+ * solo en Perfiles: aparecia en el match de Vacantes pero nunca en el
+ * Pipeline, que es donde el equipo trabaja.
+ */
+export function vacanteIdDePuesto(puesto: string): string {
+  const mapeada = VACANTE_DE_PUESTO[puesto];
+  if (mapeada) return mapeada;
+  const slug = normalizar(puesto)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `${PREFIJO_FORMULARIO}${slug || "sin-puesto"}`;
+}
+
+export function esVacanteDeFormulario(id: string): boolean {
+  return id.startsWith(PREFIJO_FORMULARIO);
+}
+
+/** La vacante de un puesto del formulario, armada a partir de sus postulaciones. */
+export function vacanteDeFormulario(id: string, puesto: string, creada: string): Vacante {
+  return {
+    id,
+    titulo: puesto || "Sin puesto",
+    cliente: "Postulaciones del formulario",
+    area: "Formulario de carreras",
+    descripcion: "Puesto tal como llega del formulario de carreras. Sin requisitos definidos.",
+    requisitos: { ...REQUISITOS_BASE, skills: [], deseables: [] },
+    estado: "abierta",
+    plazas: 1,
+    responsable: "me",
+    creada,
+    origen: "formulario",
+  };
+}
 
 export interface EnvioFormulario {
   first_name: string;

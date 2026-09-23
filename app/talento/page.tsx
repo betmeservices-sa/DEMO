@@ -13,6 +13,7 @@ import type { Etapa, Postulacion } from "@/lib/talento/tipos";
 import { Boton, Capa, Encabezado, ScoreBadge, useSoloBetme } from "@/components/talento/ui";
 import { FichaCandidato } from "@/components/talento/FichaCandidato";
 import { textoIngles, textoPretension } from "@/lib/talento/mostrar";
+import { postulacionesDelTablero } from "@/lib/talento/mezcla";
 import { BarraComparar, BotonComparar } from "@/components/talento/Comparar";
 
 export default function PipelinePage() {
@@ -35,17 +36,18 @@ export default function PipelinePage() {
     if (!estado) return [];
     const vacs = new Map(estado.vacantes.map((v) => [v.id, v]));
     const cands = new Map(estado.candidatos.map((c) => [c.id, c]));
-    return estado.postulaciones
-      .filter((p) => (vacanteId === "todas" ? vacs.get(p.vacanteId)?.estado === "abierta" : p.vacanteId === vacanteId))
+    return postulacionesDelTablero(estado, vacanteId)
       .map((p) => {
         const v = vacs.get(p.vacanteId)!;
         const c = cands.get(p.candidatoId)!;
         const proxima = estado.entrevistas
           .filter((e) => e.postulacionId === p.id && e.estado === "programada")
           .sort((a, b) => a.inicio.localeCompare(b.inicio))[0];
-        return { p, v, c, score: calcularMatch(c, v.requisitos).score, proxima };
+        // Las vacantes de puestos del formulario no tienen requisitos: sin match.
+        const score = v.origen === "formulario" ? null : calcularMatch(c, v.requisitos).score;
+        return { p, v, c, score, proxima };
       })
-      .sort((a, b) => b.score - a.score);
+      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.p.creada.localeCompare(a.p.creada));
   }, [estado, vacanteId]);
 
   if (!es) return <div className="flex-1 bg-surface" />;
@@ -165,7 +167,7 @@ export default function PipelinePage() {
                               {vacanteId === "todas" ? v.titulo : c.titular}
                             </p>
                           </div>
-                          <ScoreBadge score={score} />
+                          {score !== null && <ScoreBadge score={score} />}
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[var(--text-3)]">
                           <span>{textoIngles(c)}</span>

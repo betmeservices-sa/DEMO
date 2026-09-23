@@ -9,8 +9,8 @@
 // perder postulaciones reales sin que nadie se entere.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { actualizarConEnvio, candidatoDeEnvio, VACANTE_DE_PUESTO, type EnvioFormulario } from "./formulario";
-import type { Candidato, Postulacion } from "./tipos";
+import { actualizarConEnvio, candidatoDeEnvio, vacanteIdDePuesto, type EnvioFormulario } from "./formulario";
+import type { Candidato, EstadoGhl, Postulacion } from "./tipos";
 
 const TENANT = "betme";
 
@@ -52,13 +52,13 @@ export async function leerReal(): Promise<EstadoReal> {
   const c = base();
   if (!c) return { candidatos: [...mem.candidatos.values()], postulaciones: [...mem.postulaciones.values()] };
   const [a, b] = await Promise.all([
-    c.from("talento_candidatos").select("perfil").eq("tenant", TENANT).order("creado", { ascending: false }),
+    c.from("talento_candidatos").select("perfil, ghl").eq("tenant", TENANT).order("creado", { ascending: false }),
     c.from("talento_postulaciones").select("datos").eq("tenant", TENANT),
   ]);
   if (a.error) throw a.error;
   if (b.error) throw b.error;
   return {
-    candidatos: (a.data ?? []).map((r) => r.perfil as Candidato),
+    candidatos: (a.data ?? []).map((r) => ({ ...(r.perfil as Candidato), ghl: (r.ghl as EstadoGhl | null) ?? undefined })),
     postulaciones: (b.data ?? []).map((r) => r.datos as Postulacion),
   };
 }
@@ -77,7 +77,8 @@ async function guardarCandidato(x: Candidato, nuevo: boolean): Promise<void> {
     mem.candidatos.set(x.id, x);
     return;
   }
-  const fila = { id: x.id, tenant: TENANT, email: x.correo ? x.correo.toLowerCase() : null, perfil: x, actualizado: new Date().toISOString() };
+  const { ghl: _ghl, ...perfil } = x; // eslint-disable-line @typescript-eslint/no-unused-vars
+  const fila = { id: x.id, tenant: TENANT, email: x.correo ? x.correo.toLowerCase() : null, perfil, actualizado: new Date().toISOString() };
   const r = nuevo
     ? await c.from("talento_candidatos").insert({ ...fila, creado: x.creado })
     : await c.from("talento_candidatos").upsert(fila, { onConflict: "id" });
@@ -118,10 +119,11 @@ export async function registrarEnvio(e: EnvioFormulario, origen: string | null, 
     mem.envios.push({ candidato_id: candidato.id, payload: e, recibido: ahora });
   }
 
-  // Entra al pipeline de la vacante de su puesto, si hay una y no esta ya.
-  const vacanteId = VACANTE_DE_PUESTO[e.position];
+  // Siempre entra al pipeline: a la vacante del tablero si su puesto tiene
+  // una, o a la del puesto del formulario. Si ya estaba ahi, no se duplica.
+  const vacanteId = vacanteIdDePuesto(e.position);
   let postulacionId: string | null = null;
-  if (vacanteId) {
+  {
     const { postulaciones } = await leerReal();
     const ya = postulaciones.find((p) => p.candidatoId === candidato.id && p.vacanteId === vacanteId);
     if (!ya) {
@@ -153,4 +155,25 @@ export async function guardarCambios(candidatos: Candidato[], postulaciones: Pos
       if (r.error) throw r.error;
     }
   }
+}
+
+/** El perfil de un candidato real, o null. */
+export async function leerCandidato(id: string): Promise<Candidato | null> {
+  const c = base();
+  if (!c) return mem.candidatos.get(id) ?? null;
+  const r = await c.from("talento_candidatos").select("perfil").eq("tenant", TENANT).eq("id", id).maybeSingle();
+  if (r.error) throw r.error;
+  return (r.data?.perfil as Candidato) ?? null;
+}
+
+/** Guarda como salio la marca en GHL. Columna aparte: el panel no la pisa al guardar el perfil. */
+export async function guardarGhl(id: string, ghl: EstadoGhl): Promise<void> {
+  const c = base();
+  if (!c) {
+    const x = mem.candidatos.get(id);
+    if (x) mem.candidatos.set(id, { ...x, ghl });
+    return;
+  }
+  const r = await c.from("talento_candidatos").update({ ghl }).eq("tenant", TENANT).eq("id", id);
+  if (r.error) throw r.error;
 }

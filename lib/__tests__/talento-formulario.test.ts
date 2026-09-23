@@ -12,10 +12,12 @@ import {
   pretensionDeTexto,
   validarEnvio,
   VACANTE_DE_PUESTO,
+  vacanteIdDePuesto,
 } from "@/lib/talento/formulario";
 import { calcularMatch } from "@/lib/talento/matching";
 import { sembrarTalento } from "@/lib/talento/seed";
 import { leerReal } from "@/lib/talento/servidor";
+import { mezclarReales, postulacionesDelTablero } from "@/lib/talento/mezcla";
 import { OPTIONS, POST } from "@/app/api/talento/postulacion/route";
 
 const ENVIO = {
@@ -148,11 +150,38 @@ describe("ruta pública /api/talento/postulacion", () => {
     expect(s.candidatos.filter((x) => x.correo === "karla.pineda@example.com")).toHaveLength(1);
     expect(s.postulaciones.filter((p) => p.candidatoId === c.id).map((p) => p.vacanteId).sort()).toEqual(["v4", "v5"]);
 
-    // Un puesto sin vacante abierta queda solo en Perfiles.
+    // Un puesto sin vacante del tablero entra a la vacante de su puesto.
     await pedir({ ...ENVIO, email: "otra@example.com", position: "IT Specialist" });
     s = await leerReal();
     const otra = s.candidatos.find((x) => x.correo === "otra@example.com")!;
-    expect(s.postulaciones.filter((p) => p.candidatoId === otra.id)).toHaveLength(0);
+    expect(s.postulaciones.filter((p) => p.candidatoId === otra.id)).toMatchObject([{ vacanteId: "f-it-specialist", etapa: "nuevo" }]);
+  });
+
+  // El bug del 23 de septiembre: una postulacion real a "Digital Marketing
+  // Specialist" (puesto sin vacante en el tablero) aparecia en el match de
+  // Vacantes pero no en el Pipeline, porque no se le creaba postulacion y
+  // porque el Pipeline solo pinta vacantes que el navegador conoce.
+  it("toda postulación del formulario aparece en el Pipeline", async () => {
+    await pedir({ ...ENVIO, email: "ktherine@example.com", first_name: "Katherine", position: "Digital Marketing Specialist" });
+    const real = await leerReal();
+    const c = real.candidatos.find((x) => x.correo === "ktherine@example.com")!;
+    const estado = mezclarReales(sembrarTalento(), real);
+    const vacante = estado.vacantes.find((v) => v.id === "f-digital-marketing-specialist")!;
+    expect(vacante).toMatchObject({ titulo: "Digital Marketing Specialist", estado: "abierta", origen: "formulario" });
+    const enTablero = postulacionesDelTablero(estado, "todas").filter((p) => p.candidatoId === c.id);
+    expect(enTablero).toHaveLength(1);
+    expect(enTablero[0].etapa).toBe("nuevo");
+    expect(postulacionesDelTablero(estado, vacante.id).map((p) => p.candidatoId)).toContain(c.id);
+    // Y las de puestos con vacante del tablero siguen apareciendo en la suya.
+    expect(postulacionesDelTablero(estado, "v4").length).toBeGreaterThan(0);
+    // En modo real no se ven los de ejemplo.
+    expect(estado.candidatos.some((x) => /^c\d\d$/.test(x.id))).toBe(false);
+  });
+
+  it("la vacante de un puesto del formulario no se ofrece para el match", () => {
+    expect(vacanteIdDePuesto("Project Coordinator")).toBe("v4");
+    expect(vacanteIdDePuesto("Insurance VA (Life/Health)")).toBe("f-insurance-va-life-health");
+    expect(vacanteIdDePuesto("")).toBe("f-sin-puesto");
   });
 
   it("rechaza lo inválido, lo enorme y lo que no es JSON", async () => {

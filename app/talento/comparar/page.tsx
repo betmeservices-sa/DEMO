@@ -34,7 +34,8 @@ export default function CompararPage() {
   if (!estado) return <div className="flex-1 animate-pulse bg-surface" />;
 
   const ficha = fichaId ? estado.candidatos.find((c) => c.id === fichaId) : null;
-  const opciones = [...estado.vacantes]
+  const opciones = estado.vacantes
+    .filter((v) => v.origen !== "formulario")
     .sort((a, b) => Number(a.estado !== "abierta") - Number(b.estado !== "abierta"))
     .map((v) => ({ valor: v.id, etiqueta: v.titulo, detalle: v.estado === "abierta" ? v.cliente : `${v.cliente} (cerrada)` }));
 

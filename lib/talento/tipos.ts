@@ -74,6 +74,8 @@ export interface Candidato {
   audioUrl?: string;
   /** Aprobado o rechazado por el equipo. Sin esto, esta pendiente de revision. */
   decision?: Decision;
+  /** Resultado de marcar la decision en GHL. Lo escribe el servidor. */
+  ghl?: EstadoGhl;
   /** Fecha de ingreso al banco de talento. */
   creado: string;
   /** Puesto al que aplico en el formulario de carreras. */
@@ -94,6 +96,15 @@ export interface MovimientoDecision {
   creada: boolean;
   etapaPrevia?: Etapa;
   motivoPrevio?: string;
+}
+
+export interface EstadoGhl {
+  estado: "ok" | "error";
+  accion: "aprobado" | "rechazado" | "deshacer";
+  /** Resultado previo, para poder reintentar un deshacer. */
+  previo?: "aprobado" | "rechazado";
+  ts: string;
+  detalle?: string;
 }
 
 export interface Decision {
@@ -135,6 +146,12 @@ export interface Vacante {
   responsable: string;
   creada: string;
   cerrada?: string;
+  /**
+   * "formulario" = no la creo el equipo: es el puesto tal como llega del
+   * formulario de carreras, para que ninguna postulacion quede fuera del
+   * pipeline. No tiene requisitos, asi que no se le calcula match.
+   */
+  origen?: "formulario";
 }
 
 export interface MovimientoEtapa {

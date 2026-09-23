@@ -132,7 +132,7 @@ export default function VacantesPage() {
                   <Link href={`/talento?vacante=${sel.id}`} className="inline-flex items-center rounded-lg border border-line bg-card px-3 py-1.5 text-[12.5px] font-semibold text-[var(--text-2)] hover:bg-surface">
                     Ver pipeline ({enPipeline(sel).length})
                   </Link>
-                  {sel.estado !== "cerrada" && (
+                  {sel.estado !== "cerrada" && sel.origen !== "formulario" && (
                     <Boton
                       onClick={() =>
                         despachar({ type: "ESTADO_VACANTE", vacanteId: sel.id, estado: sel.estado === "abierta" ? "pausada" : "abierta", ts: new Date().toISOString() })
@@ -143,9 +143,10 @@ export default function VacantesPage() {
                   )}
                 </div>
               </div>
-              <ResumenRequisitos r={sel.requisitos} />
+              {sel.origen !== "formulario" && <ResumenRequisitos r={sel.requisitos} />}
             </Seccion>
 
+            {sel.origen !== "formulario" && (
             <Seccion>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -183,6 +184,7 @@ export default function VacantesPage() {
                 }
               />
             </Seccion>
+            )}
           </div>
         )}
       </div>

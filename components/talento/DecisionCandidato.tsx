@@ -8,7 +8,7 @@ import { destinoAprobado, estadoRevision } from "@/lib/talento/decision";
 import { nombreEtapa } from "@/lib/talento/catalogo";
 import { fechaCortaSv, horaSv } from "@/lib/talento/fechas";
 import { idNuevo } from "@/lib/talento/operaciones";
-import { despachar } from "@/lib/talento/store";
+import { despachar, marcarGhl } from "@/lib/talento/store";
 import type { Candidato, EstadoTalento } from "@/lib/talento/tipos";
 import { Boton, INPUT, nombreStaff } from "./ui";
 
@@ -50,6 +50,7 @@ export function DecisionCandidato({ c, estado }: { c: Candidato; estado: EstadoT
           </button>
         </div>
         {aviso && <p className="mt-1.5 text-[11.5px] text-[var(--text-3)]">{aviso}</p>}
+        <MarcaGhl c={c} />
       </div>
     );
   }
@@ -86,6 +87,26 @@ export function DecisionCandidato({ c, estado }: { c: Candidato; estado: EstadoT
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
         />
       )}
+      <MarcaGhl c={c} />
     </div>
+  );
+}
+
+/** Como salio la marca en GHL. Solo se ve si hubo algo que decir. */
+function MarcaGhl({ c }: { c: Candidato }) {
+  const g = c.ghl;
+  if (!g) return null;
+  if (g.estado === "ok") {
+    // Solo si corresponde a la decision de ahora: un "ok" viejo no dice nada.
+    const vigente = g.accion === "deshacer" ? !c.decision : c.decision?.resultado === g.accion;
+    return vigente ? <p data-ghl="ok" className="mt-1.5 text-[11px] text-[var(--text-3)]">Marcado en GHL</p> : null;
+  }
+  return (
+    <p data-ghl="error" className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-[var(--brand-red)]" title={g.detalle}>
+      No se pudo marcar en GHL.
+      <button type="button" onClick={() => void marcarGhl(c.id, g.accion, g.previo)} className="font-bold underline">
+        Reintentar
+      </button>
+    </p>
   );
 }

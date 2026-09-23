@@ -22,7 +22,8 @@ import { useSyncExternalStore } from "react";
 import { diaSv, diasEntre } from "./fechas";
 import { desplazar, reducirTalento, type AccionTalento } from "./operaciones";
 import { sembrarTalento, VERSION_TALENTO } from "./seed";
-import type { Candidato, EstadoTalento, Postulacion } from "./tipos";
+import { mezclarReales } from "./mezcla";
+import type { Candidato, EstadoGhl, EstadoTalento, Postulacion } from "./tipos";
 
 const KEY = "ccg.talento.v1";
 const REFRESCO_MS = 30_000;
@@ -73,15 +74,7 @@ export function hayReales(): boolean {
 /** Lo que ven las pantallas: el demo, o los reales sobre las vacantes del tablero. */
 function mezclar(): EstadoTalento {
   const l = cargarLocal();
-  if (!hayReales()) return l;
-  const ids = new Set(real!.postulaciones.map((p) => p.id));
-  return {
-    ...l,
-    candidatos: real!.candidatos,
-    postulaciones: real!.postulaciones,
-    entrevistas: l.entrevistas.filter((e) => ids.has(e.postulacionId)),
-    onboarding: l.onboarding.filter((o) => ids.has(o.postulacionId)),
-  };
+  return hayReales() ? mezclarReales(l, real!) : l;
 }
 
 function leer(): EstadoTalento {
@@ -143,7 +136,13 @@ export function despachar(a: AccionTalento) {
   const antes = mezclar();
   const despues = reducirTalento(antes, a);
   // Lo local (vacantes, entrevistas, onboarding) se guarda en el navegador.
-  local = { ...cargarLocal(), vacantes: despues.vacantes, entrevistas: despues.entrevistas, onboarding: despues.onboarding };
+  // Las vacantes de puestos del formulario se arman al mezclar: no se guardan.
+  local = {
+    ...cargarLocal(),
+    vacantes: despues.vacantes.filter((v) => v.origen !== "formulario"),
+    entrevistas: despues.entrevistas,
+    onboarding: despues.onboarding,
+  };
   guardarLocal();
   // Lo real va al servidor: solo lo que cambio (el reducer no toca los demas objetos).
   const cAntes = new Set(antes.candidatos);
@@ -154,7 +153,32 @@ export function despachar(a: AccionTalento) {
   const borrar = antes.postulaciones.filter((p) => !idsDespues.has(p.id)).map((p) => p.id);
   real = { candidatos: despues.candidatos, postulaciones: despues.postulaciones };
   emitir();
-  void subir(candidatos, postulaciones, borrar);
+  const guardado = subir(candidatos, postulaciones, borrar);
+  // La decision tambien se marca en GHL, en segundo plano y despues de que el
+  // perfil quedo guardado. Si GHL falla, la ficha lo dice y deja reintentar.
+  if (a.type === "DECIDIR") void guardado.then(() => marcarGhl(a.candidatoId, a.resultado));
+  if (a.type === "DECISION_DESHACER") {
+    const previo = antes.candidatos.find((c) => c.id === a.candidatoId)?.decision?.resultado;
+    if (previo) void guardado.then(() => marcarGhl(a.candidatoId, "deshacer", previo));
+  }
+}
+
+/** Pide al servidor marcar (o desmarcar) la decision en GHL. Tambien es el "Reintentar" de la ficha. */
+export async function marcarGhl(candidatoId: string, accion: "aprobado" | "rechazado" | "deshacer", previo?: "aprobado" | "rechazado") {
+  try {
+    const r = await fetch("/api/talento/ghl", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ candidatoId, accion, previo }),
+    });
+    const d = (await r.json()) as { ok: boolean; ghl?: EstadoGhl };
+    if (d.ghl && real) {
+      real = { ...real, candidatos: real.candidatos.map((c) => (c.id === candidatoId ? { ...c, ghl: d.ghl } : c)) };
+      emitir();
+    }
+  } catch {
+    // Sin red: queda como estaba; la ficha sigue ofreciendo reintentar si hubo error antes.
+  }
 }
 
 /** Vuelve a los datos de fabrica del demo. Los candidatos reales no se tocan. */
