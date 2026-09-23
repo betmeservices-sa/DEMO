@@ -132,17 +132,22 @@ export default function SettingsPage() {
       const cached = window.localStorage.getItem(cacheKey);
       if (cached) setConexiones(JSON.parse(cached));
     } catch {}
-    fetch("/api/meta/connections", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.ok) {
-          setConexiones(d.conexiones);
-          try {
-            window.localStorage.setItem(cacheKey, JSON.stringify(d.conexiones));
-          } catch {}
-        }
-      })
-      .catch(() => {});
+    const refrescar = () =>
+      fetch("/api/meta/connections", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.ok) {
+            setConexiones(d.conexiones);
+            try {
+              window.localStorage.setItem(cacheKey, JSON.stringify(d.conexiones));
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    refrescar();
+    // Conectar abre Meta en otra pestaña: al volver a esta, se trae lo nuevo.
+    window.addEventListener("focus", refrescar);
+    return () => window.removeEventListener("focus", refrescar);
   }, [metaEstado]);
 
   const numVars = useMemo(() => contarVariables(cuerpo), [cuerpo]);
@@ -276,6 +281,8 @@ export default function SettingsPage() {
             </div>
             <a
               href="/api/meta/connect"
+              target="_blank"
+              rel="noopener"
               className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-brand/25 transition hover:brightness-105"
             >
               <Facebook size={16} />
@@ -294,6 +301,8 @@ export default function SettingsPage() {
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <a
               href="/api/meta/ig/connect"
+              target="_blank"
+              rel="noopener"
               className="inline-flex items-center gap-2 rounded-xl border border-line bg-white px-3.5 py-2 text-[13px] font-bold text-[var(--text)] transition hover:bg-slate-50"
             >
               <Instagram size={15} className="text-brand" />
