@@ -105,15 +105,13 @@ export function MessageBubble({
       )}
     >
       {/* Burbuja con picker de emojis */}
-      <div className="group/bubble relative max-w-[78%]">
+      <div className={cn("group/bubble relative max-w-[78%]", reaccion && !esStaff && "pb-3")}>
         <div
           className={cn(
             "rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm",
             esStaff
               ? "rounded-br-sm bg-brand text-white"
               : "rounded-bl-sm bg-card text-[var(--text)] ring-1 ring-line",
-            // Deja espacio inferior si hay una reaccion activa.
-            reaccion && !esStaff && "mb-3",
           )}
         >
           {esRespuestaAHistoria && (
@@ -266,7 +264,7 @@ export function MessageBubble({
 
         {/* Reaccion activa pegada a la burbuja */}
         {reaccion && !esStaff && (
-          <span className="absolute -bottom-2.5 left-2 rounded-full border border-line bg-card px-1.5 py-0.5 text-[12px] leading-none shadow-sm">
+          <span className="absolute bottom-0 left-2 rounded-full border border-line bg-card px-1.5 py-0.5 text-[12px] leading-none shadow-sm">
             {reaccion}
           </span>
         )}
