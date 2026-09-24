@@ -33,6 +33,7 @@ import {
   MessagesSquare,
   Mic,
   RefreshCw,
+  Sun,
   TicketCheck,
   Users,
 } from "lucide-react";
@@ -42,6 +43,7 @@ import { CalendarioRango } from "@/components/dashboard/CalendarioRango";
 import { ConversacionCierre } from "@/components/dashboard/ConversacionCierre";
 import { PERIODOS, type Canal, type Periodo, type ReporteConsumo } from "@/lib/agencia-consumo";
 import { PERIODOS_AGENCIA, type ReservasDelPeriodo, type TicketsDelPeriodo } from "@/lib/agencia-resumen";
+import type { Contador, PlanConversaciones, UsoDelPlan } from "@/lib/plan-conversaciones";
 
 interface Cierre {
   inicio: string | null;
@@ -317,6 +319,29 @@ export function AgenciaDashboard() {
     };
   }, [cliente, filtro, rangoInvalido]);
 
+  // El plan de conversaciones del mes (Day Pass aparte). Se corta por MES, no
+  // por el periodo: el periodo solo dice qué mes mirar.
+  const [plan, setPlan] = useState<Plan | null>(null);
+  useEffect(() => {
+    if (rangoInvalido) return;
+    let vivo = true;
+    const leer = () =>
+      fetch(`/api/agencia/plan?cliente=${encodeURIComponent(cliente)}&${filtro}`, { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => {
+          if (vivo) setPlan(d.ok && d.plan ? { plan: d.plan, mes: d.mes, uso: d.uso, cliente } : null);
+        })
+        .catch(() => {
+          if (vivo) setPlan(null);
+        });
+    void leer();
+    const t = setInterval(leer, 60_000);
+    return () => {
+      vivo = false;
+      clearInterval(t);
+    };
+  }, [cliente, filtro, rangoInvalido]);
+
   const cerrarCalendario = useCallback(() => setCalendario(false), []);
   const cerrarChat = useCallback(() => setChat(null), []);
 
@@ -436,6 +461,8 @@ export function AgenciaDashboard() {
 
         {/* Primero el trabajo del agente y, debajo, la plata que apartó: así
             lo pidió el cliente. Los dos se cortan con el mismo periodo. */}
+        {plan && plan.cliente === cliente && <PlanDelMes p={plan} />}
+
         {reporte && reporte.cliente.id === cliente && (
           <Consumo r={reporte} metrica={metrica} setMetrica={setMetrica} paraCliente={paraCliente} />
         )}
@@ -1033,6 +1060,92 @@ function Desplegable({
       {children}
       <ChevronDown size={16} className={cn("shrink-0 text-[var(--text-3)] transition", abierto && "rotate-180")} />
     </button>
+  );
+}
+
+interface Plan {
+  plan: PlanConversaciones;
+  mes: { etiqueta: string };
+  uso: UsoDelPlan;
+  cliente: string;
+}
+
+/**
+ * El plan del mes con DOS contadores: Day Pass aparte con su propio cupo, y el
+ * general. Las de Day Pass que pasan de su cupo se suman al general (y se dice
+ * cuántas). Lo pidió el cliente así: el Day Pass no se come el plan.
+ */
+function PlanDelMes({ p }: { p: Plan }) {
+  const { uso } = p;
+  return (
+    <section className="rounded-2xl border border-line bg-card p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-[15px] font-bold text-[var(--text)]">Plan de conversaciones · {p.mes.etiqueta}</h2>
+        <span className="text-[12px] text-[var(--text-3)]">{miles(uso.total)} conversaciones en el mes</span>
+      </div>
+      <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+        <BarraDePlan
+          titulo="Day Pass"
+          Icon={Sun}
+          c={uso.dayPass}
+          nota={
+            uso.dayPassAlGeneral > 0
+              ? `${miles(uso.totalDayPass)} en el mes · ${miles(uso.dayPassAlGeneral)} pasaron al general`
+              : null
+          }
+        />
+        <BarraDePlan
+          titulo="Generales"
+          Icon={MessageSquareText}
+          c={uso.general}
+          nota={uso.dayPassAlGeneral > 0 ? `incluye ${miles(uso.dayPassAlGeneral)} de Day Pass sobre su cupo` : null}
+        />
+      </div>
+    </section>
+  );
+}
+
+function BarraDePlan({
+  titulo,
+  Icon,
+  c,
+  nota,
+}: {
+  titulo: string;
+  Icon: typeof Coins;
+  c: Contador;
+  nota: string | null;
+}) {
+  const pct = c.incluidas === 0 ? 0 : Math.min(100, (c.usadas / c.incluidas) * 100);
+  const pasado = c.excedente > 0;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-2)]">
+          <Icon size={14} className="text-brand" /> {titulo}
+        </p>
+        <p className="text-[13px] tabular-nums text-[var(--text-3)]">
+          <span className={cn("text-[20px] font-extrabold tracking-tight", pasado ? "text-[var(--brand-red)]" : "text-[var(--text)]")}>
+            {miles(c.usadas)}
+          </span>{" "}
+          de {miles(c.incluidas)}
+        </p>
+      </div>
+      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface">
+        <div
+          className={cn("h-full rounded-full", pasado ? "bg-[var(--brand-red)]" : "bg-brand")}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="mt-1.5 text-[11.5px] text-[var(--text-3)]">
+        {pasado ? (
+          <span className="font-semibold text-[var(--brand-red)]">{miles(c.excedente)} sobre el plan</span>
+        ) : (
+          `quedan ${miles(c.incluidas - c.usadas)}`
+        )}
+        {nota && ` · ${nota}`}
+      </p>
+    </div>
   );
 }
 
