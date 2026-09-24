@@ -1,42 +1,81 @@
-// El plan de conversaciones con Day Pass aparte.
+// El plan de conversaciones: las primeras pagadas y, desde la siguiente, Day
+// Pass (con su cupo) separado del resto.
 //
-// Lo acordado con Yali: 1.000 generales al mes y 500 de Day Pass que NO cuentan
-// en el general; pasadas las 500, cada Day Pass extra sí suma al general.
+// Lo acordado con Yali: 1.000 conversaciones al mes ya pagadas, en orden
+// cronológico y de cualquier tema. Desde la 1.001, las de Day Pass van a un
+// cupo de 500 y las demás son excedente; el Day Pass sobre su cupo también.
 import { describe, expect, it } from "vitest";
-import { idDeConsumo, mesDelPlan, usoDelPlan } from "@/lib/plan-conversaciones";
+import { conversacionesDelMes, idDeConsumo, mesDelPlan, usoDelPlan } from "@/lib/plan-conversaciones";
 
-const plan = { generales: 1000, dayPass: 500 };
-const ids = (prefijo: string, n: number) => Array.from({ length: n }, (_, i) => `${prefijo}${i}`);
+const plan = { incluidas: 1000, dayPass: 500 };
 
-describe("los dos contadores", () => {
-  it("el Day Pass no gasta del general mientras no pase de 500", () => {
-    const dp = ids("dp", 300);
-    const u = usoDelPlan([...dp, ...ids("g", 700)], new Set(dp), plan);
-    expect(u.dayPass).toEqual({ usadas: 300, incluidas: 500, excedente: 0 });
-    expect(u.general).toEqual({ usadas: 700, incluidas: 1000, excedente: 0 });
-    expect(u.dayPassAlGeneral).toBe(0);
+/** n conversaciones en fila, una por minuto a partir de `desdeMin`. */
+const fila = (prefijo: string, n: number, desdeMin = 0) =>
+  Array.from({ length: n }, (_, i) => ({
+    id: `${prefijo}${i}`,
+    primera: new Date(Date.UTC(2026, 8, 1, 12, desdeMin + i)).toISOString(),
+  }));
+
+describe("las pagadas y lo que viene después", () => {
+  it("las primeras 1.000 están pagadas aunque sean de Day Pass", () => {
+    const dp = fila("dp", 300);
+    const g = fila("g", 700, 300);
+    const u = usoDelPlan([...dp, ...g], new Set(dp.map((c) => c.id)), plan);
+    expect(u.pagadas).toMatchObject({ usadas: 1000, incluidas: 1000, excedente: 0, dayPass: 300 });
+    expect(u.pagadas.llenoEl).toBe(g[g.length - 1].primera);
+    expect(u.despues).toEqual({
+      dayPass: { usadas: 0, incluidas: 500, excedente: 0 },
+      sinDayPass: 0,
+      dayPassSobreCupo: 0,
+      excedente: 0,
+    });
   });
 
-  it("pasadas las 500, el Day Pass extra suma al general", () => {
-    const dp = ids("dp", 560);
-    const u = usoDelPlan([...dp, ...ids("g", 1412)], new Set(dp), plan);
-    expect(u.dayPass).toEqual({ usadas: 500, incluidas: 500, excedente: 0 });
-    expect(u.dayPassAlGeneral).toBe(60);
-    expect(u.general).toEqual({ usadas: 1472, incluidas: 1000, excedente: 472 });
-    expect(u.total).toBe(1972);
+  it("desde la 1.001 se separan Day Pass y el resto", () => {
+    const pagadas = fila("p", 1000);
+    const dp = fila("dp", 245, 1000);
+    const g = fila("g", 790, 1245);
+    const u = usoDelPlan([...pagadas, ...dp, ...g], new Set(dp.map((c) => c.id)), plan);
+    expect(u.despues.dayPass).toEqual({ usadas: 245, incluidas: 500, excedente: 0 });
+    expect(u.despues.sinDayPass).toBe(790);
+    expect(u.despues.excedente).toBe(790);
+    expect(u.total).toBe(2035);
   });
 
-  it("una conversación cuenta una vez aunque tenga muchas respuestas", () => {
-    const u = usoDelPlan(["a", "a", "a", "b"], new Set(["a"]), plan);
-    expect(u.total).toBe(2);
-    expect(u.dayPass.usadas).toBe(1);
-    expect(u.general.usadas).toBe(1);
+  it("el Day Pass que pasa de su cupo también es excedente", () => {
+    const pagadas = fila("p", 1000);
+    const dp = fila("dp", 560, 1000);
+    const g = fila("g", 100, 1560);
+    const u = usoDelPlan([...pagadas, ...dp, ...g], new Set(dp.map((c) => c.id)), plan);
+    expect(u.despues.dayPass).toEqual({ usadas: 560, incluidas: 500, excedente: 60 });
+    expect(u.despues.dayPassSobreCupo).toBe(60);
+    expect(u.despues.excedente).toBe(160);
+  });
+
+  it("sin llegar a 1.000 no hay nada después", () => {
+    const u = usoDelPlan(fila("g", 40), new Set(["g1"]), plan);
+    expect(u.pagadas).toMatchObject({ usadas: 40, dayPass: 1, llenoEl: null });
+    expect(u.despues.excedente).toBe(0);
   });
 
   it("un Day Pass de otro mes que no se atendió este mes no cuenta", () => {
-    const u = usoDelPlan(["g1"], new Set(["dp-viejo"]), plan);
-    expect(u.dayPass.usadas).toBe(0);
-    expect(u.general.usadas).toBe(1);
+    const u = usoDelPlan(fila("g", 1), new Set(["dp-viejo"]), plan);
+    expect(u.totalDayPass).toBe(0);
+  });
+});
+
+describe("el orden de la fila", () => {
+  it("una conversación cuenta una vez, en el lugar de su PRIMERA respuesta", () => {
+    const c = conversacionesDelMes([
+      { waFrom: "b", ts: "2026-09-02T10:00:00Z" },
+      { waFrom: "a", ts: "2026-09-03T10:00:00Z" },
+      { waFrom: "a", ts: "2026-09-01T10:00:00Z" },
+      { waFrom: "b", ts: "2026-09-05T10:00:00Z" },
+    ]);
+    expect(c).toEqual([
+      { id: "a", primera: "2026-09-01T10:00:00Z" },
+      { id: "b", primera: "2026-09-02T10:00:00Z" },
+    ]);
   });
 });
 

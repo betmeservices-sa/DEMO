@@ -1071,36 +1071,59 @@ interface Plan {
 }
 
 /**
- * El plan del mes con DOS contadores: Day Pass aparte con su propio cupo, y el
- * general. Las de Day Pass que pasan de su cupo se suman al general (y se dice
- * cuántas). Lo pidió el cliente así: el Day Pass no se come el plan.
+ * El plan del mes: las primeras conversaciones (en orden) ya están pagadas, y
+ * desde la siguiente se separan las de Day Pass (con su cupo) del resto, que
+ * es excedente. Así lo acordó el cliente.
  */
 function PlanDelMes({ p }: { p: Plan }) {
-  const { uso } = p;
+  const { pagadas, despues } = p.uso;
+  const siguiente = miles(p.plan.incluidas + 1);
   return (
     <section className="rounded-2xl border border-line bg-card p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-[15px] font-bold text-[var(--text)]">Plan de conversaciones · {p.mes.etiqueta}</h2>
-        <span className="text-[12px] text-[var(--text-3)]">{miles(uso.total)} conversaciones en el mes</span>
+        <span className="text-[12px] text-[var(--text-3)]">{miles(p.uso.total)} conversaciones en el mes</span>
       </div>
-      <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+
+      <div className="mt-4">
         <BarraDePlan
-          titulo="Day Pass"
-          Icon={Sun}
-          c={uso.dayPass}
-          nota={
-            uso.dayPassAlGeneral > 0
-              ? `${miles(uso.totalDayPass)} en el mes · ${miles(uso.dayPassAlGeneral)} pasaron al general`
-              : null
-          }
-        />
-        <BarraDePlan
-          titulo="Generales"
+          titulo="Pagadas en el plan"
           Icon={MessageSquareText}
-          c={uso.general}
-          nota={uso.dayPassAlGeneral > 0 ? `incluye ${miles(uso.dayPassAlGeneral)} de Day Pass sobre su cupo` : null}
+          c={pagadas}
+          nota={[
+            pagadas.llenoEl ? `se llenó el ${fechaHora(pagadas.llenoEl)}` : null,
+            pagadas.dayPass > 0 ? `${miles(pagadas.dayPass)} eran de Day Pass` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || null}
         />
       </div>
+
+      <p className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-3)]">
+        Desde la conversación {siguiente}
+      </p>
+      {pagadas.llenoEl === null ? (
+        <p className="mt-2 text-[12.5px] text-[var(--text-3)]">Todavía dentro de las {miles(p.plan.incluidas)} del plan.</p>
+      ) : (
+        <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
+          <BarraDePlan
+            titulo="Day Pass"
+            Icon={Sun}
+            c={despues.dayPass}
+            nota={despues.dayPassSobreCupo > 0 ? "lo que pasa del cupo suma al excedente" : null}
+          />
+          <div>
+            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-2)]">
+              <MessagesSquare size={14} className="text-brand" /> Sin Day Pass
+            </p>
+            <p className="mt-1 text-[20px] font-extrabold tracking-tight text-[var(--brand-red)]">{miles(despues.sinDayPass)}</p>
+            <p className="mt-0.5 text-[11.5px] text-[var(--text-3)]">
+              Excedente del mes: <span className="font-semibold text-[var(--text-2)]">{miles(despues.excedente)}</span>
+              {despues.dayPassSobreCupo > 0 && ` (incluye ${miles(despues.dayPassSobreCupo)} de Day Pass sobre su cupo)`}
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

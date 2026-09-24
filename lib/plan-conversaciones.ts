@@ -1,15 +1,18 @@
-// El plan de conversaciones de un cliente, con dos contadores.
+// El plan de conversaciones de un cliente: lo pagado, y lo que viene después.
 //
-// LO QUE SE ACORDÓ CON YALI (2026-09-24): el plan es de 1.000 conversaciones
-// al mes, y las de Day Pass van APARTE con 500 propias. Una conversación de Day
-// Pass no gasta del plan general hasta que se acaban sus 500; de ahí en
-// adelante cada Day Pass extra sí suma al general.
+// LO QUE SE ACORDÓ CON YALI (2026-09-24): el plan son 1.000 conversaciones al
+// mes y esas ya están pagadas, sean del tema que sean. Se cuentan en orden
+// cronológico: las primeras 1.000 del mes son del plan. Desde la 1.001 se
+// separan:
 //
-//   general = conversaciones que no son de Day Pass + (Day Pass por encima de 500)
+//   - las de Day Pass van a un cupo propio de 500;
+//   - las que no son de Day Pass son excedente;
+//   - las de Day Pass que pasen de 500 también son excedente.
 //
 // Qué es UNA conversación: un chat distinto al que el agente respondió en el
 // mes (la misma definición que "Conversaciones atendidas" del consumo). La
-// misma persona en dos meses cuenta en los dos.
+// misma persona en dos meses cuenta en los dos. Su lugar en la fila es la hora
+// de la PRIMERA respuesta del agente en el mes.
 //
 // Qué la hace de Day Pass: que haya hablado del Day Pass, según el análisis
 // diario de las conversaciones (temas) o porque el huésped lo escribió con
@@ -20,15 +23,15 @@
 import { claveDeDia, inicioDeMes, partesSV } from "./periodos";
 
 export interface PlanConversaciones {
-  /** Conversaciones generales incluidas por mes. */
-  generales: number;
-  /** Conversaciones de Day Pass incluidas por mes, aparte de las generales. */
+  /** Conversaciones incluidas (pagadas) por mes, de cualquier tema. */
+  incluidas: number;
+  /** Cupo de Day Pass para las que llegan DESPUÉS de las incluidas. */
   dayPass: number;
 }
 
 /** Los planes vigentes. Un cliente sin plan acá no muestra contadores. */
 export const PLANES: Record<string, PlanConversaciones> = {
-  yaly: { generales: 1000, dayPass: 500 },
+  yaly: { incluidas: 1000, dayPass: 500 },
 };
 
 export interface Contador {
@@ -39,14 +42,30 @@ export interface Contador {
 }
 
 export interface UsoDelPlan {
-  dayPass: Contador;
-  general: Contador;
-  /** Conversaciones de Day Pass que, por pasar de su cupo, cuentan en el general. */
-  dayPassAlGeneral: number;
-  /** Todas las conversaciones del mes, de los dos tipos. */
+  /** Las primeras del mes, las que cubre el plan. */
+  pagadas: Contador & {
+    /** Cuántas de las pagadas fueron de Day Pass (solo informativo). */
+    dayPass: number;
+    /** Cuándo entró la última que cubre el plan; null si no se llenó. */
+    llenoEl: string | null;
+  };
+  /** Desde la conversación que sigue a las pagadas. */
+  despues: {
+    dayPass: Contador;
+    sinDayPass: number;
+    /** Day Pass por encima de su cupo. */
+    dayPassSobreCupo: number;
+    /** Lo que ya no cubre nada: sin Day Pass + Day Pass sobre su cupo. */
+    excedente: number;
+  };
   total: number;
-  /** Conversaciones de Day Pass del mes, antes de repartir. */
   totalDayPass: number;
+}
+
+export interface ConversacionDelMes {
+  id: string;
+  /** Primera respuesta del agente en el mes (ISO). Decide el orden. */
+  primera: string;
 }
 
 const contador = (usadas: number, incluidas: number): Contador => ({
@@ -56,31 +75,51 @@ const contador = (usadas: number, incluidas: number): Contador => ({
 });
 
 /**
- * Reparte las conversaciones del mes entre los dos contadores.
+ * Las conversaciones del mes en orden, a partir de las respuestas del agente:
+ * una por chat, con la hora de su primera respuesta.
+ */
+export function conversacionesDelMes(respuestas: Iterable<{ waFrom: string; ts: string }>): ConversacionDelMes[] {
+  const primera = new Map<string, string>();
+  for (const r of respuestas) {
+    const antes = primera.get(r.waFrom);
+    if (!antes || Date.parse(r.ts) < Date.parse(antes)) primera.set(r.waFrom, r.ts);
+  }
+  return [...primera.entries()]
+    .map(([id, ts]) => ({ id, primera: ts }))
+    .sort((a, b) => Date.parse(a.primera) - Date.parse(b.primera) || a.id.localeCompare(b.id));
+}
+
+/**
+ * Reparte las conversaciones del mes: las primeras `incluidas` son del plan y
+ * desde ahí se separan Day Pass (con su cupo) y el resto (excedente).
  *
- * `conversaciones` son los ids de chat que el agente atendió; `deDayPass`, los
- * que hablaron de Day Pass (puede traer ids de otros meses: solo cuentan los
- * que además están en `conversaciones`).
+ * `deDayPass` puede traer ids de otros meses: solo cuentan los que además
+ * están en `conversaciones`.
  */
 export function usoDelPlan(
-  conversaciones: Iterable<string>,
+  conversaciones: readonly ConversacionDelMes[],
   deDayPass: ReadonlySet<string>,
   plan: PlanConversaciones,
 ): UsoDelPlan {
-  let total = 0;
-  let totalDayPass = 0;
-  for (const id of new Set(conversaciones)) {
-    total++;
-    if (deDayPass.has(id)) totalDayPass++;
-  }
-  const dayPassAlGeneral = Math.max(0, totalDayPass - plan.dayPass);
-  const generales = total - totalDayPass;
+  const pagadas = conversaciones.slice(0, plan.incluidas);
+  const resto = conversaciones.slice(plan.incluidas);
+  const dpDespues = resto.filter((c) => deDayPass.has(c.id)).length;
+  const sinDayPass = resto.length - dpDespues;
+  const dayPassSobreCupo = Math.max(0, dpDespues - plan.dayPass);
   return {
-    dayPass: contador(Math.min(totalDayPass, plan.dayPass), plan.dayPass),
-    general: contador(generales + dayPassAlGeneral, plan.generales),
-    dayPassAlGeneral,
-    total,
-    totalDayPass,
+    pagadas: {
+      ...contador(pagadas.length, plan.incluidas),
+      dayPass: pagadas.filter((c) => deDayPass.has(c.id)).length,
+      llenoEl: pagadas.length >= plan.incluidas ? pagadas[pagadas.length - 1]!.primera : null,
+    },
+    despues: {
+      dayPass: contador(dpDespues, plan.dayPass),
+      sinDayPass,
+      dayPassSobreCupo,
+      excedente: sinDayPass + dayPassSobreCupo,
+    },
+    total: conversaciones.length,
+    totalDayPass: conversaciones.filter((c) => deDayPass.has(c.id)).length,
   };
 }
 

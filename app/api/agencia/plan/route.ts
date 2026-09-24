@@ -1,4 +1,5 @@
-// El plan de conversaciones de un cliente en el mes: Day Pass aparte.
+// El plan de conversaciones de un cliente en el mes: las pagadas y, desde la
+// siguiente, Day Pass y el resto por separado.
 //
 // GET ?cliente=<tenant>&periodo=...  (el mismo filtro del tablero)
 //
@@ -14,7 +15,7 @@ import { TENANTS } from "@/lib/tenants";
 import { getSupabase } from "@/lib/supabase";
 import { detalleConsumo } from "@/lib/tokens-store";
 import { esPeriodo, rangoDePeriodo } from "@/lib/periodos";
-import { PLANES, idDeConsumo, mesDelPlan, usoDelPlan } from "@/lib/plan-conversaciones";
+import { PLANES, conversacionesDelMes, idDeConsumo, mesDelPlan, usoDelPlan } from "@/lib/plan-conversaciones";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -108,7 +109,8 @@ export async function GET(req: Request) {
       ),
     ]);
 
-    const conversaciones = filas.filter((f) => (f.tipo ?? "respuesta") === "respuesta").map((f) => f.waFrom);
+    // En orden: la fila de las 1.000 pagadas se arma por la primera respuesta.
+    const conversaciones = conversacionesDelMes(filas.filter((f) => (f.tipo ?? "respuesta") === "respuesta"));
     const deDayPass = new Set<string>([
       ...analizadas.map((f) => idDeConsumo(f.conversacion_id)),
       ...mencionesWa.map((f) => f.wa_from),
