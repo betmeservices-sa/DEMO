@@ -1,11 +1,10 @@
-// El plan de conversaciones de un cliente en su ciclo de facturación: el
-// plan (las primeras N) y el paquete que corre después, Day Pass aparte.
+// El plan de conversaciones de un cliente en su ciclo de facturación: sin Day
+// Pass y Day Pass, cada una con lo incluido y su paquete adicional.
 //
-// GET ?cliente=<tenant>&periodo=...  (el mismo filtro del tablero)
+// GET ?cliente=<tenant>&ciclo=actual|anterior
 //
-// Se corta por CICLO, no por el periodo: se muestra el ciclo que contiene el
-// final del periodo elegido (ver lib/plan-conversaciones). Con "7 días" es el
-// ciclo en curso; con un rango de un ciclo pasado, ese.
+// Va por CICLO de facturación y NO sigue al filtro de periodo del tablero:
+// "actual" es el ciclo en curso y "anterior" el que ya cerró (para cobrarlo).
 //
 // Solo para la agencia, igual que el resto del tablero.
 
@@ -14,8 +13,16 @@ import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
 import { TENANTS } from "@/lib/tenants";
 import { getSupabase } from "@/lib/supabase";
 import { detalleConsumo } from "@/lib/tokens-store";
-import { esPeriodo, rangoDePeriodo } from "@/lib/periodos";
-import { PLANES, cicloDelPlan, conversacionesDelCiclo, idDeConsumo, usoDelPlan } from "@/lib/plan-conversaciones";
+import {
+  DURACION_CONVERSACION_MS,
+  PLANES,
+  cicloEnCurso,
+  conversacionesQueArrancanEn,
+  hayCicloAnterior,
+  idDeConsumo,
+  inicioDelPlanMs,
+  usoDelPlan,
+} from "@/lib/plan-conversaciones";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,16 +69,23 @@ export async function GET(req: Request) {
   const plan = PLANES[cliente];
   if (!plan) return NextResponse.json({ ok: true, plan: null });
 
-  const periodo = q.get("periodo");
-  const rango = rangoDePeriodo(esPeriodo(periodo) ? periodo : "7d", new Date(), q.get("desde"), q.get("hasta"));
-  const ciclo = cicloDelPlan(rango.hasta, plan.diaDeRenovacion);
+  const ahora = new Date();
+  const hayAnterior = hayCicloAnterior(ahora, plan);
+  const pideAnterior = q.get("ciclo") === "anterior";
+  // Antes de que arranque el plan no hay ciclo que mostrar (ni que cobrar).
+  if (pideAnterior && !hayAnterior) return NextResponse.json({ ok: true, plan, hayAnterior, ciclo: null, uso: null });
+  const ciclo = cicloEnCurso(ahora, plan.diaDeRenovacion, pideAnterior);
+  // Si el plan arrancó a mitad de un ciclo, se cuenta desde que arrancó.
+  const desde = new Date(Math.max(Date.parse(ciclo.desde), inicioDelPlanMs(plan))).toISOString();
 
   const sb = getSupabase(cliente);
   if (!sb) return NextResponse.json({ ok: false, error: "Sin base configurada." });
 
   try {
     const [filas, analizadas, mencionesWa, mencionesMeta] = await Promise.all([
-      detalleConsumo(cliente, TOPE_FILAS, ciclo.desde, ciclo.hasta),
+      // 24 h antes del corte: así se ve dónde arrancó una sesión que viene
+      // abierta del ciclo anterior y no se cuenta de nuevo en este.
+      detalleConsumo(cliente, TOPE_FILAS, new Date(Date.parse(desde) - DURACION_CONVERSACION_MS).toISOString(), ciclo.hasta),
       // Lo que el análisis diario marcó como Day Pass, de cualquier fecha: si
       // el chat tuvo conversaciones en este ciclo, esas cuentan como Day Pass.
       todas<{ conversacion_id: string }>((a, b) =>
@@ -89,7 +103,7 @@ export async function GET(req: Request) {
           .select("wa_from")
           .eq("tenant", cliente)
           .eq("direccion", "in")
-          .gte("ts", ciclo.desde)
+          .gte("ts", desde)
           .lt("ts", ciclo.hasta)
           .filter("texto", "imatch", MENCIONA_DAY_PASS)
           .order("id")
@@ -101,7 +115,7 @@ export async function GET(req: Request) {
           .select("canal, sender_id")
           .eq("tenant", cliente)
           .eq("direction", "in")
-          .gte("ts", ciclo.desde)
+          .gte("ts", desde)
           .lt("ts", ciclo.hasta)
           .filter("texto", "imatch", MENCIONA_DAY_PASS)
           .order("id")
@@ -109,8 +123,11 @@ export async function GET(req: Request) {
       ),
     ]);
 
-    // Sesiones de 24 h en orden de inicio: la fila del plan se arma así.
-    const conversaciones = conversacionesDelCiclo(filas.filter((f) => (f.tipo ?? "respuesta") === "respuesta"));
+    // Sesiones de 24 h que arrancan en el ciclo, en orden de inicio.
+    const conversaciones = conversacionesQueArrancanEn(
+      filas.filter((f) => (f.tipo ?? "respuesta") === "respuesta"),
+      desde,
+    );
     const chatsDayPass = new Set<string>([
       ...analizadas.map((f) => idDeConsumo(f.conversacion_id)),
       ...mencionesWa.map((f) => f.wa_from),
@@ -120,6 +137,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: true,
       plan,
+      hayAnterior,
       ciclo,
       uso: usoDelPlan(conversaciones, chatsDayPass, plan),
       truncado: filas.length >= TOPE_FILAS,

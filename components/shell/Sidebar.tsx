@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { MODULOS_CLINICA } from "@/lib/modulos";
@@ -62,6 +62,7 @@ const NAV: NavItem[] = [
   { id: "sofia", href: "/sofia", label: "Probar a Sofía", Icon: Bot },
   { id: "dashboard", href: "/dashboard", label: "Dashboard", Icon: BarChart3 },
   { id: "reporte", href: "/reporte", label: "Reporte", Icon: FileBarChart },
+  { id: "auditoria", href: "/auditoria", label: "Audit logs", Icon: ScrollText },
   { id: "llamadas", href: "/llamadas", label: "Llamadas", Icon: PhoneCall },
   { id: "qa", href: "/qa", label: "QA", Icon: Headphones },
   { id: "agentes", href: "/agentes", label: "Agentes", Icon: Bot },
@@ -177,7 +178,9 @@ export function Sidebar({
       // dice que casos NO cuentan y nombra de quien fue cada error. Va en el
       // tablero de MiAgentIA, NO en el del cliente: Yali no tiene por que leer
       // nuestra auditoria de su propio agente.
-      (item.id !== "reporte" || veReporte),
+      (item.id !== "reporte" || veReporte) &&
+      // Quién entró al panel de cada cliente: también es solo de la agencia.
+      (item.id !== "auditoria" || veReporte),
       );
 
   // Los avisos del menu: lo que espera respuesta en cada modulo.

@@ -1,19 +1,29 @@
 // El plan de conversaciones de Yali en su ciclo de facturación.
 //
-// Lo acordado: las primeras 1.000 conversaciones del ciclo (en orden, del tema
-// que sean) son del plan, ya pagadas. Desde la 1.001 corre un paquete de 1.000
-// generales y 500 de Day Pass; el Day Pass que pase de 500 cuenta en el
-// general. Una conversación es una sesión de 24 horas, como dice la propuesta.
+// Lo acordado (2026-09-28): sin Day Pass, el plan incluye 1.000 por ciclo y
+// desde la 1.001 corre un paquete adicional; Day Pass va aparte desde la
+// primera, con 500 incluidas y su paquete adicional desde la 501. Una
+// conversación es una sesión de 24 horas, como dice la propuesta. El ciclo de
+// Yali arranca el 1 de septiembre (mes calendario).
 import { describe, expect, it } from "vitest";
 import {
+  PLANES,
   cicloDelPlan,
+  cicloEnCurso,
   conversacionesDelCiclo,
+  conversacionesQueArrancanEn,
+  hayCicloAnterior,
   idDeConsumo,
   usoDelPlan,
   type Conversacion,
 } from "@/lib/plan-conversaciones";
 
-const plan = { plan: 1000, paquete: { generales: 1000, dayPass: 500 }, diaDeRenovacion: 1 };
+const plan = {
+  incluidas: { generales: 1000, dayPass: 500 },
+  adicional: { generales: 1000, dayPass: 500 },
+  diaDeRenovacion: 1,
+  inicio: "2026-09-01",
+};
 
 /** n conversaciones de chats distintos, una por minuto a partir de `desdeMin`. */
 const fila = (prefijo: string, n: number, desdeMin = 0): Conversacion[] =>
@@ -23,6 +33,12 @@ const fila = (prefijo: string, n: number, desdeMin = 0): Conversacion[] =>
   }));
 
 const chats = (cs: Conversacion[]) => new Set(cs.map((c) => c.chat));
+
+describe("el plan de Yali", () => {
+  it("ciclo desde el 1, 1.000 sin Day Pass y 500 de Day Pass, más sus paquetes", () => {
+    expect(PLANES.yaly).toEqual(plan);
+  });
+});
 
 describe("qué es una conversación: una sesión de 24 horas", () => {
   const r = (waFrom: string, ts: string) => ({ waFrom, ts });
@@ -60,46 +76,72 @@ describe("qué es una conversación: una sesión de 24 horas", () => {
   });
 });
 
-describe("el plan y el paquete", () => {
-  it("las primeras 1.000 son del plan aunque sean de Day Pass", () => {
+describe("el corte del ciclo", () => {
+  it("una sesión que viene abierta del ciclo anterior no se cuenta otra vez", () => {
+    // Empezó el 31 de agosto 11 p.m. SV (1 sept 05:00 UTC) y siguió después
+    // de medianoche: es de agosto. La de las 3 p.m. del 1 de septiembre (21:00
+    // UTC) cae dentro de las 24 h, así que es la misma y tampoco cuenta.
+    const c = conversacionesQueArrancanEn(
+      [
+        { waFrom: "a", ts: "2026-09-01T05:00:00Z" },
+        { waFrom: "a", ts: "2026-09-01T07:00:00Z" },
+        { waFrom: "a", ts: "2026-09-01T21:00:00Z" },
+        { waFrom: "b", ts: "2026-09-01T07:00:00Z" },
+      ],
+      "2026-09-01T06:00:00.000Z",
+    );
+    expect(c).toEqual([{ chat: "b", inicio: "2026-09-01T07:00:00.000Z" }]);
+  });
+
+  it("no hay ciclo anterior hasta que el plan cumpla su primer ciclo", () => {
+    expect(hayCicloAnterior(new Date("2026-09-28T17:00:00Z"), plan)).toBe(false);
+    expect(hayCicloAnterior(new Date("2026-10-01T06:00:00Z"), plan)).toBe(true);
+  });
+});
+
+describe("las dos filas: sin Day Pass y Day Pass", () => {
+  it("el Day Pass va aparte desde la primera: no gasta de las 1.000", () => {
     const dp = fila("dp", 300);
     const g = fila("g", 700, 300);
     const u = usoDelPlan([...dp, ...g], chats(dp), plan);
-    expect(u.plan).toMatchObject({ usadas: 1000, incluidas: 1000, dayPass: 300 });
-    expect(u.plan.llenoEl).toBe(g[g.length - 1].inicio);
-    expect(u.paquete.total).toBe(0);
-    expect(u.paquete.generales.usadas).toBe(0);
-    expect(u.paquete.dayPass.usadas).toBe(0);
+    expect(u.total).toBe(1000);
+    expect(u.generales.plan).toEqual({ usadas: 700, incluidas: 1000, excedente: 0 });
+    expect(u.dayPass.plan).toEqual({ usadas: 300, incluidas: 500, excedente: 0 });
+    expect(u.generales.adicional.usadas).toBe(0);
+    expect(u.dayPass.adicional.usadas).toBe(0);
+    expect(u.generales.llenoEl).toBeNull();
   });
 
-  it("desde la 1.001: Day Pass a su cupo, lo demás al general", () => {
-    const delPlan = fila("p", 1000);
-    const dp = fila("dp", 245, 1000);
-    const g = fila("g", 790, 1245);
-    const u = usoDelPlan([...delPlan, ...dp, ...g], chats(dp), plan);
-    expect(u.total).toBe(2035);
-    expect(u.totalDayPass).toBe(245);
-    expect(u.paquete.total).toBe(1035);
-    expect(u.paquete.dayPass).toEqual({ usadas: 245, incluidas: 500, excedente: 0 });
-    expect(u.paquete.generales).toEqual({ usadas: 790, incluidas: 1000, excedente: 0 });
+  it("sin Day Pass: desde la 1.001 corre el paquete adicional", () => {
+    const g = fila("g", 1842);
+    const u = usoDelPlan(g, new Set(), plan);
+    expect(u.generales.total).toBe(1842);
+    expect(u.generales.plan).toEqual({ usadas: 1000, incluidas: 1000, excedente: 0 });
+    expect(u.generales.adicional).toEqual({ usadas: 842, incluidas: 1000, excedente: 0 });
+    // Se llenó con la conversación 1.000, no con la 1.001.
+    expect(u.generales.llenoEl).toBe(g[999].inicio);
   });
 
-  it("el Day Pass sobre su cupo pasa al general, y el general puede pasarse", () => {
-    const delPlan = fila("p", 1000);
-    const dp = fila("dp", 560, 1000);
-    const g = fila("g", 980, 1560);
-    const u = usoDelPlan([...delPlan, ...dp, ...g], chats(dp), plan);
-    expect(u.paquete.dayPassSobreCupo).toBe(60);
-    expect(u.paquete.dayPass).toEqual({ usadas: 560, incluidas: 500, excedente: 60 });
-    expect(u.paquete.generales).toEqual({ usadas: 1040, incluidas: 1000, excedente: 40 });
+  it("Day Pass: desde la 501 corre su paquete adicional", () => {
+    const dp = fila("dp", 771);
+    const u = usoDelPlan(dp, chats(dp), plan);
+    expect(u.dayPass.plan).toEqual({ usadas: 500, incluidas: 500, excedente: 0 });
+    expect(u.dayPass.adicional).toEqual({ usadas: 271, incluidas: 500, excedente: 0 });
+    expect(u.dayPass.llenoEl).toBe(dp[499].inicio);
+    expect(u.generales.total).toBe(0);
+  });
+
+  it("el paquete adicional también puede pasarse", () => {
+    const u = usoDelPlan(fila("g", 2040), new Set(), plan);
+    expect(u.generales.adicional).toEqual({ usadas: 1040, incluidas: 1000, excedente: 40 });
   });
 
   it("al arrancar el ciclo todo está en cero", () => {
     const u = usoDelPlan([], new Set(), plan);
     expect(u.total).toBe(0);
-    expect(u.plan).toMatchObject({ usadas: 0, llenoEl: null });
-    expect(u.paquete.generales).toEqual({ usadas: 0, incluidas: 1000, excedente: 0 });
-    expect(u.paquete.dayPass).toEqual({ usadas: 0, incluidas: 500, excedente: 0 });
+    expect(u.generales.plan.usadas).toBe(0);
+    expect(u.dayPass.plan.usadas).toBe(0);
+    expect(u.generales.llenoEl).toBeNull();
   });
 
   it("un chat de Day Pass: todas sus conversaciones del ciclo son de Day Pass", () => {
@@ -112,8 +154,8 @@ describe("el plan y el paquete", () => {
       new Set(["a", "de-otro-ciclo"]),
       plan,
     );
-    expect(u.totalDayPass).toBe(2);
-    expect(u.plan.dayPass).toBe(2);
+    expect(u.dayPass.total).toBe(2);
+    expect(u.generales.total).toBe(1);
   });
 });
 
@@ -129,6 +171,22 @@ describe("los ids del análisis y del consumo", () => {
 });
 
 describe("el ciclo de facturación", () => {
+  it("el ciclo en curso y el anterior, desde el 1 (hoy 28 de septiembre, 5 p.m. en El Salvador)", () => {
+    const ahora = new Date("2026-09-28T23:00:00Z");
+    expect(cicloEnCurso(ahora, 1)).toEqual({
+      desde: "2026-09-01T06:00:00.000Z",
+      hasta: "2026-10-01T06:00:00.000Z",
+      etiqueta: "Septiembre 2026",
+    });
+    expect(cicloEnCurso(ahora, 1, true).etiqueta).toBe("Agosto 2026");
+  });
+
+  it("de noche en El Salvador el 30 de septiembre sigue siendo septiembre", () => {
+    // 30 sept 11 p.m. SV = 1 oct 5 a.m. UTC.
+    expect(cicloEnCurso(new Date("2026-10-01T05:00:00Z"), 1).etiqueta).toBe("Septiembre 2026");
+    expect(cicloEnCurso(new Date("2026-10-01T06:00:00Z"), 1).etiqueta).toBe("Octubre 2026");
+  });
+
   it("con renovación el 1, es el mes calendario, cortado en hora de El Salvador", () => {
     const c = cicloDelPlan("2026-09-25T06:00:00.000Z", 1);
     expect(c).toEqual({

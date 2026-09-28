@@ -3,16 +3,18 @@
 // El tablero de la agencia: un cliente a la vez.
 //
 // Arriba, una pestaña por cliente (solo los de verdad: los demos no se
-// reportan). Debajo de los filtros, en este orden: cuánto consumió el agente de
-// IA, las estadías que apartó (la plata), quién cerró cada una, y los tickets,
-// la gente y los accesos del cliente. TODO se corta con el periodo elegido:
-// antes el filtro movía el consumo y la plata seguía mostrando 30 días.
+// reportan). Primero va el PLAN DE CONVERSACIONES del ciclo de facturación
+// (components/dashboard/PlanDelCiclo), que NO sigue al filtro de periodo: el
+// ciclo lo marca la facturación. Después el filtro y, debajo, todo lo que sí
+// se corta con él: cuánto consumió el agente de IA, las estadías (la plata),
+// quién cerró cada una, y los tickets y la gente del cliente. El registro de
+// accesos se mudó a su propia página (app/auditoria).
 //
-// DOS VISTAS. "Agencia" es lo de adentro y "Cliente" es lo que se le puede
-// enseñar al cliente: lo mismo SIN un solo costo nuestro (ni dólares del
-// agente, ni tokens, ni caché, ni el modelo que se usa). El dinero que sí se
-// queda es el del cliente: lo que el agente le apartó, que es suyo y es el
-// punto de todo esto.
+// DOS VISTAS. "Cliente" es lo que se le puede enseñar al cliente: SIN un solo
+// costo nuestro (ni dólares del agente, ni tokens, ni caché, ni el modelo que
+// se usa). "Agencia" es lo de adentro. Se entra SIEMPRE en "Cliente" y se pasa
+// a "Agencia" a mano (lo pidió el usuario el 2026-09-28): así nada nuestro
+// queda a la vista por haber sido lo último que se miró.
 //
 // Los periodos (hoy, ayer, 7 días, 30 días, rango) se cortan en hora de El
 // Salvador en el servidor; acá solo se pintan.
@@ -27,13 +29,11 @@ import {
   Coins,
   Database,
   Handshake,
-  KeyRound,
   Loader2,
   MessageSquareText,
   MessagesSquare,
   Mic,
   RefreshCw,
-  Sun,
   TicketCheck,
   Users,
 } from "lucide-react";
@@ -43,7 +43,8 @@ import { CalendarioRango } from "@/components/dashboard/CalendarioRango";
 import { ConversacionCierre } from "@/components/dashboard/ConversacionCierre";
 import { PERIODOS, type Canal, type Periodo, type ReporteConsumo } from "@/lib/agencia-consumo";
 import { PERIODOS_AGENCIA, type ReservasDelPeriodo, type TicketsDelPeriodo } from "@/lib/agencia-resumen";
-import type { Contador, PlanConversaciones, UsoDelPlan } from "@/lib/plan-conversaciones";
+import { ROL, TZ, fechaCorta, fechaHora, miles } from "@/lib/formato-agencia";
+import { PlanDelCiclo } from "@/components/dashboard/PlanDelCiclo";
 
 interface Cierre {
   inicio: string | null;
@@ -103,38 +104,14 @@ interface Cliente {
   activosAhora: number;
 }
 
-interface Acceso {
-  ts: string;
-  tenant: string;
-  usuario: string;
-  nombre: string | null;
-  rol: string | null;
-  host: string | null;
-  ip: string | null;
-  activo: boolean;
-}
-
 interface Resumen {
   clientes: Cliente[];
-  accesos: Acceso[];
 }
 
 type Reporte = ReporteConsumo & { cliente: { id: string; nombre: string }; filasLeidas: number };
 
 /** Qué se está mirando: lo de adentro o lo que ve el cliente. */
 type Vista = "agencia" | "cliente";
-
-const VISTA_KEY = "ccg.agencia.vista";
-
-const ROL: Record<string, string> = {
-  admin: "Administrador",
-  jefe: "Dirección",
-  gerente_marketing: "Gerente",
-  atencion: "Atención",
-  marketing: "Marketing",
-  recepcion: "Recepción",
-  medico: "Médico",
-};
 
 const CANAL: Record<Canal, string> = {
   whatsapp: "WhatsApp",
@@ -143,7 +120,6 @@ const CANAL: Record<Canal, string> = {
   otro: "Otro",
 };
 
-const TZ = "America/El_Salvador";
 const CLIENTE_INICIAL = "yaly";
 
 // Los filtros del tablero, con sus etiquetas de siempre.
@@ -169,10 +145,6 @@ function dineroFino(n: number): string {
   return dinero(n);
 }
 
-function miles(n: number): string {
-  return n.toLocaleString("en-US");
-}
-
 /** 1.234.567 tokens se leen mejor como "1.2M"; menos de 10k, tal cual. */
 function tokensCortos(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
@@ -190,14 +162,6 @@ function hace(iso: string | null): string {
   if (h < 24) return `hace ${h} h`;
   const d = Math.round(h / 24);
   return `hace ${d} ${d === 1 ? "día" : "días"}`;
-}
-
-function fechaHora(iso: string): string {
-  return new Date(iso).toLocaleString("es-SV", { timeZone: TZ, day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
-}
-
-function fechaCorta(iso: string): string {
-  return new Date(iso).toLocaleString("es-SV", { timeZone: TZ, day: "numeric", month: "short" });
 }
 
 /**
@@ -235,27 +199,8 @@ export function AgenciaDashboard() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [metrica, setMetrica] = useState<"respuestas" | "costo">("respuestas");
-  // Arranca en "agencia" para que el servidor y el primer pintado digan lo
-  // mismo; lo guardado se lee ya montado.
-  const [vista, setVista] = useState<Vista>("agencia");
-
-  useEffect(() => {
-    try {
-      const v = window.localStorage.getItem(VISTA_KEY);
-      if (v === "cliente" || v === "agencia") setVista(v);
-    } catch {
-      // Sin localStorage (ventana privada) se queda en la vista de agencia.
-    }
-  }, []);
-
-  const cambiarVista = useCallback((v: Vista) => {
-    setVista(v);
-    try {
-      window.localStorage.setItem(VISTA_KEY, v);
-    } catch {
-      // Que no se acuerde no es motivo para que no cambie.
-    }
-  }, []);
+  // Se entra SIEMPRE en "cliente"; "agencia" se elige a mano y no se recuerda.
+  const [vista, setVista] = useState<Vista>("cliente");
 
   // El mismo periodo para las tres consultas: si una se corta distinto, el
   // tablero vuelve a mostrar números de periodos diferentes lado a lado.
@@ -319,35 +264,11 @@ export function AgenciaDashboard() {
     };
   }, [cliente, filtro, rangoInvalido]);
 
-  // El plan de conversaciones del ciclo de facturación (Day Pass aparte). Se
-  // corta por CICLO, no por el periodo: el periodo solo dice qué ciclo mirar.
-  const [plan, setPlan] = useState<Plan | null>(null);
-  useEffect(() => {
-    if (rangoInvalido) return;
-    let vivo = true;
-    const leer = () =>
-      fetch(`/api/agencia/plan?cliente=${encodeURIComponent(cliente)}&${filtro}`, { cache: "no-store" })
-        .then((r) => r.json())
-        .then((d) => {
-          if (vivo) setPlan(d.ok && d.plan ? { plan: d.plan, ciclo: d.ciclo, uso: d.uso, cliente } : null);
-        })
-        .catch(() => {
-          if (vivo) setPlan(null);
-        });
-    void leer();
-    const t = setInterval(leer, 60_000);
-    return () => {
-      vivo = false;
-      clearInterval(t);
-    };
-  }, [cliente, filtro, rangoInvalido]);
-
   const cerrarCalendario = useCallback(() => setCalendario(false), []);
   const cerrarChat = useCallback(() => setChat(null), []);
 
   const clientes = resumen?.clientes ?? [];
   const seleccionado = clientes.find((c) => c.id === cliente) ?? null;
-  const accesos = (resumen?.accesos ?? []).filter((a) => a.tenant === cliente);
   const paraCliente = vista === "cliente";
 
   return (
@@ -357,16 +278,16 @@ export function AgenciaDashboard() {
           <div>
             <h1 className="text-[17px] font-extrabold tracking-tight text-brand">Agencia</h1>
             <p className="text-[12.5px] text-[var(--text-3)]">
-              {paraCliente ? "Lo que hizo el agente de IA, para enseñárselo al cliente" : "Agente de IA, tickets y accesos, cliente por cliente"}
+              {paraCliente ? "Lo que hizo el agente de IA" : "Plan, agente de IA, reservas y tickets, cliente por cliente"}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex gap-1 rounded-lg border border-line bg-surface p-0.5">
-              {(["agencia", "cliente"] as const).map((v) => (
+              {(["cliente", "agencia"] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
-                  onClick={() => cambiarVista(v)}
+                  onClick={() => setVista(v)}
                   className={cn(
                     "rounded-md px-2.5 py-1 text-[12px] font-semibold capitalize transition",
                     vista === v ? "bg-brand text-white" : "text-[var(--text-2)] hover:bg-card",
@@ -409,7 +330,11 @@ export function AgenciaDashboard() {
       </header>
 
       <div className="flex-1 space-y-5 overflow-y-auto p-5">
-        <div className="flex flex-wrap items-center gap-2">
+        {/* El plan va PRIMERO y fuera del filtro: lo marca el ciclo de
+            facturación. La raya de abajo separa lo que el filtro sí mueve. */}
+        <PlanDelCiclo cliente={cliente} />
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-line pt-5">
           <div className="relative flex flex-wrap gap-1 rounded-xl border border-line bg-surface p-1">
             {FILTROS.map((p) => (
               <button
@@ -459,10 +384,8 @@ export function AgenciaDashboard() {
           </p>
         )}
 
-        {/* Primero el trabajo del agente y, debajo, la plata que apartó: así
-            lo pidió el cliente. Los dos se cortan con el mismo periodo. */}
-        {plan && plan.cliente === cliente && <PlanDelCiclo p={plan} />}
-
+        {/* Debajo del filtro, todo se corta con el mismo periodo: primero el
+            trabajo del agente y, debajo, las reservas (así lo pidió el cliente). */}
         {reporte && reporte.cliente.id === cliente && (
           <Consumo r={reporte} metrica={metrica} setMetrica={setMetrica} paraCliente={paraCliente} />
         )}
@@ -474,45 +397,6 @@ export function AgenciaDashboard() {
 
         {seleccionado && <TicketsYGente c={seleccionado} />}
 
-        {resumen && (
-          <section className="rounded-2xl border border-line bg-card p-5">
-            <h2 className="flex items-center gap-2 text-[15px] font-bold text-[var(--text)]">
-              <KeyRound size={15} className="text-brand" /> Accesos al panel
-            </h2>
-            {accesos.length === 0 ? (
-              <p className="mt-2 text-[12.5px] text-[var(--text-3)]">Nadie de {seleccionado?.nombre ?? "este cliente"} entró en este periodo.</p>
-            ) : (
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-[12.5px]">
-                  <thead className="text-[11px] uppercase tracking-wide text-[var(--text-3)]">
-                    <tr className="text-left">
-                      <th className="py-1.5 pr-3 font-semibold">Cuándo</th>
-                      <th className="py-1.5 pr-3 font-semibold">Quién</th>
-                      <th className="py-1.5 pr-3 font-semibold">Desde</th>
-                      <th className="py-1.5 font-semibold">Ahora</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {accesos.map((a, i) => (
-                      <tr key={`${a.ts}-${i}`} className="border-t border-line">
-                        <td className="whitespace-nowrap py-2 pr-3 text-[var(--text-2)]">{fechaHora(a.ts)}</td>
-                        <td className="py-2 pr-3">
-                          <span className="font-semibold text-[var(--text)]">{a.nombre ?? a.usuario}</span>
-                          <span className="block text-[11px] text-[var(--text-3)]">
-                            {a.usuario}
-                            {a.rol ? ` · ${ROL[a.rol] ?? a.rol}` : ""}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-3 text-[var(--text-3)]">{[a.host, a.ip].filter(Boolean).join(" · ") || "sin dato"}</td>
-                        <td className="py-2">{a.activo ? <Pastilla verde>Activo</Pastilla> : <span className="text-[var(--text-3)]">·</span>}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        )}
       </div>
 
       {chat?.conversacion && (
@@ -564,9 +448,9 @@ function Consumo({
       {paraCliente ? (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
           <MetricCard label="Respuestas enviadas" valor={miles(a.respuestas)} delta={delta(a.respuestas, ant.respuestas)} Icon={Bot} />
-          <MetricCard label="Conversaciones atendidas" valor={miles(a.conversaciones)} delta={delta(a.conversaciones, ant.conversaciones)} Icon={MessageSquareText} />
+          <MetricCard label="Chats atendidos" valor={miles(a.conversaciones)} delta={delta(a.conversaciones, ant.conversaciones)} Icon={MessageSquareText} />
           <MetricCard
-            label="Respuestas por conversación"
+            label="Respuestas por chat"
             valor={a.respuestasPorConversacion.toFixed(1)}
             delta={delta(a.respuestasPorConversacion, ant.respuestasPorConversacion)}
             Icon={MessagesSquare}
@@ -576,7 +460,7 @@ function Consumo({
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <MetricCard label={`Costo del agente · ${r.periodo.etiqueta.toLowerCase()}`} valor={dinero(a.costo)} delta={delta(a.costo, ant.costo)} Icon={CircleDollarSign} />
           <MetricCard label="Respuestas enviadas" valor={miles(a.respuestas)} delta={delta(a.respuestas, ant.respuestas)} Icon={Bot} />
-          <MetricCard label="Conversaciones atendidas" valor={miles(a.conversaciones)} delta={delta(a.conversaciones, ant.conversaciones)} Icon={MessageSquareText} />
+          <MetricCard label="Chats atendidos" valor={miles(a.conversaciones)} delta={delta(a.conversaciones, ant.conversaciones)} Icon={MessageSquareText} />
           <MetricCard label="Costo por respuesta" valor={dineroFino(a.costoPorRespuesta)} delta={delta(a.costoPorRespuesta, ant.costoPorRespuesta)} Icon={Coins} />
         </div>
       )}
@@ -606,7 +490,7 @@ function Consumo({
             )
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <Tarjeta titulo="Respuestas por conversación" Icon={MessageSquareText}>
+              <Tarjeta titulo="Respuestas por chat" Icon={MessageSquareText}>
                 <p className="text-[24px] font-extrabold tracking-tight text-[var(--text)]">{a.respuestasPorConversacion.toFixed(1)}</p>
                 <p className="text-[12px] text-[var(--text-2)]">
                   antes {ant.respuestasPorConversacion.toFixed(1)}
@@ -704,7 +588,7 @@ function Consumo({
               <thead className="text-[11px] uppercase tracking-wide text-[var(--text-3)]">
                 <tr className="text-left">
                   <th className="py-1.5 pr-3 font-semibold">Canal</th>
-                  <th className="py-1.5 pr-3 text-right font-semibold">Conv.</th>
+                  <th className="py-1.5 pr-3 text-right font-semibold">Chats</th>
                   <th className="py-1.5 pr-3 text-right font-semibold">Resp.</th>
                   {!paraCliente && <th className="py-1.5 text-right font-semibold">Costo</th>}
                 </tr>
@@ -724,7 +608,7 @@ function Consumo({
 
           <section className="rounded-2xl border border-line bg-card">
             <Desplegable abierto={verConversaciones} setAbierto={setVerConversaciones}>
-              <h2 className="text-[15px] font-bold text-[var(--text)]">Conversaciones · {r.conversaciones.length}</h2>
+              <h2 className="text-[15px] font-bold text-[var(--text)]">Chats · {r.conversaciones.length}</h2>
             </Desplegable>
             {verConversaciones && (
               <div className="max-h-80 overflow-auto px-5 pb-5">
@@ -768,40 +652,66 @@ function Consumo({
  *
  * Esta plata es del cliente, no nuestra, así que también se le enseña a él.
  */
+/**
+ * Las reservas del periodo, por cómo terminaron (ver lib/agencia-resumen).
+ *
+ * Antes decía "Estadías apartadas por el agente" y no era cierto: la tabla
+ * tiene también las que la detección encontró en chats del equipo y las que
+ * alguien tomó a mano. Y "rechazadas" mezclaba huéspedes que no pagaron con
+ * estadías que sí se hicieron por otro camino. Ahora cada número dice qué es.
+ */
 function Reservas({ c }: { c: Cliente }) {
   const r = c.reservas;
+  const o = r.confirmadas.porOrigen;
+  const origen = [
+    o.sofia > 0 ? `${o.sofia} ${o.sofia === 1 ? "la apartó" : "las apartó"} Sofía` : null,
+    o.detectada > 0 ? `${o.detectada} sin apartado de Sofía (las encontró el sistema en el chat o en Cloudbeds)` : null,
+    o.manual > 0 ? `${o.manual} tomada${o.manual === 1 ? "" : "s"} a mano` : null,
+    o.otro > 0 ? `${o.otro} sin origen` : null,
+  ].filter(Boolean);
+  const aparte = [
+    r.otraVia > 0 ? `${r.otraVia} se hicieron por otra vía (pagó en hotel, se ingresó a mano)` : null,
+    r.rechazadas > 0
+      ? `${r.rechazadas} rechazadas por el equipo por otros motivos, como cambio de fecha o cancelación${r.sinMotivo > 0 ? ` (${r.sinMotivo} sin motivo escrito)` : ""}`
+      : null,
+    r.reemplazadas > 0 ? `${r.reemplazadas} cambiadas por un apartado nuevo de Sofía en el mismo chat, que no cuentan` : null,
+  ].filter(Boolean);
+
   return (
     <section className="rounded-2xl border border-line bg-card p-5">
       <p className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-3)]">
-        <BedDouble size={12} /> Estadías apartadas por el agente
+        <BedDouble size={12} /> Reservas
       </p>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
-          <p className="text-[24px] font-extrabold leading-none tracking-tight text-[#2f9e2f]">
-            {dinero(r.confirmadas.total)}
+          <p className="text-[24px] font-extrabold leading-none tracking-tight text-[#2f9e2f]">{dinero(r.confirmadas.total)}</p>
+          <p className="mt-1 text-[12px] font-semibold text-[var(--text-2)]">
+            {r.confirmadas.n} pagada{r.confirmadas.n === 1 ? "" : "s"} y confirmada{r.confirmadas.n === 1 ? "" : "s"}
           </p>
-          <p className="mt-1 text-[12px] text-[var(--text-2)]">
-            {r.confirmadas.n} confirmada{r.confirmadas.n === 1 ? "" : "s"}
-          </p>
+          {origen.length > 0 && <p className="text-[11.5px] text-[var(--text-3)]">{origen.join(" · ")}</p>}
         </div>
         <div>
-          <p className="text-[24px] font-extrabold leading-none tracking-tight text-[var(--brand-accent)]">
-            {dinero(r.esperando.total)}
-          </p>
-          <p className="mt-1 text-[12px] text-[var(--text-2)]">
-            {r.esperando.n} esperando pago
+          <p className="text-[24px] font-extrabold leading-none tracking-tight text-[var(--brand-accent)]">{dinero(r.abiertas.total)}</p>
+          <p className="mt-1 text-[12px] font-semibold text-[var(--text-2)]">
+            {r.abiertas.n} abierta{r.abiertas.n === 1 ? "" : "s"}
           </p>
           <p className="text-[11.5px] text-[var(--text-3)]">
-            {r.pendientePago.n} sin comprobante · {r.conComprobante.n} por verificar
+            {r.abiertas.enSuHora} esperando pago, dentro de su apartado de 1 hora · {r.abiertas.porVerificar} ya
+            pagó y falta verificar el comprobante
           </p>
         </div>
         <div>
-          <p className="text-[24px] font-extrabold leading-none tracking-tight text-[var(--text-3)]">
-            {r.rechazadas}
+          <p className="text-[24px] font-extrabold leading-none tracking-tight text-[var(--text-3)]">{dinero(r.vencidas.total)}</p>
+          <p className="mt-1 text-[12px] font-semibold text-[var(--text-2)]">
+            {r.vencidas.n} vencida{r.vencidas.n === 1 ? "" : "s"}: no pagaron a tiempo
           </p>
-          <p className="mt-1 text-[12px] text-[var(--text-2)]">rechazadas</p>
+          <p className="text-[11.5px] text-[var(--text-3)]">
+            {r.vencidas.sinCerrar} se les venció el apartado de 1 hora y nadie las cerró · {r.vencidas.cerradas} cerradas por
+            el equipo (no pagó, no contestó)
+          </p>
         </div>
       </div>
+      {aparte.length > 0 && <p className="mt-3 text-[11.5px] text-[var(--text-3)]">Aparte: {aparte.join(" · ")}.</p>}
     </section>
   );
 }
@@ -1060,158 +970,6 @@ function Desplegable({
       {children}
       <ChevronDown size={16} className={cn("shrink-0 text-[var(--text-3)] transition", abierto && "rotate-180")} />
     </button>
-  );
-}
-
-interface Plan {
-  plan: PlanConversaciones;
-  ciclo: { etiqueta: string };
-  uso: UsoDelPlan;
-  cliente: string;
-}
-
-/**
- * El plan del ciclo en cuatro barras, como lo pidió el usuario:
- *
- *   1. Conversaciones del ciclo (todas), partida en lo que cubre el plan y lo
- *      que corre en el paquete.
- *   2. Conversaciones del paquete: las generales desde la que sigue al plan,
- *      contra su cupo.
- *   3. Day Pass del ciclo (todas), en la misma escala que la 1 para que se vea
- *      qué parte del total son.
- *   4. Day Pass del paquete, contra su cupo; lo que pasa del cupo se va al 2.
- */
-function PlanDelCiclo({ p }: { p: Plan }) {
-  const { uso, plan } = p;
-  // Las barras 1 y 3 comparten escala: el total del ciclo, o el plan mientras
-  // no se llene (así al arrancar el ciclo se ve cuánto falta).
-  const escala = Math.max(uso.total, plan.plan, 1);
-  const enPaquete = uso.plan.llenoEl !== null;
-  const siguiente = miles(plan.plan + 1);
-  const g = uso.paquete.generales;
-  const dp = uso.paquete.dayPass;
-
-  return (
-    <section className="rounded-2xl border border-line bg-card p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-[15px] font-bold text-[var(--text)]">Plan de conversaciones · {p.ciclo.etiqueta}</h2>
-        <span className="text-[12px] text-[var(--text-3)]">conversación = sesión de 24 h</span>
-      </div>
-
-      <div className="mt-4 space-y-5">
-        <FilaDePlan
-          titulo="Conversaciones del ciclo"
-          Icon={MessagesSquare}
-          valor={miles(uso.total)}
-          segmentos={[
-            { n: uso.plan.usadas, tono: "suave" },
-            { n: uso.paquete.total, tono: "fuerte" },
-          ]}
-          escala={escala}
-          nota={
-            enPaquete
-              ? `${miles(plan.plan)} del plan, se llenó el ${fechaHora(uso.plan.llenoEl!)} · ${miles(uso.paquete.total)} desde la ${siguiente}`
-              : `quedan ${miles(plan.plan - uso.plan.usadas)} del plan de ${miles(plan.plan)}`
-          }
-        />
-        <FilaDePlan
-          titulo="Conversaciones del paquete"
-          Icon={MessageSquareText}
-          valor={miles(g.usadas)}
-          de={miles(g.incluidas)}
-          segmentos={[{ n: Math.min(g.usadas, g.incluidas), tono: g.excedente > 0 ? "alerta" : "fuerte" }]}
-          escala={g.incluidas}
-          alerta={g.excedente > 0}
-          nota={[
-            g.excedente > 0 ? `${miles(g.excedente)} sobre el paquete` : `quedan ${miles(g.incluidas - g.usadas)}`,
-            uso.paquete.dayPassSobreCupo > 0 ? `incluye ${miles(uso.paquete.dayPassSobreCupo)} de Day Pass sobre su cupo` : null,
-            !enPaquete ? `empieza en la ${siguiente}` : null,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        />
-
-        <FilaDePlan
-          titulo="Day Pass del ciclo"
-          Icon={Sun}
-          valor={miles(uso.totalDayPass)}
-          segmentos={[
-            { n: uso.plan.dayPass, tono: "suave" },
-            { n: dp.usadas, tono: "fuerte" },
-          ]}
-          escala={escala}
-          nota={
-            enPaquete
-              ? `${miles(uso.plan.dayPass)} dentro del plan · ${miles(dp.usadas)} desde la ${siguiente}`
-              : "todas dentro del plan"
-          }
-        />
-        <FilaDePlan
-          titulo="Day Pass del paquete"
-          Icon={Sun}
-          valor={miles(Math.min(dp.usadas, dp.incluidas))}
-          de={miles(dp.incluidas)}
-          segmentos={[{ n: Math.min(dp.usadas, dp.incluidas), tono: "fuerte" }]}
-          escala={dp.incluidas}
-          nota={
-            dp.excedente > 0
-              ? `${miles(dp.excedente)} pasaron a las generales del paquete`
-              : `quedan ${miles(dp.incluidas - dp.usadas)}${!enPaquete ? ` · empieza en la ${siguiente}` : ""}`
-          }
-        />
-      </div>
-    </section>
-  );
-}
-
-const TONO: Record<"suave" | "fuerte" | "alerta", string> = {
-  suave: "bg-brand/40",
-  fuerte: "bg-brand",
-  alerta: "bg-[var(--brand-red)]",
-};
-
-function FilaDePlan({
-  titulo,
-  Icon,
-  valor,
-  de,
-  segmentos,
-  escala,
-  alerta = false,
-  nota,
-}: {
-  titulo: string;
-  Icon: typeof Coins;
-  valor: string;
-  /** "de 1,000": solo en las barras que tienen cupo. */
-  de?: string;
-  segmentos: { n: number; tono: keyof typeof TONO }[];
-  escala: number;
-  alerta?: boolean;
-  nota: string;
-}) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-2)]">
-          <Icon size={14} className="text-brand" /> {titulo}
-        </p>
-        <p className="text-[13px] tabular-nums text-[var(--text-3)]">
-          <span className={cn("text-[20px] font-extrabold tracking-tight", alerta ? "text-[var(--brand-red)]" : "text-[var(--text)]")}>
-            {valor}
-          </span>
-          {de && ` de ${de}`}
-        </p>
-      </div>
-      <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-surface">
-        {segmentos.map((sg, i) =>
-          sg.n > 0 ? (
-            <div key={i} className={cn("h-full", TONO[sg.tono])} style={{ width: `${Math.min(100, (sg.n / escala) * 100)}%` }} />
-          ) : null,
-        )}
-      </div>
-      <p className={cn("mt-1.5 text-[11.5px]", alerta ? "font-semibold text-[var(--brand-red)]" : "text-[var(--text-3)]")}>{nota}</p>
-    </div>
   );
 }
 

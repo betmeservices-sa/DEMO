@@ -1,9 +1,10 @@
 // El tablero de la agencia: la plata, los tickets y la gente de cada cliente.
 //
 // Solo para la cuenta de la agencia (sesión con `todos`). Por cliente, en el
-// periodo elegido: las estadías que apartó el agente, los tickets, y la gente
-// del cliente con su último login y si está adentro ahora. Más el log de
-// accesos. El consumo de la IA va aparte, en /api/agencia/consumo.
+// periodo elegido: las reservas, los tickets, y la gente del cliente con su
+// último login y si está adentro ahora. El registro de accesos completo va en
+// su propia página (/api/agencia/accesos) y el consumo de la IA en
+// /api/agencia/consumo.
 //
 // GET ?periodo=hoy|ayer|7d|30d|rango&desde=AAAA-MM-DD&hasta=AAAA-MM-DD
 //
@@ -93,15 +94,5 @@ export async function GET(req: Request) {
     ok: true,
     periodo: rango,
     clientes,
-    accesos: accesos.slice(0, 100).map((a) => ({
-      ts: a.ts,
-      tenant: a.tenant,
-      usuario: a.usuario,
-      nombre: a.nombre,
-      rol: a.rol,
-      host: a.host,
-      ip: a.ip,
-      activo: estaActivo(actividadPor.get(a.usuario)?.ultimoVisto, ahora),
-    })),
   });
 }

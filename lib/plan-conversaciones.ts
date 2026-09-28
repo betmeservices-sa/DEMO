@@ -1,12 +1,14 @@
 // El plan de conversaciones de un cliente en su ciclo de facturación.
 //
-// LO QUE SE ACORDÓ CON YALI (2026-09-24/27):
+// LO QUE SE ACORDÓ CON YALI (versión del 2026-09-28):
 //
-//   - PLAN: las primeras 1.000 conversaciones del ciclo, en orden cronológico y
-//     del tema que sean, ya están pagadas (Plan A Starter de la propuesta).
-//   - PAQUETE: desde la 1.001 corre un paquete de 1.000 generales y 500 de Day
-//     Pass. Las de Day Pass van a su cupo; las demás, al general. El Day Pass
-//     que pase de 500 también cuenta en el general.
+//   - SIN DAY PASS: el plan incluye 1.000 conversaciones por ciclo. Desde la
+//     1.001 corre el paquete adicional.
+//   - DAY PASS: van aparte desde la primera. El plan incluye 500 por ciclo;
+//     desde la 501 corre su propio paquete adicional.
+//
+// Las dos filas son independientes: una conversación de Day Pass nunca gasta
+// de las 1.000 generales, ni al revés.
 //
 // QUÉ ES UNA CONVERSACIÓN. Lo dice la propuesta que recibió el cliente: "una
 // sesión activa con un huésped, con validez de 24 horas". La sesión arranca
@@ -17,31 +19,43 @@
 // QUÉ LA HACE DE DAY PASS. Que el chat haya hablado del Day Pass: lo marcó el
 // análisis diario de conversaciones, o el huésped lo escribió en el ciclo. Se
 // decide por chat y todas sus sesiones del ciclo lo heredan: es simple de
-// explicar, no cambia de un día a otro, y si se equivoca es a favor del
-// cliente (el Day Pass tiene su propio cupo).
+// explicar y si se equivoca es a favor del cliente. Ojo: si el análisis diario
+// cambia el tema de un chat, sus sesiones pasan de una fila a la otra.
 //
-// EL CICLO. Va de renovación a renovación de la suscripción (Stripe), no por
-// mes calendario. `diaDeRenovacion` = 1 es el mes calendario. Se corta a la
-// medianoche de El Salvador.
+// EL CICLO. Va de renovación a renovación (`diaDeRenovacion`; 1 = mes
+// calendario). Se corta a la medianoche de El Salvador.
 //
 // Puro: sin base ni reloj, para poder probarlo.
 
 import { medianocheSV, partesSV } from "./periodos";
 
+export interface Cupos {
+  /** Conversaciones sin Day Pass. */
+  generales: number;
+  /** Conversaciones de Day Pass. */
+  dayPass: number;
+}
+
 export interface PlanConversaciones {
-  /** Las primeras N conversaciones del ciclo, de cualquier tema, ya pagadas. */
-  plan: number;
-  /** Lo que corre desde la conversación `plan + 1`. */
-  paquete: { generales: number; dayPass: number };
-  /** Día del mes en que se renueva la suscripción. 1 = mes calendario. */
+  /** Lo que el plan incluye por ciclo. */
+  incluidas: Cupos;
+  /** El paquete adicional que corre cuando se acaba lo incluido. */
+  adicional: Cupos;
+  /** Día del mes en que arranca cada ciclo. 1 = mes calendario. */
   diaDeRenovacion: number;
+  /** Desde cuándo corre el plan (AAAA-MM-DD, El Salvador). Antes no hay ciclos. */
+  inicio: string;
 }
 
 /** Los planes vigentes. Un cliente sin plan acá no muestra contadores. */
 export const PLANES: Record<string, PlanConversaciones> = {
-  // El ciclo es la fecha de pago: Yali pagó el martes 22 de septiembre de 2026,
-  // así que cada ciclo va del 22 al 21 del mes siguiente.
-  yaly: { plan: 1000, paquete: { generales: 1000, dayPass: 500 }, diaDeRenovacion: 22 },
+  // El ciclo de Yali arranca el 1 de septiembre de 2026 y va por mes calendario.
+  yaly: {
+    incluidas: { generales: 1000, dayPass: 500 },
+    adicional: { generales: 1000, dayPass: 500 },
+    diaDeRenovacion: 1,
+    inicio: "2026-09-01",
+  },
 };
 
 /** Lo que dura una conversación, según la propuesta: 24 horas. */
@@ -61,27 +75,23 @@ export interface Conversacion {
   inicio: string;
 }
 
-export interface UsoDelPlan {
-  /** Todas las conversaciones del ciclo. */
+/** Una fila del plan: lo incluido y, pasado eso, el paquete adicional. */
+export interface FilaDelPlan {
+  /** Todas las del ciclo de esta fila. */
   total: number;
-  /** Todas las de Day Pass del ciclo. */
-  totalDayPass: number;
-  /** Las primeras del ciclo, las que cubre el plan. */
-  plan: Contador & {
-    /** Cuántas de las del plan fueron de Day Pass. */
-    dayPass: number;
-    /** Cuándo arrancó la última que cubre el plan; null si no se llenó. */
-    llenoEl: string | null;
-  };
-  /** Desde la conversación que sigue al plan. */
-  paquete: {
-    total: number;
-    /** Sin Day Pass, más el Day Pass sobre su cupo. */
-    generales: Contador;
-    dayPass: Contador;
-    /** Day Pass por encima de su cupo, que pasó al general. */
-    dayPassSobreCupo: number;
-  };
+  /** Las que cubre el plan (nunca más que lo incluido). */
+  plan: Contador;
+  /** Las que van al paquete adicional, desde la que sigue a lo incluido. */
+  adicional: Contador;
+  /** Cuándo arrancó la última que cubre el plan; null si no se llenó. */
+  llenoEl: string | null;
+}
+
+export interface UsoDelPlan {
+  /** Todas las conversaciones del ciclo, con Day Pass. */
+  total: number;
+  generales: FilaDelPlan;
+  dayPass: FilaDelPlan;
 }
 
 const contador = (usadas: number, incluidas: number): Contador => ({
@@ -118,9 +128,19 @@ export function conversacionesDelCiclo(respuestas: Iterable<{ waFrom: string; ts
   return out.sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio) || a.chat.localeCompare(b.chat));
 }
 
+/** Reparte una fila (ya en orden) entre lo incluido y el paquete adicional. */
+function fila(conversaciones: readonly Conversacion[], incluidas: number, adicional: number): FilaDelPlan {
+  const enPlan = Math.min(conversaciones.length, incluidas);
+  return {
+    total: conversaciones.length,
+    plan: contador(enPlan, incluidas),
+    adicional: contador(conversaciones.length - enPlan, adicional),
+    llenoEl: conversaciones.length >= incluidas && incluidas > 0 ? conversaciones[incluidas - 1]!.inicio : null,
+  };
+}
+
 /**
- * Reparte las conversaciones del ciclo: las primeras `plan` son del plan, y
- * desde la siguiente cada una va al cupo de Day Pass o al general.
+ * Reparte las conversaciones del ciclo en las dos filas del plan.
  *
  * `chatsDayPass` puede traer chats de otros ciclos: solo cuentan los que
  * además tienen conversaciones en este.
@@ -130,25 +150,12 @@ export function usoDelPlan(
   chatsDayPass: ReadonlySet<string>,
   p: PlanConversaciones,
 ): UsoDelPlan {
-  const esDp = (c: Conversacion) => chatsDayPass.has(c.chat);
-  const delPlan = conversaciones.slice(0, p.plan);
-  const delPaquete = conversaciones.slice(p.plan);
-  const dpPaquete = delPaquete.filter(esDp).length;
-  const dayPassSobreCupo = Math.max(0, dpPaquete - p.paquete.dayPass);
+  const dp = conversaciones.filter((c) => chatsDayPass.has(c.chat));
+  const generales = conversaciones.filter((c) => !chatsDayPass.has(c.chat));
   return {
     total: conversaciones.length,
-    totalDayPass: conversaciones.filter(esDp).length,
-    plan: {
-      ...contador(delPlan.length, p.plan),
-      dayPass: delPlan.filter(esDp).length,
-      llenoEl: delPlan.length >= p.plan ? delPlan[delPlan.length - 1]!.inicio : null,
-    },
-    paquete: {
-      total: delPaquete.length,
-      generales: contador(delPaquete.length - dpPaquete + dayPassSobreCupo, p.paquete.generales),
-      dayPass: contador(dpPaquete, p.paquete.dayPass),
-      dayPassSobreCupo,
-    },
+    generales: fila(generales, p.incluidas.generales, p.adicional.generales),
+    dayPass: fila(dp, p.incluidas.dayPass, p.adicional.dayPass),
   };
 }
 
@@ -177,9 +184,46 @@ function diaEn(y: number, m: number, dia: number): number {
 }
 
 /**
- * El ciclo que contiene el final del periodo elegido. Con "7 días" es el ciclo
- * en curso; con un rango que termina en uno pasado, ese.
+ * El ciclo en curso en `ahora`, o el que terminó justo antes si `anterior`.
+ * Lo usa el tablero: el plan NO sigue al filtro de periodo, va por ciclo.
  */
+export function cicloEnCurso(
+  ahora: Date,
+  diaDeRenovacion: number,
+  anterior = false,
+): { desde: string; hasta: string; etiqueta: string } {
+  const actual = cicloDelPlan(new Date(ahora.getTime() + 1).toISOString(), diaDeRenovacion);
+  return anterior ? cicloDelPlan(actual.desde, diaDeRenovacion) : actual;
+}
+
+/** La medianoche de El Salvador del día en que arrancó el plan, en ms UTC. */
+export function inicioDelPlanMs(p: PlanConversaciones): number {
+  const [y, m, d] = p.inicio.split("-").map(Number);
+  return medianocheSV(y!, m! - 1, d!);
+}
+
+/**
+ * ¿Hay un ciclo anterior que mostrar? Solo si arrancó cuando el plan ya
+ * corría: agosto no es un ciclo de Yali aunque haya habido conversaciones.
+ */
+export function hayCicloAnterior(ahora: Date, p: PlanConversaciones): boolean {
+  return Date.parse(cicloEnCurso(ahora, p.diaDeRenovacion, true).desde) >= inicioDelPlanMs(p);
+}
+
+/**
+ * Las conversaciones que ARRANCAN en el ciclo. Hay que leer las respuestas
+ * desde 24 h antes: una sesión que empezó el último día del ciclo anterior
+ * sigue abierta al entrar en este, y sin ver su inicio se contaba dos veces.
+ */
+export function conversacionesQueArrancanEn(
+  respuestas: Iterable<{ waFrom: string; ts: string }>,
+  desde: string,
+): Conversacion[] {
+  const t0 = Date.parse(desde);
+  return conversacionesDelCiclo(respuestas).filter((c) => Date.parse(c.inicio) >= t0);
+}
+
+/** El ciclo que contiene el instante justo antes de `hastaExclusivo`. */
 export function cicloDelPlan(
   hastaExclusivo: string,
   diaDeRenovacion: number,
