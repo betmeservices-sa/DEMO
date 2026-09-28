@@ -319,8 +319,8 @@ export function AgenciaDashboard() {
     };
   }, [cliente, filtro, rangoInvalido]);
 
-  // El plan de conversaciones del mes (Day Pass aparte). Se corta por MES, no
-  // por el periodo: el periodo solo dice qué mes mirar.
+  // El plan de conversaciones del ciclo de facturación (Day Pass aparte). Se
+  // corta por CICLO, no por el periodo: el periodo solo dice qué ciclo mirar.
   const [plan, setPlan] = useState<Plan | null>(null);
   useEffect(() => {
     if (rangoInvalido) return;
@@ -329,7 +329,7 @@ export function AgenciaDashboard() {
       fetch(`/api/agencia/plan?cliente=${encodeURIComponent(cliente)}&${filtro}`, { cache: "no-store" })
         .then((r) => r.json())
         .then((d) => {
-          if (vivo) setPlan(d.ok && d.plan ? { plan: d.plan, mes: d.mes, uso: d.uso, cliente } : null);
+          if (vivo) setPlan(d.ok && d.plan ? { plan: d.plan, ciclo: d.ciclo, uso: d.uso, cliente } : null);
         })
         .catch(() => {
           if (vivo) setPlan(null);
@@ -461,7 +461,7 @@ export function AgenciaDashboard() {
 
         {/* Primero el trabajo del agente y, debajo, la plata que apartó: así
             lo pidió el cliente. Los dos se cortan con el mismo periodo. */}
-        {plan && plan.cliente === cliente && <PlanDelMes p={plan} />}
+        {plan && plan.cliente === cliente && <PlanDelCiclo p={plan} />}
 
         {reporte && reporte.cliente.id === cliente && (
           <Consumo r={reporte} metrica={metrica} setMetrica={setMetrica} paraCliente={paraCliente} />
@@ -1065,82 +1065,131 @@ function Desplegable({
 
 interface Plan {
   plan: PlanConversaciones;
-  mes: { etiqueta: string };
+  ciclo: { etiqueta: string };
   uso: UsoDelPlan;
   cliente: string;
 }
 
 /**
- * El plan del mes: las primeras conversaciones (en orden) ya están pagadas, y
- * desde la siguiente se separan las de Day Pass (con su cupo) del resto, que
- * es excedente. Así lo acordó el cliente.
+ * El plan del ciclo en cuatro barras, como lo pidió el usuario:
+ *
+ *   1. Conversaciones del ciclo (todas), partida en lo que cubre el plan y lo
+ *      que corre en el paquete.
+ *   2. Conversaciones del paquete: las generales desde la que sigue al plan,
+ *      contra su cupo.
+ *   3. Day Pass del ciclo (todas), en la misma escala que la 1 para que se vea
+ *      qué parte del total son.
+ *   4. Day Pass del paquete, contra su cupo; lo que pasa del cupo se va al 2.
  */
-function PlanDelMes({ p }: { p: Plan }) {
-  const { pagadas, despues } = p.uso;
-  const siguiente = miles(p.plan.incluidas + 1);
+function PlanDelCiclo({ p }: { p: Plan }) {
+  const { uso, plan } = p;
+  // Las barras 1 y 3 comparten escala: el total del ciclo, o el plan mientras
+  // no se llene (así al arrancar el ciclo se ve cuánto falta).
+  const escala = Math.max(uso.total, plan.plan, 1);
+  const enPaquete = uso.plan.llenoEl !== null;
+  const siguiente = miles(plan.plan + 1);
+  const g = uso.paquete.generales;
+  const dp = uso.paquete.dayPass;
+
   return (
     <section className="rounded-2xl border border-line bg-card p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-[15px] font-bold text-[var(--text)]">Plan de conversaciones · {p.mes.etiqueta}</h2>
-        <span className="text-[12px] text-[var(--text-3)]">{miles(p.uso.total)} conversaciones en el mes</span>
+        <h2 className="text-[15px] font-bold text-[var(--text)]">Plan de conversaciones · {p.ciclo.etiqueta}</h2>
+        <span className="text-[12px] text-[var(--text-3)]">conversación = sesión de 24 h</span>
       </div>
 
-      <div className="mt-4">
-        <BarraDePlan
-          titulo="Pagadas en el plan"
+      <div className="mt-4 space-y-5">
+        <FilaDePlan
+          titulo="Conversaciones del ciclo"
+          Icon={MessagesSquare}
+          valor={miles(uso.total)}
+          segmentos={[
+            { n: uso.plan.usadas, tono: "suave" },
+            { n: uso.paquete.total, tono: "fuerte" },
+          ]}
+          escala={escala}
+          nota={
+            enPaquete
+              ? `${miles(plan.plan)} del plan, se llenó el ${fechaHora(uso.plan.llenoEl!)} · ${miles(uso.paquete.total)} desde la ${siguiente}`
+              : `quedan ${miles(plan.plan - uso.plan.usadas)} del plan de ${miles(plan.plan)}`
+          }
+        />
+        <FilaDePlan
+          titulo="Conversaciones del paquete"
           Icon={MessageSquareText}
-          c={pagadas}
+          valor={miles(g.usadas)}
+          de={miles(g.incluidas)}
+          segmentos={[{ n: Math.min(g.usadas, g.incluidas), tono: g.excedente > 0 ? "alerta" : "fuerte" }]}
+          escala={g.incluidas}
+          alerta={g.excedente > 0}
           nota={[
-            pagadas.llenoEl ? `se llenó el ${fechaHora(pagadas.llenoEl)}` : null,
-            pagadas.dayPass > 0 ? `${miles(pagadas.dayPass)} eran de Day Pass` : null,
+            g.excedente > 0 ? `${miles(g.excedente)} sobre el paquete` : `quedan ${miles(g.incluidas - g.usadas)}`,
+            uso.paquete.dayPassSobreCupo > 0 ? `incluye ${miles(uso.paquete.dayPassSobreCupo)} de Day Pass sobre su cupo` : null,
+            !enPaquete ? `empieza en la ${siguiente}` : null,
           ]
             .filter(Boolean)
-            .join(" · ") || null}
+            .join(" · ")}
+        />
+
+        <FilaDePlan
+          titulo="Day Pass del ciclo"
+          Icon={Sun}
+          valor={miles(uso.totalDayPass)}
+          segmentos={[
+            { n: uso.plan.dayPass, tono: "suave" },
+            { n: dp.usadas, tono: "fuerte" },
+          ]}
+          escala={escala}
+          nota={
+            enPaquete
+              ? `${miles(uso.plan.dayPass)} dentro del plan · ${miles(dp.usadas)} desde la ${siguiente}`
+              : "todas dentro del plan"
+          }
+        />
+        <FilaDePlan
+          titulo="Day Pass del paquete"
+          Icon={Sun}
+          valor={miles(Math.min(dp.usadas, dp.incluidas))}
+          de={miles(dp.incluidas)}
+          segmentos={[{ n: Math.min(dp.usadas, dp.incluidas), tono: "fuerte" }]}
+          escala={dp.incluidas}
+          nota={
+            dp.excedente > 0
+              ? `${miles(dp.excedente)} pasaron a las generales del paquete`
+              : `quedan ${miles(dp.incluidas - dp.usadas)}${!enPaquete ? ` · empieza en la ${siguiente}` : ""}`
+          }
         />
       </div>
-
-      <p className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-3)]">
-        Desde la conversación {siguiente}
-      </p>
-      {pagadas.llenoEl === null ? (
-        <p className="mt-2 text-[12.5px] text-[var(--text-3)]">Todavía dentro de las {miles(p.plan.incluidas)} del plan.</p>
-      ) : (
-        <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
-          <BarraDePlan
-            titulo="Day Pass"
-            Icon={Sun}
-            c={despues.dayPass}
-            nota={despues.dayPassSobreCupo > 0 ? "lo que pasa del cupo suma al excedente" : null}
-          />
-          <div>
-            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-2)]">
-              <MessagesSquare size={14} className="text-brand" /> Sin Day Pass
-            </p>
-            <p className="mt-1 text-[20px] font-extrabold tracking-tight text-[var(--brand-red)]">{miles(despues.sinDayPass)}</p>
-            <p className="mt-0.5 text-[11.5px] text-[var(--text-3)]">
-              Excedente del mes: <span className="font-semibold text-[var(--text-2)]">{miles(despues.excedente)}</span>
-              {despues.dayPassSobreCupo > 0 && ` (incluye ${miles(despues.dayPassSobreCupo)} de Day Pass sobre su cupo)`}
-            </p>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
 
-function BarraDePlan({
+const TONO: Record<"suave" | "fuerte" | "alerta", string> = {
+  suave: "bg-brand/40",
+  fuerte: "bg-brand",
+  alerta: "bg-[var(--brand-red)]",
+};
+
+function FilaDePlan({
   titulo,
   Icon,
-  c,
+  valor,
+  de,
+  segmentos,
+  escala,
+  alerta = false,
   nota,
 }: {
   titulo: string;
   Icon: typeof Coins;
-  c: Contador;
-  nota: string | null;
+  valor: string;
+  /** "de 1,000": solo en las barras que tienen cupo. */
+  de?: string;
+  segmentos: { n: number; tono: keyof typeof TONO }[];
+  escala: number;
+  alerta?: boolean;
+  nota: string;
 }) {
-  const pct = c.incluidas === 0 ? 0 : Math.min(100, (c.usadas / c.incluidas) * 100);
-  const pasado = c.excedente > 0;
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
@@ -1148,26 +1197,20 @@ function BarraDePlan({
           <Icon size={14} className="text-brand" /> {titulo}
         </p>
         <p className="text-[13px] tabular-nums text-[var(--text-3)]">
-          <span className={cn("text-[20px] font-extrabold tracking-tight", pasado ? "text-[var(--brand-red)]" : "text-[var(--text)]")}>
-            {miles(c.usadas)}
-          </span>{" "}
-          de {miles(c.incluidas)}
+          <span className={cn("text-[20px] font-extrabold tracking-tight", alerta ? "text-[var(--brand-red)]" : "text-[var(--text)]")}>
+            {valor}
+          </span>
+          {de && ` de ${de}`}
         </p>
       </div>
-      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface">
-        <div
-          className={cn("h-full rounded-full", pasado ? "bg-[var(--brand-red)]" : "bg-brand")}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <p className="mt-1.5 text-[11.5px] text-[var(--text-3)]">
-        {pasado ? (
-          <span className="font-semibold text-[var(--brand-red)]">{miles(c.excedente)} sobre el plan</span>
-        ) : (
-          `quedan ${miles(c.incluidas - c.usadas)}`
+      <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-surface">
+        {segmentos.map((sg, i) =>
+          sg.n > 0 ? (
+            <div key={i} className={cn("h-full", TONO[sg.tono])} style={{ width: `${Math.min(100, (sg.n / escala) * 100)}%` }} />
+          ) : null,
         )}
-        {nota && ` · ${nota}`}
-      </p>
+      </div>
+      <p className={cn("mt-1.5 text-[11.5px]", alerta ? "font-semibold text-[var(--brand-red)]" : "text-[var(--text-3)]")}>{nota}</p>
     </div>
   );
 }

@@ -1,11 +1,11 @@
-// El plan de conversaciones de un cliente en el mes: las pagadas y, desde la
-// siguiente, Day Pass y el resto por separado.
+// El plan de conversaciones de un cliente en su ciclo de facturación: el
+// plan (las primeras N) y el paquete que corre después, Day Pass aparte.
 //
 // GET ?cliente=<tenant>&periodo=...  (el mismo filtro del tablero)
 //
-// El plan es MENSUAL, no del periodo: se muestra el mes en que termina el
-// periodo elegido (ver lib/plan-conversaciones). Con "7 días" es este mes; con
-// un rango de agosto, agosto.
+// Se corta por CICLO, no por el periodo: se muestra el ciclo que contiene el
+// final del periodo elegido (ver lib/plan-conversaciones). Con "7 días" es el
+// ciclo en curso; con un rango de un ciclo pasado, ese.
 //
 // Solo para la agencia, igual que el resto del tablero.
 
@@ -15,13 +15,13 @@ import { TENANTS } from "@/lib/tenants";
 import { getSupabase } from "@/lib/supabase";
 import { detalleConsumo } from "@/lib/tokens-store";
 import { esPeriodo, rangoDePeriodo } from "@/lib/periodos";
-import { PLANES, conversacionesDelMes, idDeConsumo, mesDelPlan, usoDelPlan } from "@/lib/plan-conversaciones";
+import { PLANES, cicloDelPlan, conversacionesDelCiclo, idDeConsumo, usoDelPlan } from "@/lib/plan-conversaciones";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** Techo de seguridad de filas de consumo por mes (Yali anda por ~8.000). */
+/** Techo de seguridad de filas de consumo por ciclo (Yali anda por ~11.000). */
 const TOPE_FILAS = 40000;
 
 /** Mil es lo que PostgREST devuelve por página. */
@@ -64,16 +64,16 @@ export async function GET(req: Request) {
 
   const periodo = q.get("periodo");
   const rango = rangoDePeriodo(esPeriodo(periodo) ? periodo : "7d", new Date(), q.get("desde"), q.get("hasta"));
-  const mes = mesDelPlan(rango.hasta);
+  const ciclo = cicloDelPlan(rango.hasta, plan.diaDeRenovacion);
 
   const sb = getSupabase(cliente);
   if (!sb) return NextResponse.json({ ok: false, error: "Sin base configurada." });
 
   try {
     const [filas, analizadas, mencionesWa, mencionesMeta] = await Promise.all([
-      detalleConsumo(cliente, TOPE_FILAS, mes.desde, mes.hasta),
+      detalleConsumo(cliente, TOPE_FILAS, ciclo.desde, ciclo.hasta),
       // Lo que el análisis diario marcó como Day Pass, de cualquier fecha: si
-      // la conversación siguió este mes, cuenta este mes.
+      // el chat tuvo conversaciones en este ciclo, esas cuentan como Day Pass.
       todas<{ conversacion_id: string }>((a, b) =>
         sb
           .from("conversacion_analisis")
@@ -89,8 +89,8 @@ export async function GET(req: Request) {
           .select("wa_from")
           .eq("tenant", cliente)
           .eq("direccion", "in")
-          .gte("ts", mes.desde)
-          .lt("ts", mes.hasta)
+          .gte("ts", ciclo.desde)
+          .lt("ts", ciclo.hasta)
           .filter("texto", "imatch", MENCIONA_DAY_PASS)
           .order("id")
           .range(a, b),
@@ -101,17 +101,17 @@ export async function GET(req: Request) {
           .select("canal, sender_id")
           .eq("tenant", cliente)
           .eq("direction", "in")
-          .gte("ts", mes.desde)
-          .lt("ts", mes.hasta)
+          .gte("ts", ciclo.desde)
+          .lt("ts", ciclo.hasta)
           .filter("texto", "imatch", MENCIONA_DAY_PASS)
           .order("id")
           .range(a, b),
       ),
     ]);
 
-    // En orden: la fila de las 1.000 pagadas se arma por la primera respuesta.
-    const conversaciones = conversacionesDelMes(filas.filter((f) => (f.tipo ?? "respuesta") === "respuesta"));
-    const deDayPass = new Set<string>([
+    // Sesiones de 24 h en orden de inicio: la fila del plan se arma así.
+    const conversaciones = conversacionesDelCiclo(filas.filter((f) => (f.tipo ?? "respuesta") === "respuesta"));
+    const chatsDayPass = new Set<string>([
       ...analizadas.map((f) => idDeConsumo(f.conversacion_id)),
       ...mencionesWa.map((f) => f.wa_from),
       ...mencionesMeta.map((f) => `${f.canal === "instagram" ? "instagram" : "facebook"}:${f.sender_id}`),
@@ -120,8 +120,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: true,
       plan,
-      mes,
-      uso: usoDelPlan(conversaciones, deDayPass, plan),
+      ciclo,
+      uso: usoDelPlan(conversaciones, chatsDayPass, plan),
       truncado: filas.length >= TOPE_FILAS,
     });
   } catch (e) {
