@@ -31,6 +31,7 @@ import type { MetaCanal } from "@/lib/meta-messages-store";
 import { esPeriodo, rangoDePeriodo } from "@/lib/periodos";
 import { confirmadasDelPeriodo } from "@/lib/agencia-resumen";
 import { getSupabase } from "@/lib/supabase";
+import { CUENTAS_DE_PAGO } from "@/lib/cuentas-de-pago";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,18 +59,27 @@ async function hiloWhatsapp(tenant: string, telefono: string): Promise<MensajeDe
   if (!sb) return [];
   const { data, error } = await sb
     .from("wa_messages")
-    .select("direccion, ts, staff_id, staff_nombre")
+    .select("direccion, ts, staff_id, staff_nombre, texto, media_tipo")
     .eq("tenant", tenant)
     .eq("wa_from", telefono)
     .order("ts", { ascending: false })
     .limit(HILO);
   if (error) throw new Error(error.message);
-  const filas = (data ?? []) as { direccion: string; ts: string; staff_id: string | null; staff_nombre: string | null }[];
+  const filas = (data ?? []) as {
+    direccion: string;
+    ts: string;
+    staff_id: string | null;
+    staff_nombre: string | null;
+    texto: string | null;
+    media_tipo: string | null;
+  }[];
   return filas.map((m) => ({
     direction: m.direccion === "in" ? "in" : "out",
     ts: m.ts,
     staffId: m.staff_id,
     staffNombre: m.staff_nombre,
+    texto: m.texto,
+    imagen: m.media_tipo === "image" || m.media_tipo === "document",
   }));
 }
 
@@ -123,10 +133,12 @@ export async function GET(req: Request) {
         ts: m.ts,
         staffId: m.staffId ?? null,
         staffNombre: m.staffNombre ?? null,
+        texto: m.texto,
+        imagen: Boolean(m.adjuntoMiniatura) || /^\[imagen/i.test(m.texto ?? ""),
       }));
     }
 
-    let cierre: Cierre = comoSeCerro(mensajes, r.confirmadaTs ?? null);
+    let cierre: Cierre = comoSeCerro(mensajes, r.confirmadaTs ?? null, CUENTAS_DE_PAGO[pedido] ?? []);
     // Cargada a mano desde el panel: la hizo una persona, no hay chat.
     if (canal === "manual") {
       cierre = { ...cierre, cerro: "persona", persona: r.confirmadaPor ?? null };

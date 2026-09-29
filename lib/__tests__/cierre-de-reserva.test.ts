@@ -12,6 +12,15 @@ const T = (dia: number, hora: number, min = 0) =>
 const huesped = (ts: string) => ({ direction: "in" as const, ts });
 const sofia = (ts: string) => ({ direction: "out" as const, ts, staffId: "ia", staffNombre: "Sofía" });
 const vero = (ts: string) => ({ direction: "out" as const, ts, staffId: "s2", staffNombre: "Verónica Viches" });
+const CUENTAS = ["125265819"];
+const cuentaDeSofia = (ts: string) => ({
+  direction: "out" as const,
+  ts,
+  staffId: "ia",
+  staffNombre: "Sofía",
+  texto: "Puede transferir a BAC, cuenta corriente 125265819 a nombre de DIJOSA S.A. de C.V.",
+});
+const comprobante = (ts: string) => ({ direction: "in" as const, ts, imagen: true });
 
 describe("cuándo empezó de verdad la conversación", () => {
   it("corta donde hubo un silencio largo", () => {
@@ -63,17 +72,56 @@ describe("quién se lleva el trato", () => {
     expect(c.mensajesPersona).toBe(1);
   });
 
-  it("si Sofía habló sola hasta el final, el trato es de Sofía", () => {
-    // Aunque después alguien le dé al botón de confirmar: apretar el botón no
-    // es haber cerrado el trato.
-    const c = comoSeCerro([huesped(T(9, 9)), sofia(T(9, 9, 5)), huesped(T(9, 9, 30))], T(9, 10));
+  // La regla del usuario (2026-09-29): Sofía mandó la cuenta, el huésped
+  // respondió con el comprobante y nadie del equipo escribió antes del pago.
+  // Validar el comprobante y apretar "confirmar" no le quita el trato.
+  it("Sofía mandó la cuenta y llegó el comprobante: la cerró Sofía", () => {
+    const c = comoSeCerro(
+      [huesped(T(9, 9)), cuentaDeSofia(T(9, 9, 5)), comprobante(T(9, 9, 30))],
+      T(9, 10),
+      CUENTAS,
+    );
     expect(c.cerro).toBe("sofia");
-    expect(c.pasoAPersona).toBeNull();
+    expect(c.cuentaDeSofia).toBe(T(9, 9, 5));
+    expect(c.comprobante).toBe(T(9, 9, 30));
     expect(c.persona).toBeNull();
   });
 
-  it("una persona que escribe DESPUÉS del cierre no le quita el trato a Sofía", () => {
-    const c = comoSeCerro([huesped(T(9, 9)), sofia(T(9, 9, 5)), vero(T(9, 14))], T(9, 10));
+  it("si el equipo escribe DESPUÉS del comprobante (validando), sigue siendo de Sofía", () => {
+    const c = comoSeCerro(
+      [huesped(T(9, 9)), cuentaDeSofia(T(9, 9, 5)), comprobante(T(9, 9, 30)), vero(T(9, 9, 40))],
+      T(9, 10),
+      CUENTAS,
+    );
+    expect(c.cerro).toBe("sofia");
+  });
+
+  it("si el equipo escribió ANTES del pago, aunque sea días antes, no es de Sofía", () => {
+    // Caso CS-ARH9B: el equipo atendió el 20, Sofía retomó y cobró el 26.
+    const c = comoSeCerro(
+      [huesped(T(3, 9)), vero(T(3, 10)), huesped(T(9, 9)), cuentaDeSofia(T(9, 9, 5)), comprobante(T(9, 9, 30))],
+      T(9, 10),
+      CUENTAS,
+    );
+    expect(c.cerro).toBe("persona");
+  });
+
+  it("Sofía habló sola pero no cobró (no mandó la cuenta): no se afirma", () => {
+    const c = comoSeCerro([huesped(T(9, 9)), sofia(T(9, 9, 5)), comprobante(T(9, 9, 30))], T(9, 10), CUENTAS);
+    expect(c.cerro).toBe("sin_datos");
+  });
+
+  it("mandó la cuenta pero no llegó comprobante: no se afirma", () => {
+    const c = comoSeCerro([huesped(T(9, 9)), cuentaDeSofia(T(9, 9, 5)), huesped(T(9, 9, 30))], T(9, 10), CUENTAS);
+    expect(c.cerro).toBe("sin_datos");
+  });
+
+  it("una persona que escribe DESPUÉS de confirmar no le quita el trato a Sofía", () => {
+    const c = comoSeCerro(
+      [huesped(T(9, 9)), cuentaDeSofia(T(9, 9, 5)), comprobante(T(9, 9, 30)), vero(T(9, 14))],
+      T(9, 10),
+      CUENTAS,
+    );
     expect(c.cerro).toBe("sofia");
   });
 
@@ -133,6 +181,8 @@ describe("el titular", () => {
     mensajesPersona: persona ? 5 : 0,
     minutosTotales: minutos,
     minutosHastaPersona: persona ? 60 : null,
+    cuentaDeSofia: null,
+    comprobante: null,
   });
 
   const reservas = [

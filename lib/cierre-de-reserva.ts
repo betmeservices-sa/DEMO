@@ -28,6 +28,10 @@ export interface MensajeDelHilo {
   /** "ia" es Sofía. Cualquier otro es una persona del hotel. */
   staffId?: string | null;
   staffNombre?: string | null;
+  /** El texto, para ver si Sofía mandó el número de cuenta. */
+  texto?: string | null;
+  /** Si trae una imagen (el comprobante que manda el huésped). */
+  imagen?: boolean;
 }
 
 export const ID_AGENTE = "ia";
@@ -56,6 +60,10 @@ export interface Cierre {
   minutosTotales: number | null;
   /** Minutos que tardó en pasar a una persona desde que arrancó. */
   minutosHastaPersona: number | null;
+  /** Cuándo mandó Sofía el número de cuenta; null si no lo mandó ella. */
+  cuentaDeSofia: string | null;
+  /** Cuándo mandó el huésped el comprobante (una imagen después de la cuenta). */
+  comprobante: string | null;
 }
 
 const MIN = 60_000;
@@ -102,38 +110,65 @@ export function tandaDelCierre<T extends MensajeDelHilo>(mensajes: readonly T[],
  * `confirmadaTs` es cuándo quedó confirmada; se usa para cortar el hilo y para
  * medir cuánto tardó.
  */
-export function comoSeCerro(mensajes: MensajeDelHilo[], confirmadaTs?: string | null): Cierre {
+export function comoSeCerro(
+  mensajes: MensajeDelHilo[],
+  confirmadaTs?: string | null,
+  cuentas: readonly string[] = [],
+): Cierre {
+  // Para los tiempos se usa la tanda (la visita que terminó en la reserva).
   const tanda = tandaDelCierre(mensajes, confirmadaTs);
-  const salientes = tanda.filter((m) => m.direction === "out");
-  // Una persona es cualquier saliente que no sea del agente y diga quién lo
-  // mandó: por id, o solo por nombre ("Equipo" = desde la app de Facebook).
-  const dePersona = salientes.filter(
-    (m) => m.staffId !== ID_AGENTE && (m.staffId || m.staffNombre?.trim()),
-  );
-  const delAgente = salientes.filter((m) => m.staffId === ID_AGENTE);
-  // Salientes que no dicen quién los mandó: pudo ser cualquiera.
-  const sinMarca = salientes.filter((m) => !m.staffId && !m.staffNombre?.trim());
-
-  const primera = dePersona[0] ?? null;
   const inicio = tanda[0]?.ts ?? null;
+
+  // Para decidir quién cerró se mira TODO el chat hasta la confirmación, sin
+  // cortar en silencios: si el equipo atendió días antes y Sofía retomó, el
+  // trato no es solo de Sofía (caso CS-ARH9B, 20 mensajes del equipo el 20-sep
+  // y Sofía cerró el 26).
+  const tope = confirmadaTs ? Date.parse(confirmadaTs) : Infinity;
+  const hilo = [...mensajes]
+    .filter((m) => !Number.isNaN(Date.parse(m.ts)) && Date.parse(m.ts) <= tope)
+    .sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
+
+  const esPersona = (m: MensajeDelHilo) =>
+    m.direction === "out" && m.staffId !== ID_AGENTE && Boolean(m.staffId || m.staffNombre?.trim());
+  const sinMarca = (m: MensajeDelHilo) => m.direction === "out" && !m.staffId && !m.staffNombre?.trim();
+
+  // LA REGLA DEL USUARIO (2026-09-29): Sofía cerró sola si mandó el número de
+  // cuenta, el huésped respondió con el comprobante y nadie del equipo había
+  // escrito antes de ese pago. Validar el comprobante y apretar "confirmar"
+  // no le quita el trato: eso siempre lo hace una persona.
+  const cuenta = hilo.find(
+    (m) => m.direction === "out" && m.staffId === ID_AGENTE && cuentas.some((c) => (m.texto ?? "").includes(c)),
+  );
+  const comprobante = cuenta
+    ? hilo.find((m) => m.direction === "in" && m.imagen && Date.parse(m.ts) >= Date.parse(cuenta.ts))
+    : undefined;
+  const limite = comprobante ? Date.parse(comprobante.ts) : tope;
+  const antesDelPago = hilo.filter((m) => Date.parse(m.ts) < limite);
+
+  const dePersona = hilo.filter(esPersona);
+  const primera = dePersona[0] ?? null;
+
+  let cerro: Cerro;
+  if (hilo.length === 0) cerro = "sin_datos";
+  else if (antesDelPago.some(esPersona)) cerro = "persona";
+  // Un saliente sin marca antes del pago pudo ser de cualquiera: no se sabe.
+  else if (antesDelPago.some(sinMarca)) cerro = "sin_datos";
+  else if (cuenta && comprobante) cerro = "sofia";
+  // Nadie del equipo escribió, pero Sofía tampoco cobró (una reserva que el
+  // huésped ya tenía, o un pago que no llegó por imagen): no se afirma.
+  else cerro = "sin_datos";
 
   return {
     inicio,
     pasoAPersona: primera?.ts ?? null,
     persona: primera?.staffNombre?.trim() || null,
-    // Si nadie del hotel escribió antes del cierre, el trato lo hizo Sofía,
-    // aunque después alguien le diera al botón de confirmar. Pero solo si se
-    // puede afirmar: sin hilo, o con salientes sin marca, no se sabe.
-    cerro:
-      dePersona.length > 0
-        ? "persona"
-        : tanda.length === 0 || sinMarca.length > 0
-          ? "sin_datos"
-          : "sofia",
-    mensajesAgente: delAgente.length,
+    cerro,
+    mensajesAgente: hilo.filter((m) => m.direction === "out" && m.staffId === ID_AGENTE).length,
     mensajesPersona: dePersona.length,
     minutosTotales: entre(inicio, confirmadaTs),
     minutosHastaPersona: entre(inicio, primera?.ts ?? null),
+    cuentaDeSofia: cuenta?.ts ?? null,
+    comprobante: comprobante?.ts ?? null,
   };
 }
 

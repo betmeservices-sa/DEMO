@@ -745,7 +745,7 @@ function ComoSeCerraron({
               </p>
               <p className="mt-1 flex items-center gap-1 text-[12px] text-[var(--text-2)]">
                 <Bot size={12} className="text-brand" />
-                {resumen.sofia.n} cerró el agente solo
+                {resumen.sofia.n} las cerró Sofía sola: mandó la cuenta y el huésped pagó; el equipo solo confirmó
               </p>
             </div>
             <div>
@@ -754,7 +754,7 @@ function ComoSeCerraron({
               </p>
               <p className="mt-1 flex items-center gap-1 text-[12px] text-[var(--text-2)]">
                 <Users size={12} />
-                {resumen.persona.n} las cerró una persona
+                {resumen.persona.n} con el equipo: alguien del equipo escribió antes del pago
               </p>
             </div>
             <div>
@@ -764,7 +764,7 @@ function ComoSeCerraron({
               <p className="mt-1 text-[12px] text-[var(--text-2)]">tarda un trato, mediana</p>
             </div>
             <div>
-              <p className="text-[12px] font-semibold text-[var(--text-2)]">Cerraron</p>
+              <p className="text-[12px] font-semibold text-[var(--text-2)]">Quién del equipo</p>
               {resumen.porPersona.length === 0 ? (
                 <p className="text-[12px] text-[var(--text-3)]">nadie tuvo que entrar</p>
               ) : (
@@ -782,8 +782,8 @@ function ComoSeCerraron({
 
           {resumen.sinDatos.n > 0 && (
             <p className="mt-3 text-[12px] text-[var(--text-3)]">
-              {resumen.sinDatos.n} ({dinero(resumen.sinDatos.total)}) sin datos para saber quién cerró: sin chat, o de
-              WhatsApp antes del 17 de septiembre, cuando no se guardaba quién mandaba cada mensaje.
+              {resumen.sinDatos.n} ({dinero(resumen.sinDatos.total)}) no se le pueden atribuir a nadie: nadie del equipo escribió, pero
+              Sofía tampoco cobró (reservas que el huésped ya tenía, o sin chat).
             </p>
           )}
 
