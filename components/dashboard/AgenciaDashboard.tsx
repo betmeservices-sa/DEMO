@@ -34,6 +34,7 @@ import {
   MessagesSquare,
   Mic,
   RefreshCw,
+  Wallet,
   TicketCheck,
   Users,
 } from "lucide-react";
@@ -488,7 +489,9 @@ function Consumo({
               </div>
             )
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <SaldoLuna />
+
               <Tarjeta titulo="Respuestas por chat" Icon={MessageSquareText}>
                 <p className="text-[24px] font-extrabold tracking-tight text-[var(--text)]">{a.respuestasPorConversacion.toFixed(1)}</p>
                 <p className="text-[12px] text-[var(--text-2)]">
@@ -954,6 +957,74 @@ function Desplegable({
       {children}
       <ChevronDown size={16} className={cn("shrink-0 text-[var(--text-3)] transition", abierto && "rotate-180")} />
     </button>
+  );
+}
+
+interface SaldoOpenai {
+  gastoMes: number;
+  gastoDesdeCarga: number | null;
+  cargado: number | null;
+  cargadoDesde: string | null;
+  saldo: number | null;
+  promedioDiario: number;
+}
+
+/**
+ * El saldo de la cuenta de OpenAI con la que corre luna. Solo en la vista
+ * Agencia: es plata nuestra. OpenAI no da el saldo por API, así que es lo
+ * cargado menos lo gastado desde esa carga (ver lib/saldo-openai.ts).
+ */
+function SaldoLuna() {
+  const [s, setS] = useState<SaldoOpenai | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    const leer = () =>
+      fetch("/api/agencia/saldo-ia", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => {
+          if (!vivo) return;
+          if (d.ok) {
+            setS(d.saldo);
+            setError(d.saldo ? null : "Falta la llave de admin de OpenAI.");
+          } else setError(d.error ?? "No se pudo leer.");
+        })
+        .catch(() => vivo && setError("No se pudo leer."));
+    void leer();
+    const t = setInterval(leer, 10 * 60_000);
+    return () => {
+      vivo = false;
+      clearInterval(t);
+    };
+  }, []);
+
+  const alcanza = s && s.saldo !== null && s.promedioDiario > 0 ? Math.floor(s.saldo / s.promedioDiario) : null;
+  return (
+    <Tarjeta titulo="Saldo de luna (OpenAI)" Icon={Wallet}>
+      {!s ? (
+        <p className="text-[12.5px] text-[var(--text-3)]">{error ?? "Leyendo..."}</p>
+      ) : s.saldo !== null ? (
+        <>
+          <p className={cn("text-[24px] font-extrabold tracking-tight", s.saldo < 5 ? "text-[var(--brand-red)]" : "text-[var(--text)]")}>
+            {dineroFino(s.saldo)}
+          </p>
+          <p className="text-[12px] text-[var(--text-2)]">
+            de {dinero(s.cargado!)} cargados el {s.cargadoDesde} · gastado {dineroFino(s.gastoDesdeCarga!)}
+          </p>
+          <p className="text-[11.5px] text-[var(--text-3)]">
+            este mes {dineroFino(s.gastoMes)} · {dineroFino(s.promedioDiario)} por día
+            {alcanza !== null && ` · alcanza para ~${alcanza} días`}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-[24px] font-extrabold tracking-tight text-[var(--text)]">{dineroFino(s.gastoMes)}</p>
+          <p className="text-[12px] text-[var(--text-2)]">gastado este mes · {dineroFino(s.promedioDiario)} por día</p>
+          <p className="text-[11.5px] text-[var(--text-3)]">Para ver el saldo falta cargar el monto y la fecha de la última recarga.</p>
+        </>
+      )}
+    </Tarjeta>
   );
 }
 
