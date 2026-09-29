@@ -127,26 +127,26 @@ export function PlanDelCiclo({ cliente }: { cliente: string }) {
 
           <div className="mt-5 space-y-5">
             <Barra
-              titulo="Sin Day Pass · incluidas en el plan"
+              titulo="Conversaciones incluidas en el plan"
               Icon={MessagesSquare}
               c={vigente.uso.generales.plan}
               nota={notaIncluidas(vigente.uso.generales, "sin Day Pass")}
             />
             <Barra
-              titulo={`Sin Day Pass · paquete adicional desde la ${miles(vigente.plan.incluidas.generales + 1)}`}
+              titulo="Day Pass · incluidas en el plan"
+              Icon={Sun}
+              c={vigente.uso.dayPass.plan}
+              nota={notaIncluidas(vigente.uso.dayPass, "de Day Pass")}
+            />
+            <Barra
+              titulo="Paquete adicional"
               Icon={MessagesSquare}
               c={vigente.uso.generales.adicional}
               adicional
               nota={notaAdicional(vigente.uso.generales)}
             />
             <Barra
-              titulo="Day Pass · incluidas en la facturación"
-              Icon={Sun}
-              c={vigente.uso.dayPass.plan}
-              nota={notaIncluidas(vigente.uso.dayPass, "de Day Pass")}
-            />
-            <Barra
-              titulo={`Day Pass · paquete adicional desde la ${miles(vigente.plan.incluidas.dayPass + 1)}`}
+              titulo="Day Pass · paquete adicional"
               Icon={Sun}
               c={vigente.uso.dayPass.adicional}
               adicional
