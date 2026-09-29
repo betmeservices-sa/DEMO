@@ -29,7 +29,7 @@ import { mensajesAnteriores } from "@/lib/meta-messages-store";
 import { comoSeCerro, resumirCierres, type Cierre, type MensajeDelHilo } from "@/lib/cierre-de-reserva";
 import type { MetaCanal } from "@/lib/meta-messages-store";
 import { esPeriodo, rangoDePeriodo } from "@/lib/periodos";
-import { confirmadasDelPeriodo } from "@/lib/agencia-resumen";
+import { confirmadasDelPeriodo, origenDeReserva } from "@/lib/agencia-resumen";
 import { getSupabase } from "@/lib/supabase";
 import { CUENTAS_DE_PAGO } from "@/lib/cuentas-de-pago";
 
@@ -156,6 +156,9 @@ export async function GET(req: Request) {
       confirmadaTs: r.confirmadaTs ?? null,
       confirmadaPor: r.confirmadaPor ?? null,
       comprobanteTs: r.comprobanteTs ?? null,
+      // Quién creó la reserva (Sofía la apartó, o la tomó el equipo), para
+      // repartir la plata del bloque de Reservas con los mismos chats.
+      origen: origenDeReserva(r),
       // El visor de chat de la agencia lee Messenger e Instagram.
       conversacion: esMeta ? r.clave : null,
       cierre,

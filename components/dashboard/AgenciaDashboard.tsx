@@ -69,6 +69,8 @@ interface ReservaCerrada {
   confirmadaTs: string | null;
   confirmadaPor: string | null;
   comprobanteTs: string | null;
+  /** Quién creó la reserva: "sofia" si la apartó ella. */
+  origen?: string;
   /** La clave del chat de Meta. null = entró por otra vía y no hay chat que abrir. */
   conversacion: string | null;
   cierre: Cierre;
@@ -391,7 +393,7 @@ export function AgenciaDashboard() {
           <Consumo r={reporte} metrica={metrica} setMetrica={setMetrica} paraCliente={paraCliente} />
         )}
 
-        {seleccionado && <Reservas c={seleccionado} sofiaSola={cierres?.resumen.sofia.n} />}
+        {seleccionado && <Reservas c={seleccionado} sofiaSola={cierres?.resumen.sofia.n} cierres={cierres?.cierres} />}
         {cierres && cierres.resumen.total > 0 && (
           <ComoSeCerraron d={cierres} abierto={verCierres} setAbierto={setVerCierres} onChat={setChat} />
         )}
@@ -647,7 +649,24 @@ function Consumo({
  * alguien tomó a mano. Y "rechazadas" mezclaba huéspedes que no pagaron con
  * estadías que sí se hicieron por otro camino. Ahora cada número dice qué es.
  */
-function Reservas({ c, sofiaSola }: { c: Cliente; sofiaSola?: number }) {
+/** La plata de las confirmadas repartida con los mismos chats que "Quién cerró". */
+function repartoDeLaPlata(cierres: ReservaCerrada[]) {
+  const suma = (rs: ReservaCerrada[]) => ({ n: rs.length, total: Math.round(rs.reduce((s, r) => s + (r.total ?? 0), 0)) });
+  const sola = cierres.filter((c) => c.cierre.cerro === "sofia");
+  const conEquipo = cierres.filter((c) => c.cierre.cerro !== "sofia" && c.origen === "sofia");
+  const equipo = cierres.filter((c) => c.cierre.cerro !== "sofia" && c.origen !== "sofia");
+  return { sola: suma(sola), conEquipo: suma(conEquipo), equipo: suma(equipo) };
+}
+
+function Reservas({
+  c,
+  sofiaSola,
+  cierres,
+}: {
+  c: Cliente;
+  sofiaSola?: number;
+  cierres?: ReservaCerrada[];
+}) {
   const r = c.reservas;
   const o = r.confirmadas.porOrigen;
   // "Las apartó" es que Sofía usó su herramienta y mandó la cuenta; cuántas
@@ -681,7 +700,27 @@ function Reservas({ c, sofiaSola }: { c: Cliente; sofiaSola?: number }) {
           <p className="mt-1 text-[12px] font-semibold text-[var(--text-2)]">
             {r.confirmadas.n} pagada{r.confirmadas.n === 1 ? "" : "s"} y confirmada{r.confirmadas.n === 1 ? "" : "s"}
           </p>
-          {origen.length > 0 && <p className="text-[11.5px] text-[var(--text-3)]">{origen.join(" · ")}</p>}
+          {cierres && cierres.length > 0 ? (
+            (() => {
+              const p = repartoDeLaPlata(cierres);
+              return (
+                <ul className="mt-1 space-y-0.5 text-[11.5px] text-[var(--text-3)]">
+                  <li>
+                    <span className="font-semibold text-[#2f9e2f]">{dinero(p.sola.total)}</span> las cerró Sofía sola ({p.sola.n})
+                  </li>
+                  <li>
+                    <span className="font-semibold text-[var(--text-2)]">{dinero(p.conEquipo.total)}</span> las apartó Sofía y el
+                    equipo escribió antes del pago ({p.conEquipo.n})
+                  </li>
+                  <li>
+                    <span className="font-semibold text-[var(--text-2)]">{dinero(p.equipo.total)}</span> las cobró el equipo ({p.equipo.n})
+                  </li>
+                </ul>
+              );
+            })()
+          ) : (
+            origen.length > 0 && <p className="text-[11.5px] text-[var(--text-3)]">{origen.join(" · ")}</p>
+          )}
         </div>
         <div>
           <p className="text-[24px] font-extrabold leading-none tracking-tight text-[var(--brand-accent)]">{dinero(r.abiertas.total)}</p>
