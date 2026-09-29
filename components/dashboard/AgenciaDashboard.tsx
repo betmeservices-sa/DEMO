@@ -436,7 +436,6 @@ function Consumo({
   const [verConversaciones, setVerConversaciones] = useState(false);
   const a = r.actual;
   const ant = r.anterior;
-  const tk = a.tokens;
   const vacio = a.respuestas === 0 && a.transcripciones.cantidad === 0;
   // En la vista de cliente el gráfico es de respuestas y no hay de qué elegir.
   const serieDe = paraCliente ? "respuestas" : metrica;
@@ -489,7 +488,7 @@ function Consumo({
               </div>
             )
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Tarjeta titulo="Respuestas por chat" Icon={MessageSquareText}>
                 <p className="text-[24px] font-extrabold tracking-tight text-[var(--text)]">{a.respuestasPorConversacion.toFixed(1)}</p>
                 <p className="text-[12px] text-[var(--text-2)]">
@@ -499,21 +498,6 @@ function Consumo({
                 {a.transcripciones.cantidad > 0 && (
                   <p className="mt-1 flex items-center gap-1 text-[12px] text-[var(--text-3)]">
                     <Mic size={12} /> {a.transcripciones.cantidad} {a.transcripciones.cantidad === 1 ? "nota de voz transcrita" : "notas de voz transcritas"} · {dineroFino(a.transcripciones.costo)}
-                  </p>
-                )}
-              </Tarjeta>
-
-              <Tarjeta titulo="Tokens" Icon={Coins}>
-                <p className="text-[24px] font-extrabold tracking-tight text-[var(--text)]">{tokensCortos(tk.total)}</p>
-                <p className="text-[12px] text-[var(--text-2)]">
-                  {tokensCortos(tk.entrada)} de entrada · {tokensCortos(tk.salida)} de salida
-                </p>
-                <p className="text-[11.5px] text-[var(--text-3)]">
-                  entrada: {tokensCortos(tk.entradaSinCache)} normal · {tokensCortos(tk.cacheEscritura)} escribiendo caché · {tokensCortos(tk.cacheLectura)} leyendo caché
-                </p>
-                {r.modelos.length > 0 && (
-                  <p className="mt-1 truncate text-[11.5px] text-[var(--text-3)]" title={r.modelos.map((m) => `${m.modelo}: ${dineroFino(m.costo)}`).join("\n")}>
-                    {r.modelos.map((m) => m.modelo).join(" · ")}
                   </p>
                 )}
               </Tarjeta>
