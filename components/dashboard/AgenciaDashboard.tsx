@@ -652,10 +652,12 @@ function Consumo({
 /** La plata de las confirmadas repartida con los mismos chats que "Quién cerró". */
 function repartoDeLaPlata(cierres: ReservaCerrada[]) {
   const suma = (rs: ReservaCerrada[]) => ({ n: rs.length, total: Math.round(rs.reduce((s, r) => s + (r.total ?? 0), 0)) });
+  // Dos grupos, como "Quién cerró": o la cerró Sofía sola, o intervino el
+  // equipo (aunque Sofía la haya apartado). Separar "apartó Sofía y ayudó el
+  // equipo" de "la cobró el equipo" confundía: en las dos intervino el equipo.
   const sola = cierres.filter((c) => c.cierre.cerro === "sofia");
-  const conEquipo = cierres.filter((c) => c.cierre.cerro !== "sofia" && c.origen === "sofia");
-  const equipo = cierres.filter((c) => c.cierre.cerro !== "sofia" && c.origen !== "sofia");
-  return { sola: suma(sola), conEquipo: suma(conEquipo), equipo: suma(equipo) };
+  const equipo = cierres.filter((c) => c.cierre.cerro !== "sofia");
+  return { sola: suma(sola), equipo: suma(equipo) };
 }
 
 function Reservas({
@@ -709,11 +711,7 @@ function Reservas({
                     <span className="font-semibold text-[#2f9e2f]">{dinero(p.sola.total)}</span> las cerró Sofía sola ({p.sola.n})
                   </li>
                   <li>
-                    <span className="font-semibold text-[var(--text-2)]">{dinero(p.conEquipo.total)}</span> las apartó Sofía y el
-                    equipo escribió antes del pago ({p.conEquipo.n})
-                  </li>
-                  <li>
-                    <span className="font-semibold text-[var(--text-2)]">{dinero(p.equipo.total)}</span> las cobró el equipo ({p.equipo.n})
+                    <span className="font-semibold text-[var(--text-2)]">{dinero(p.equipo.total)}</span> las cerró el equipo ({p.equipo.n})
                   </li>
                 </ul>
               );
