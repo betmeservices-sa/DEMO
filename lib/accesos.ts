@@ -7,7 +7,7 @@
 // bandeja sondea cada pocos segundos), pero se escribe a lo sumo una vez por
 // minuto por usuario para no llenar la base de escrituras iguales.
 
-import { getSupabase } from "./supabase";
+import { getSupabase, publicoDeProyectoPropio, tenantsConProyectoPropio } from "./supabase";
 
 export interface Acceso {
   ts: string;
@@ -117,25 +117,58 @@ export async function listarAccesos(opciones: { tenant?: string; dias?: number; 
   if (!sb) {
     return memAccesos.filter((a) => a.ts >= desde && (!opciones.tenant || a.tenant === opciones.tenant)).slice(0, opciones.tope ?? 200);
   }
-  let q = sb.from("accesos_log").select("ts, tenant, usuario, nombre, rol, todos, host, ip, agente").gte("ts", desde).order("ts", { ascending: false }).limit(opciones.tope ?? 200);
-  if (opciones.tenant) q = q.eq("tenant", opciones.tenant);
-  const { data, error } = await q;
-  if (error) {
-    console.error("[accesos] listar:", error.message);
-    return [];
-  }
-  return (data ?? []) as Acceso[];
+  // Un cliente con proyecto propio anota sus accesos allá; las filas que quedaron
+  // en el compartido son la copia de antes de la mudanza y se ignoran.
+  const propios = tenantsConProyectoPropio().filter((t) => !opciones.tenant || t === opciones.tenant);
+  const leer = async (cliente: NonNullable<typeof sb>, soloTenant?: string, sin: string[] = []) => {
+    let q = cliente.from("accesos_log").select("ts, tenant, usuario, nombre, rol, todos, host, ip, agente").gte("ts", desde).order("ts", { ascending: false }).limit(opciones.tope ?? 200);
+    if (soloTenant) q = q.eq("tenant", soloTenant);
+    if (sin.length) q = q.not("tenant", "in", `(${sin.join(",")})`);
+    const { data, error } = await q;
+    if (error) {
+      console.error("[accesos] listar:", error.message);
+      return [];
+    }
+    return (data ?? []) as Acceso[];
+  };
+  const listas = await Promise.all([
+    opciones.tenant && propios.includes(opciones.tenant) ? Promise.resolve([]) : leer(sb, opciones.tenant, propios),
+    ...propios.map((t) => {
+      const c = publicoDeProyectoPropio(t);
+      return c ? leer(c, t) : Promise.resolve([]);
+    }),
+  ]);
+  return listas
+    .flat()
+    .sort((a, b) => b.ts.localeCompare(a.ts))
+    .slice(0, opciones.tope ?? 200);
 }
 
 export async function actividadDeUsuarios(): Promise<Actividad[]> {
   const sb = getSupabase();
   if (!sb) return [...memActividad.values()];
-  const { data, error } = await sb.from("usuarios_actividad").select("usuario, tenant, nombre, rol, ultimo_visto, ultimo_host").limit(500);
-  if (error) {
-    console.error("[accesos] actividad listar:", error.message);
-    return [];
-  }
-  return ((data ?? []) as { usuario: string; tenant: string; nombre: string | null; rol: string | null; ultimo_visto: string; ultimo_host: string | null }[]).map((r) => ({
+  const propios = tenantsConProyectoPropio();
+  const leer = async (cliente: NonNullable<typeof sb>, soloTenant?: string) => {
+    let q = cliente.from("usuarios_actividad").select("usuario, tenant, nombre, rol, ultimo_visto, ultimo_host").limit(500);
+    if (soloTenant) q = q.eq("tenant", soloTenant);
+    else if (propios.length) q = q.not("tenant", "in", `(${propios.join(",")})`);
+    const { data, error } = await q;
+    if (error) {
+      console.error("[accesos] actividad listar:", error.message);
+      return [];
+    }
+    return data ?? [];
+  };
+  const filas = (
+    await Promise.all([
+      leer(sb),
+      ...propios.map((t) => {
+        const c = publicoDeProyectoPropio(t);
+        return c ? leer(c, t) : Promise.resolve([]);
+      }),
+    ])
+  ).flat();
+  return (filas as { usuario: string; tenant: string; nombre: string | null; rol: string | null; ultimo_visto: string; ultimo_host: string | null }[]).map((r) => ({
     usuario: r.usuario,
     tenant: r.tenant,
     nombre: r.nombre,

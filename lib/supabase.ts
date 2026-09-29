@@ -32,8 +32,48 @@ export function esquemaDeTenant(tenant?: string): string {
   return (tenant && ESQUEMA_POR_TENANT[tenant]) || "public";
 }
 
+/**
+ * Clientes que ya viven en su PROPIO proyecto de Supabase. Desde aquí se leen
+ * con un rol de solo lectura (`lector_agencia`): el tablero de la agencia ve
+ * sus números, pero no puede escribirles ni ver sus tokens ni contraseñas.
+ * Sin las tres variables, el cliente sigue leyéndose del proyecto compartido.
+ */
+function proyectoPropio(tenant?: string): { url: string; key: string; jwt: string } | null {
+  if (tenant !== "yaly") return null;
+  const url = process.env.YALI_SUPABASE_URL;
+  const key = process.env.YALI_SUPABASE_PUBLISHABLE_KEY;
+  const jwt = process.env.YALI_SUPABASE_LECTOR_JWT;
+  return url && key && jwt ? { url, key, jwt } : null;
+}
+
+function clienteDeProyectoPropio(tenant: string, esquema: string): Cliente | null {
+  const p = proyectoPropio(tenant);
+  if (!p) return null;
+  const clave = `${tenant}@${esquema}`;
+  const guardado = cache.get(clave);
+  if (guardado) return guardado;
+  const cliente = createClient(p.url, p.key, {
+    auth: { persistSession: false },
+    db: { schema: esquema },
+    global: { headers: { Authorization: `Bearer ${p.jwt}` } },
+  });
+  cache.set(clave, cliente);
+  return cliente;
+}
+
+/** Los tenants con proyecto propio, para excluir sus filas viejas del compartido. */
+export function tenantsConProyectoPropio(): string[] {
+  return Object.keys(ESQUEMA_POR_TENANT).filter((t) => proyectoPropio(t));
+}
+
+/** El `public` del proyecto propio de un cliente (accesos, actividad). */
+export function publicoDeProyectoPropio(tenant: string): Cliente | null {
+  return clienteDeProyectoPropio(tenant, "public");
+}
+
 export function getSupabase(tenant?: string): Cliente | null {
   const esquema = esquemaDeTenant(tenant);
+  if (tenant && proyectoPropio(tenant)) return clienteDeProyectoPropio(tenant, esquema);
   const guardado = cache.get(esquema);
   if (guardado !== undefined) return guardado;
 
@@ -62,6 +102,9 @@ export function todosLosClientes(): Cliente[] {
   const esquemas = ["public", ...new Set(Object.values(ESQUEMA_POR_TENANT))];
   const out: Cliente[] = [];
   for (const e of esquemas) {
+    // Un cliente con proyecto propio no se atiende desde aquí: su webhook es
+    // de su app, y este lado solo lo lee.
+    if (proyectoPropio(inversa(e))) continue;
     const c = getSupabase(inversa(e));
     if (c) out.push(c);
   }
