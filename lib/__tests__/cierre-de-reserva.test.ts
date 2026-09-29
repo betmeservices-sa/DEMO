@@ -106,6 +106,17 @@ describe("quién se lleva el trato", () => {
     expect(c.cerro).toBe("persona");
   });
 
+  it("lo que el equipo escribió en una visita de meses atrás no cuenta", () => {
+    // Caso YA-6QHME: un "Sí claro" del equipo en diciembre; la reserva es de septiembre.
+    const c = comoSeCerro(
+      [vero(T(1, 10)), huesped(T(9, 9)), cuentaDeSofia(T(9, 9, 5)), comprobante(T(9, 9, 30))],
+      T(9, 10),
+      CUENTAS,
+      T(6, 9),
+    );
+    expect(c.cerro).toBe("sofia");
+  });
+
   it("Sofía habló sola pero no cobró (no mandó la cuenta): no se afirma", () => {
     const c = comoSeCerro([huesped(T(9, 9)), sofia(T(9, 9, 5)), comprobante(T(9, 9, 30))], T(9, 10), CUENTAS);
     expect(c.cerro).toBe("sin_datos");

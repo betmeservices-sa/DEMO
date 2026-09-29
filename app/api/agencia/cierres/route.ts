@@ -138,7 +138,9 @@ export async function GET(req: Request) {
       }));
     }
 
-    let cierre: Cierre = comoSeCerro(mensajes, r.confirmadaTs ?? null, CUENTAS_DE_PAGO[pedido] ?? []);
+    // Solo cuenta lo que pasó desde 3 días antes de crearse la reserva.
+    const desde = new Date(Date.parse(r.creada) - 3 * 86_400_000).toISOString();
+    let cierre: Cierre = comoSeCerro(mensajes, r.confirmadaTs ?? null, CUENTAS_DE_PAGO[pedido] ?? [], desde);
     // Cargada a mano desde el panel: la hizo una persona, no hay chat.
     if (canal === "manual") {
       cierre = { ...cierre, cerro: "persona", persona: r.confirmadaPor ?? null };

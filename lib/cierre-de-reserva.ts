@@ -114,18 +114,25 @@ export function comoSeCerro(
   mensajes: MensajeDelHilo[],
   confirmadaTs?: string | null,
   cuentas: readonly string[] = [],
+  /**
+   * Desde cuándo se mira el chat para decidir quién cerró (el tablero pasa 3
+   * días antes de que se creara la reserva). Sin esto contaban mensajes del
+   * equipo de visitas de meses atrás: CS-ARH9B salía "del equipo" por 20
+   * mensajes del 20 de agosto, y YA-6QHME por un "Sí claro" de diciembre.
+   */
+  desde?: string | null,
 ): Cierre {
   // Para los tiempos se usa la tanda (la visita que terminó en la reserva).
   const tanda = tandaDelCierre(mensajes, confirmadaTs);
   const inicio = tanda[0]?.ts ?? null;
 
-  // Para decidir quién cerró se mira TODO el chat hasta la confirmación, sin
-  // cortar en silencios: si el equipo atendió días antes y Sofía retomó, el
-  // trato no es solo de Sofía (caso CS-ARH9B, 20 mensajes del equipo el 20-sep
-  // y Sofía cerró el 26).
+  // Para decidir quién cerró se mira el chat desde `desde` hasta la
+  // confirmación, sin cortar en silencios de 24 h: si el equipo atendió un día
+  // antes y Sofía retomó, el trato no es solo de Sofía.
   const tope = confirmadaTs ? Date.parse(confirmadaTs) : Infinity;
+  const piso = desde ? Date.parse(desde) : -Infinity;
   const hilo = [...mensajes]
-    .filter((m) => !Number.isNaN(Date.parse(m.ts)) && Date.parse(m.ts) <= tope)
+    .filter((m) => !Number.isNaN(Date.parse(m.ts)) && Date.parse(m.ts) <= tope && Date.parse(m.ts) >= piso)
     .sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
 
   const esPersona = (m: MensajeDelHilo) =>

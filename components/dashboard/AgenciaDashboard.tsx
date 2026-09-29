@@ -391,7 +391,7 @@ export function AgenciaDashboard() {
           <Consumo r={reporte} metrica={metrica} setMetrica={setMetrica} paraCliente={paraCliente} />
         )}
 
-        {seleccionado && <Reservas c={seleccionado} />}
+        {seleccionado && <Reservas c={seleccionado} sofiaSola={cierres?.resumen.sofia.n} />}
         {cierres && cierres.resumen.total > 0 && (
           <ComoSeCerraron d={cierres} abierto={verCierres} setAbierto={setVerCierres} onChat={setChat} />
         )}
@@ -647,12 +647,18 @@ function Consumo({
  * alguien tomó a mano. Y "rechazadas" mezclaba huéspedes que no pagaron con
  * estadías que sí se hicieron por otro camino. Ahora cada número dice qué es.
  */
-function Reservas({ c }: { c: Cliente }) {
+function Reservas({ c, sofiaSola }: { c: Cliente; sofiaSola?: number }) {
   const r = c.reservas;
   const o = r.confirmadas.porOrigen;
+  // "Las apartó" es que Sofía usó su herramienta y mandó la cuenta; cuántas
+  // cerró SOLA (sin que el equipo escribiera antes del pago) sale de "Quién
+  // cerró", que lee los chats. Se pone al lado para que los dos bloques digan
+  // lo mismo.
   const origen = [
-    o.sofia > 0 ? `${o.sofia} ${o.sofia === 1 ? "la apartó" : "las apartó"} Sofía` : null,
-    o.detectada > 0 ? `${o.detectada} sin apartado de Sofía (las encontró el sistema en el chat o en Cloudbeds)` : null,
+    o.sofia > 0
+      ? `${o.sofia} ${o.sofia === 1 ? "la apartó" : "las apartó"} Sofía${sofiaSola !== undefined ? ` (${sofiaSola} las cerró sola)` : ""}`
+      : null,
+    o.detectada > 0 ? `${o.detectada} sin apartado de Sofía: las cobró el equipo` : null,
     o.manual > 0 ? `${o.manual} tomada${o.manual === 1 ? "" : "s"} a mano` : null,
     o.otro > 0 ? `${o.otro} sin origen` : null,
   ].filter(Boolean);
