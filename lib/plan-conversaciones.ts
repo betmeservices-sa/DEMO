@@ -96,6 +96,12 @@ export interface PaqueteConsumido {
   porque: TipoDeConversacion;
   /** Cuándo arrancó la última conversación de ese tipo que entró en el paquete (ISO). */
   llenoEl: string;
+  /** Cómo quedó el paquete al acabarse: lo usado y lo que traía de cada tipo. */
+  alLlenarse: Record<TipoDeConversacion, Bolsa>;
+  /** Cuándo arrancó la conversación que ya no cupo y abrió el siguiente (ISO). */
+  abreSiguiente: string;
+  /** Con qué arrancó el siguiente: el tipo que se acabó en cero y el otro con su arrastre. */
+  siguiente: Record<TipoDeConversacion, Bolsa>;
 }
 
 export interface UsoDelPlan {
@@ -111,6 +117,12 @@ export interface UsoDelPlan {
   consumidos: PaqueteConsumido[];
   /** Cómo va el paquete que corre. */
   actual: Record<TipoDeConversacion, Bolsa>;
+  /**
+   * Cuándo se llegó a tantas de Day Pass como trae el plan (la 500 en Yali);
+   * null si no se llegó. No abre paquete (el Day Pass sigue en el paquete que
+   * corre), pero es lo que el usuario mira para saber cuándo se gastó el del plan.
+   */
+  dayPassDelPlanLlenoEl: string | null;
 }
 
 /**
@@ -165,32 +177,45 @@ export function usoDelPlan(
   const ultima: Record<TipoDeConversacion, string | null> = { generales: null, dayPass: null };
   const consumidos: PaqueteConsumido[] = [];
   let paquete = 1;
+  let dayPassDelPlanLlenoEl: string | null = null;
+
+  const bolsa = (t: TipoDeConversacion): Bolsa => ({ usadas: usadas[t], disponibles: disponibles[t], arrastre: arrastre[t] });
+  const bolsas = (): Record<TipoDeConversacion, Bolsa> => ({ generales: bolsa("generales"), dayPass: bolsa("dayPass") });
 
   for (const c of conversaciones) {
     const tipo: TipoDeConversacion = chatsDayPass.has(c.chat) ? "dayPass" : "generales";
     const otro: TipoDeConversacion = tipo === "generales" ? "dayPass" : "generales";
     totales[tipo]++;
+    if (tipo === "dayPass" && totales.dayPass === p.incluidas.dayPass) dayPassDelPlanLlenoEl = c.inicio;
     if (usadas[tipo] >= disponibles[tipo] && p.adicional[tipo] > 0) {
-      consumidos.push({ numero: paquete, porque: tipo, llenoEl: ultima[tipo] ?? c.inicio });
+      const alLlenarse = bolsas();
       paquete++;
       arrastre[otro] = Math.max(0, disponibles[otro] - usadas[otro]);
       arrastre[tipo] = 0;
       disponibles[otro] = arrastre[otro] + p.adicional[otro];
       disponibles[tipo] = p.adicional[tipo];
       usadas = { generales: 0, dayPass: 0 };
+      consumidos.push({
+        numero: paquete - 1,
+        porque: tipo,
+        llenoEl: ultima[tipo] ?? c.inicio,
+        alLlenarse,
+        abreSiguiente: c.inicio,
+        siguiente: bolsas(),
+      });
     }
     usadas[tipo]++;
     ultima[tipo] = c.inicio;
   }
 
-  const bolsa = (t: TipoDeConversacion): Bolsa => ({ usadas: usadas[t], disponibles: disponibles[t], arrastre: arrastre[t] });
   return {
     total: conversaciones.length,
     generales: totales.generales,
     dayPass: totales.dayPass,
     paquete,
     consumidos,
-    actual: { generales: bolsa("generales"), dayPass: bolsa("dayPass") },
+    actual: bolsas(),
+    dayPassDelPlanLlenoEl,
   };
 }
 

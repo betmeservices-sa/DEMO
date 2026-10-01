@@ -122,10 +122,27 @@ describe("los paquetes", () => {
     const g = fila("g", 1131, 446);
     const u = usoDelPlan(mezcla(dp, g), chats(dp), plan);
     expect(u.paquete).toBe(2);
-    // Se llenó con la conversación 1.000, no con la 1.001.
-    expect(u.consumidos).toEqual([{ numero: 1, porque: "generales", llenoEl: g[999].inicio }]);
+    // Se llenó con la conversación 1.000, no con la 1.001; la 1.001 abrió el 2.
+    expect(u.consumidos).toEqual([
+      {
+        numero: 1,
+        porque: "generales",
+        llenoEl: g[999].inicio,
+        alLlenarse: {
+          generales: { usadas: 1000, disponibles: 1000, arrastre: 0 },
+          dayPass: { usadas: 446, disponibles: 500, arrastre: 0 },
+        },
+        abreSiguiente: g[1000].inicio,
+        siguiente: {
+          generales: { usadas: 0, disponibles: 1000, arrastre: 0 },
+          dayPass: { usadas: 0, disponibles: 554, arrastre: 54 },
+        },
+      },
+    ]);
     expect(u.actual.generales).toEqual({ usadas: 131, disponibles: 1000, arrastre: 0 });
     expect(u.actual.dayPass).toEqual({ usadas: 0, disponibles: 54 + 500, arrastre: 54 });
+    // Nunca se llegó a 500 de Day Pass.
+    expect(u.dayPassDelPlanLlenoEl).toBeNull();
   });
 
   it("se acaba el Day Pass primero: paquete nuevo y las normales suman lo que les sobraba + 1.000", () => {
@@ -133,9 +150,13 @@ describe("los paquetes", () => {
     const g = fila("g", 300, 520);
     const u = usoDelPlan(mezcla(dp, g), chats(dp), plan);
     expect(u.paquete).toBe(2);
-    expect(u.consumidos).toEqual([{ numero: 1, porque: "dayPass", llenoEl: dp[499].inicio }]);
+    expect(u.consumidos).toHaveLength(1);
+    expect(u.consumidos[0]).toMatchObject({ numero: 1, porque: "dayPass", llenoEl: dp[499].inicio, abreSiguiente: dp[500].inicio });
+    expect(u.consumidos[0]!.siguiente.generales).toEqual({ usadas: 0, disponibles: 2000, arrastre: 1000 });
     expect(u.actual.dayPass).toEqual({ usadas: 20, disponibles: 500, arrastre: 0 });
     expect(u.actual.generales).toEqual({ usadas: 300, disponibles: 1000 + 1000, arrastre: 1000 });
+    // La 500 de Day Pass es la que llenó el plan.
+    expect(u.dayPassDelPlanLlenoEl).toBe(dp[499].inicio);
   });
 
   it("septiembre de Yali: el plan y el paquete 2 se acaban por las normales y el mes cierra en el 3", () => {
@@ -155,10 +176,18 @@ describe("los paquetes", () => {
     const u = usoDelPlan(convs, dp, chico);
     expect(u.generales).toBe(23);
     expect(u.dayPass).toBe(9);
-    expect(u.consumidos).toEqual([
-      { numero: 1, porque: "generales", llenoEl: normales[9]!.inicio },
-      { numero: 2, porque: "generales", llenoEl: normales[19]!.inicio },
+    expect(u.consumidos.map(({ numero, porque, llenoEl, abreSiguiente }) => ({ numero, porque, llenoEl, abreSiguiente }))).toEqual([
+      { numero: 1, porque: "generales", llenoEl: normales[9]!.inicio, abreSiguiente: normales[10]!.inicio },
+      { numero: 2, porque: "generales", llenoEl: normales[19]!.inicio, abreSiguiente: normales[20]!.inicio },
     ]);
+    // Al acabarse el plan: 10 de 10 normales y 4 de 5 de Day Pass; el 2 arranca con 1 + 5.
+    expect(u.consumidos[0]!.alLlenarse.dayPass).toEqual({ usadas: 4, disponibles: 5, arrastre: 0 });
+    expect(u.consumidos[0]!.siguiente.dayPass).toEqual({ usadas: 0, disponibles: 6, arrastre: 1 });
+    // Al acabarse el 2: 5 de 6 de Day Pass; el 3 arranca con 1 + 5.
+    expect(u.consumidos[1]!.alLlenarse.dayPass).toEqual({ usadas: 5, disponibles: 6, arrastre: 1 });
+    expect(u.consumidos[1]!.siguiente.dayPass).toEqual({ usadas: 0, disponibles: 6, arrastre: 1 });
+    // La 5 de Day Pass (lo que trae el plan chico) fue la primera del paquete 2.
+    expect(u.dayPassDelPlanLlenoEl).toBe(convs.filter((c) => c.chat.startsWith("D"))[4]!.inicio);
     expect(u.paquete).toBe(3);
     expect(u.actual.generales).toEqual({ usadas: 3, disponibles: 10, arrastre: 0 });
     expect(u.actual.dayPass).toEqual({ usadas: 0, disponibles: 6, arrastre: 1 });

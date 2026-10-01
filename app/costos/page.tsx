@@ -2,7 +2,8 @@
 
 // Costos de Sofía: cada conversación que atendió desde que arrancó con luna,
 // con los mensajes que mandó, lo que costó y lo que costó en promedio cada
-// mensaje suyo. Arriba el general, después cada canal, y abajo la lista.
+// mensaje suyo. Arriba el general, después cada canal, la línea de tiempo de
+// los paquetes del plan (components/dashboard/LineaDelPlan) y abajo la lista.
 //
 // Solo para la agencia (lib/modulos: MODULOS_AGENCIA). Los datos salen de
 // /api/agencia/costos, que devuelve 403 a cualquiera que no sea la agencia.
@@ -12,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, Loader2, Receipt } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { fechaHora, miles } from "@/lib/formato-agencia";
+import { LineaDelPlan } from "@/components/dashboard/LineaDelPlan";
 import type { Canal, CostoDeConversacion, ResumenDeCanal, ResumenDeCostos } from "@/lib/costos-conversacion";
 
 interface Respuesta {
@@ -156,6 +158,8 @@ export default function CostosPage() {
                   </div>
                 </section>
               )}
+
+              <LineaDelPlan cliente="yaly" />
 
               <section className="rounded-2xl border border-line bg-card p-5">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
