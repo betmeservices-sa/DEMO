@@ -1,17 +1,18 @@
 // El costo de IA de cada conversación que atendió el agente de un cliente.
 //
 // Lo pidió el usuario el 2026-10-01: desde que Sofía arrancó con luna, una fila
-// por conversación con cuántos mensajes hubo, cuánto costó y cuánto costó en
-// promedio cada mensaje.
+// por conversación con cuántos mensajes mandó Sofía, cuánto costó y cuánto costó
+// en promedio cada mensaje suyo; el total arriba y todo dividido por canal. Solo
+// cuentan los mensajes del agente: los del huésped y los del equipo no entran.
 //
 // LA CONVERSACIÓN es la misma que se factura (lib/plan-conversaciones.ts): una
 // sesión de 24 h que arranca con la primera respuesta del agente.
 //
-// SUS MENSAJES son los del chat dentro de esas 24 h, más los que el huésped
-// mandó justo antes de que arrancara (son los que la dispararon), hasta
-// GRACIA_MS antes. Un mensaje que cae dentro de las 24 h de una sesión es de
-// esa; si no, de la que arranca dentro de la gracia; si no, de ninguna (por
-// ejemplo, el equipo escribiendo en un chat donde el agente no contestó).
+// SUS MENSAJES son los que el agente mandó en el chat dentro de esas 24 h, más
+// los que mandó un rato antes de la primera respuesta con modelo (el menú fijo
+// de "¿a qué hotel?", o el mismo primer mensaje si quedó guardado unos segundos
+// antes que su consumo), hasta GRACIA_MS. Los del huésped solo sirven para
+// saber su nombre.
 //
 // EL COSTO es la suma del costo de las respuestas del agente en la sesión. Cada
 // respuesta ya trae todas sus llamadas al modelo: herramientas, revisor y
@@ -32,6 +33,8 @@ export const ARRANQUE_DEL_AGENTE: Record<string, { desde: string; etiqueta: stri
 export const GRACIA_MS = 2 * 60 * 60 * 1000;
 
 export type Quien = "huesped" | "agente" | "equipo";
+export type Canal = "whatsapp" | "facebook" | "instagram";
+export const CANALES: readonly Canal[] = ["whatsapp", "facebook", "instagram"];
 
 export interface RespuestaConCosto {
   /** El chat, como lo guarda el consumo: teléfono o "<canal>:<persona>". */
@@ -48,38 +51,37 @@ export interface MensajeDelChat {
   nombre?: string | null;
 }
 
-export type ConteoDeMensajes = Record<Quien, number> & { total: number };
-
 export interface CostoDeConversacion {
   chat: string;
   inicio: string;
-  canal: "whatsapp" | "facebook" | "instagram";
+  canal: Canal;
   /** El último nombre con que escribió el huésped en la conversación. */
   nombre: string | null;
-  /** Respuestas del agente que costaron (las que pasaron por el modelo). */
-  respuestas: number;
-  mensajes: ConteoDeMensajes;
+  /** Mensajes que mandó el agente en la conversación. */
+  mensajes: number;
   costo: number;
-  /** Costo entre los mensajes que mandó el agente; null si no mandó ninguno. */
-  porMensajeAgente: number | null;
-  /** Costo entre todos los mensajes de la conversación; null si no hay. */
+  /** Costo entre los mensajes del agente; null si no mandó ninguno. */
   porMensaje: number | null;
 }
 
 export interface ResumenDeCostos {
   conversaciones: number;
-  respuestas: number;
-  mensajes: ConteoDeMensajes;
+  /** Mensajes del agente. */
+  mensajes: number;
   costo: number;
   porConversacion: number | null;
-  porMensajeAgente: number | null;
   porMensaje: number | null;
 }
 
-const r6 = (n: number) => Math.round(n * 1e6) / 1e6;
-const cero = (): ConteoDeMensajes => ({ huesped: 0, agente: 0, equipo: 0, total: 0 });
+export interface ResumenDeCanal extends ResumenDeCostos {
+  canal: Canal;
+  /** Qué parte del costo total se llevó este canal (0 a 1). */
+  parteDelCosto: number;
+}
 
-export function canalDeChat(chat: string): CostoDeConversacion["canal"] {
+const r6 = (n: number) => Math.round(n * 1e6) / 1e6;
+
+export function canalDeChat(chat: string): Canal {
   if (chat.startsWith("facebook:")) return "facebook";
   if (chat.startsWith("instagram:")) return "instagram";
   return "whatsapp";
@@ -106,10 +108,8 @@ export function costosPorConversacion(
       inicio: s.inicio,
       canal: canalDeChat(s.chat),
       nombre: null,
-      respuestas: 0,
-      mensajes: cero(),
+      mensajes: 0,
       costo: 0,
-      porMensajeAgente: null,
       porMensaje: null,
     };
     const lista = porChat.get(s.chat) ?? [];
@@ -118,58 +118,63 @@ export function costosPorConversacion(
     if (Date.parse(s.inicio) >= t0) filas.push(fila);
   }
 
-  const sesionDe = (chat: string, t: number): CostoDeConversacion | null => {
+  // La sesión que contiene el instante; si ninguna, la que arranca dentro de
+  // la gracia (lo que se mandó justo antes de la primera respuesta con modelo).
+  const sesionDe = (chat: string, t: number, conGracia: boolean): CostoDeConversacion | null => {
     const lista = porChat.get(chat);
     if (!lista || Number.isNaN(t)) return null;
     let i = -1;
     while (i + 1 < lista.length && lista[i + 1]!.inicio <= t) i++;
     if (i >= 0 && t < lista[i]!.inicio + DURACION_CONVERSACION_MS) return lista[i]!.fila;
     const siguiente = lista[i + 1];
-    return siguiente && siguiente.inicio - t <= GRACIA_MS ? siguiente.fila : null;
+    return conGracia && siguiente && siguiente.inicio - t <= GRACIA_MS ? siguiente.fila : null;
   };
 
   for (const r of respuestas) {
-    const f = sesionDe(r.chat, Date.parse(r.ts));
-    if (!f) continue;
-    f.respuestas++;
-    f.costo += r.costo;
+    const f = sesionDe(r.chat, Date.parse(r.ts), false);
+    if (f) f.costo += r.costo;
   }
   const enOrden = [...mensajes].sort((a, b) => a.ts.localeCompare(b.ts));
   for (const m of enOrden) {
-    const f = sesionDe(m.chat, Date.parse(m.ts));
-    if (!f) continue;
-    f.mensajes[m.quien]++;
-    f.mensajes.total++;
-    if (m.quien === "huesped" && m.nombre?.trim()) f.nombre = m.nombre.trim();
+    if (m.quien === "agente") {
+      const f = sesionDe(m.chat, Date.parse(m.ts), true);
+      if (f) f.mensajes++;
+    } else if (m.quien === "huesped" && m.nombre?.trim()) {
+      const f = sesionDe(m.chat, Date.parse(m.ts), true);
+      if (f) f.nombre = m.nombre.trim();
+    }
   }
   for (const f of filas) {
     f.costo = r6(f.costo);
-    f.porMensajeAgente = f.mensajes.agente > 0 ? f.costo / f.mensajes.agente : null;
-    f.porMensaje = f.mensajes.total > 0 ? f.costo / f.mensajes.total : null;
+    f.porMensaje = f.mensajes > 0 ? f.costo / f.mensajes : null;
   }
   return filas.sort((a, b) => b.inicio.localeCompare(a.inicio) || a.chat.localeCompare(b.chat));
 }
 
 export function resumenDeCostos(filas: readonly CostoDeConversacion[]): ResumenDeCostos {
-  const mensajes = cero();
   let costo = 0;
-  let respuestas = 0;
+  let mensajes = 0;
   for (const f of filas) {
     costo += f.costo;
-    respuestas += f.respuestas;
-    mensajes.huesped += f.mensajes.huesped;
-    mensajes.agente += f.mensajes.agente;
-    mensajes.equipo += f.mensajes.equipo;
-    mensajes.total += f.mensajes.total;
+    mensajes += f.mensajes;
   }
   costo = r6(costo);
   return {
     conversaciones: filas.length,
-    respuestas,
     mensajes,
     costo,
     porConversacion: filas.length > 0 ? costo / filas.length : null,
-    porMensajeAgente: mensajes.agente > 0 ? costo / mensajes.agente : null,
-    porMensaje: mensajes.total > 0 ? costo / mensajes.total : null,
+    porMensaje: mensajes > 0 ? costo / mensajes : null,
   };
+}
+
+/** El resumen de cada canal, del que más consume al que menos. Los canales sin conversaciones no salen. */
+export function resumenPorCanal(filas: readonly CostoDeConversacion[]): ResumenDeCanal[] {
+  const total = resumenDeCostos(filas).costo;
+  return CANALES.map((canal) => {
+    const r = resumenDeCostos(filas.filter((f) => f.canal === canal));
+    return { ...r, canal, parteDelCosto: total > 0 ? r.costo / total : 0 };
+  })
+    .filter((r) => r.conversaciones > 0)
+    .sort((a, b) => b.costo - a.costo);
 }

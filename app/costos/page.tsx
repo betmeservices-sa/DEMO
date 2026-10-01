@@ -1,7 +1,8 @@
 "use client";
 
 // Costos de Sofía: cada conversación que atendió desde que arrancó con luna,
-// con sus mensajes, lo que costó y lo que costó en promedio cada mensaje.
+// con los mensajes que mandó, lo que costó y lo que costó en promedio cada
+// mensaje suyo. Arriba el general, después cada canal, y abajo la lista.
 //
 // Solo para la agencia (lib/modulos: MODULOS_AGENCIA). Los datos salen de
 // /api/agencia/costos, que devuelve 403 a cualquiera que no sea la agencia.
@@ -11,13 +12,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, Loader2, Receipt } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { fechaHora, miles } from "@/lib/formato-agencia";
-import type { CostoDeConversacion, ResumenDeCostos } from "@/lib/costos-conversacion";
+import type { Canal, CostoDeConversacion, ResumenDeCanal, ResumenDeCostos } from "@/lib/costos-conversacion";
 
 interface Respuesta {
   ok: boolean;
   error?: string;
   arranque: { desde: string; etiqueta: string } | null;
   resumen?: ResumenDeCostos;
+  porCanal?: ResumenDeCanal[];
   conversaciones?: CostoDeConversacion[];
   truncado?: boolean;
 }
@@ -29,7 +31,7 @@ const ORDENES: { clave: Orden; etiqueta: string }[] = [
   { clave: "mensajes", etiqueta: "Más mensajes" },
 ];
 
-const CANAL: Record<CostoDeConversacion["canal"], string> = {
+const CANAL: Record<Canal, string> = {
   whatsapp: "WhatsApp",
   facebook: "Messenger",
   instagram: "Instagram",
@@ -55,31 +57,9 @@ function csv(filas: readonly CostoDeConversacion[]): string {
     const s = String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const cabecera = [
-    "inicio",
-    "huesped",
-    "canal",
-    "mensajes_huesped",
-    "mensajes_sofia",
-    "mensajes_equipo",
-    "mensajes_total",
-    "costo_usd",
-    "costo_por_mensaje_de_sofia",
-    "costo_por_mensaje",
-  ];
+  const cabecera = ["inicio", "huesped", "canal", "mensajes_de_sofia", "costo_usd", "costo_por_mensaje_usd"];
   const lineas = filas.map((c) =>
-    [
-      fechaHora(c.inicio),
-      huesped(c),
-      CANAL[c.canal],
-      c.mensajes.huesped,
-      c.mensajes.agente,
-      c.mensajes.equipo,
-      c.mensajes.total,
-      c.costo.toFixed(6),
-      c.porMensajeAgente === null ? "" : c.porMensajeAgente.toFixed(6),
-      c.porMensaje === null ? "" : c.porMensaje.toFixed(6),
-    ]
+    [fechaHora(c.inicio), huesped(c), CANAL[c.canal], c.mensajes, c.costo.toFixed(6), c.porMensaje === null ? "" : c.porMensaje.toFixed(6)]
       .map(celda)
       .join(","),
   );
@@ -88,6 +68,7 @@ function csv(filas: readonly CostoDeConversacion[]): string {
 
 export default function CostosPage() {
   const [datos, setDatos] = useState<Respuesta | null>(null);
+  const [canal, setCanal] = useState<Canal | "todos">("todos");
   const [orden, setOrden] = useState<Orden>("recientes");
   const [visibles, setVisibles] = useState(PASO);
 
@@ -107,19 +88,25 @@ export default function CostosPage() {
   }, []);
 
   const filas = useMemo(() => {
-    const lista = [...(datos?.conversaciones ?? [])];
+    const lista = (datos?.conversaciones ?? []).filter((c) => canal === "todos" || c.canal === canal);
     if (orden === "caras") lista.sort((a, b) => b.costo - a.costo);
-    else if (orden === "mensajes") lista.sort((a, b) => b.mensajes.total - a.mensajes.total);
+    else if (orden === "mensajes") lista.sort((a, b) => b.mensajes - a.mensajes);
     return lista;
-  }, [datos, orden]);
+  }, [datos, canal, orden]);
 
   const r = datos?.resumen;
+  const porCanal = datos?.porCanal ?? [];
+
+  const elegirCanal = (c: Canal | "todos") => {
+    setCanal(c);
+    setVisibles(PASO);
+  };
 
   const descargar = () => {
     const blob = new Blob(["﻿" + csv(filas)], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "costos-sofia.csv";
+    a.download = canal === "todos" ? "costos-sofia.csv" : `costos-sofia-${CANAL[canal].toLowerCase()}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -132,12 +119,12 @@ export default function CostosPage() {
             <Receipt size={17} /> Costos de Sofía
           </h1>
           <p className="text-[12.5px] text-[var(--text-3)]">
-            Cada conversación de Yalí desde el {datos?.arranque?.etiqueta ?? "arranque con luna"}: mensajes, costo y costo por mensaje
+            Cada conversación de Yalí desde el {datos?.arranque?.etiqueta ?? "arranque con luna"}
           </p>
         </div>
       </header>
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-5">
+      <div className="flex-1 space-y-5 overflow-y-auto p-5">
         {datos && !datos.ok && (
           <p className="rounded-xl border border-[var(--brand-red)]/40 bg-[var(--brand-red)]/10 px-3.5 py-2.5 text-[12.5px]">
             {datos.error ?? "No se pudieron leer los costos."}
@@ -151,17 +138,45 @@ export default function CostosPage() {
         ) : (
           r && (
             <>
-              <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+              <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
                 <Dato titulo="Conversaciones" valor={miles(r.conversaciones)} />
-                <Dato titulo="Mensajes de Sofía" valor={miles(r.mensajes.agente)} nota={`de ${miles(r.mensajes.total)} en total`} />
+                <Dato titulo="Mensajes de Sofía" valor={miles(r.mensajes)} />
                 <Dato titulo="Costo total" valor={dinero(r.costo, 2)} />
                 <Dato titulo="Por conversación" valor={dinero(r.porConversacion)} />
-                <Dato titulo="Por mensaje de Sofía" valor={dinero(r.porMensajeAgente)} />
-                <Dato titulo="Por mensaje, contando todos" valor={dinero(r.porMensaje)} />
+                <Dato titulo="Por mensaje" valor={dinero(r.porMensaje)} />
               </section>
+
+              {porCanal.length > 0 && (
+                <section>
+                  <h2 className="mb-2 text-[13px] font-bold uppercase tracking-wide text-[var(--text-3)]">Por canal</h2>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    {porCanal.map((c, i) => (
+                      <TarjetaDeCanal key={c.canal} c={c} consumeMas={i === 0 && porCanal.length > 1} />
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <section className="rounded-2xl border border-line bg-card p-5">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap gap-1 rounded-xl border border-line bg-surface p-1">
+                    {(["todos", ...porCanal.map((c) => c.canal)] as const).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => elegirCanal(c)}
+                        className={cn(
+                          "rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold transition",
+                          canal === c ? "bg-brand text-white shadow-sm" : "text-[var(--text-2)] hover:bg-card",
+                        )}
+                      >
+                        {c === "todos" ? "Todas" : CANAL[c]}{" "}
+                        <span className={cn("tabular-nums", canal === c ? "text-white/80" : "text-[var(--text-3)]")}>
+                          {miles(c === "todos" ? r.conversaciones : (porCanal.find((x) => x.canal === c)?.conversaciones ?? 0))}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex gap-1 rounded-xl border border-line bg-surface p-1">
                     {ORDENES.map((o) => (
                       <button
@@ -195,11 +210,8 @@ export default function CostosPage() {
                         <tr className="text-left">
                           <th className="py-1.5 pr-3 font-semibold">Inicio</th>
                           <th className="py-1.5 pr-3 font-semibold">Huésped</th>
-                          <th className="py-1.5 pr-3 text-right font-semibold">Del huésped</th>
-                          <th className="py-1.5 pr-3 text-right font-semibold">De Sofía</th>
-                          <th className="py-1.5 pr-3 text-right font-semibold">Del equipo</th>
+                          <th className="py-1.5 pr-3 text-right font-semibold">Mensajes de Sofía</th>
                           <th className="py-1.5 pr-3 text-right font-semibold">Costo</th>
-                          <th className="py-1.5 pr-3 text-right font-semibold">Por mensaje de Sofía</th>
                           <th className="py-1.5 text-right font-semibold">Por mensaje</th>
                         </tr>
                       </thead>
@@ -209,13 +221,10 @@ export default function CostosPage() {
                             <td className="whitespace-nowrap py-2 pr-3 text-[var(--text-2)]">{fechaHora(c.inicio)}</td>
                             <td className="py-2 pr-3">
                               <span className="font-semibold text-[var(--text)]">{huesped(c)}</span>
-                              <span className="block text-[11px] text-[var(--text-3)]">{CANAL[c.canal]}</span>
+                              {canal === "todos" && <span className="block text-[11px] text-[var(--text-3)]">{CANAL[c.canal]}</span>}
                             </td>
-                            <td className="py-2 pr-3 text-right text-[var(--text-2)]">{miles(c.mensajes.huesped)}</td>
-                            <td className="py-2 pr-3 text-right text-[var(--text-2)]">{miles(c.mensajes.agente)}</td>
-                            <td className="py-2 pr-3 text-right text-[var(--text-2)]">{miles(c.mensajes.equipo)}</td>
+                            <td className="py-2 pr-3 text-right text-[var(--text-2)]">{miles(c.mensajes)}</td>
                             <td className="py-2 pr-3 text-right font-semibold text-[var(--text)]">{dinero(c.costo)}</td>
-                            <td className="py-2 pr-3 text-right text-[var(--text-2)]">{dinero(c.porMensajeAgente)}</td>
                             <td className="py-2 text-right text-[var(--text-2)]">{dinero(c.porMensaje)}</td>
                           </tr>
                         ))}
@@ -235,10 +244,9 @@ export default function CostosPage() {
                 )}
 
                 <p className="mt-4 border-t border-line pt-3 text-[11.5px] leading-relaxed text-[var(--text-3)]">
-                  Conversación: sesión de 24 h desde la primera respuesta de Sofía, la misma que cuenta el plan. Sus mensajes
-                  incluyen el que la disparó. Costo: lo que cobra OpenAI por las respuestas de Sofía, con todas sus llamadas al
-                  modelo (herramientas, revisión y reescritura); OpenAI factura la entrada de luna como escritura de caché. No
-                  entra el análisis diario de conversaciones ni las pruebas.
+                  Conversación: sesión de 24 h desde la primera respuesta de Sofía, la misma que cuenta el plan. Mensajes: los que
+                  mandó Sofía. Costo: lo que cobra OpenAI por las respuestas de Sofía, con todas sus llamadas al modelo
+                  (herramientas, revisión y reescritura). No entra el análisis diario de conversaciones ni las pruebas.
                   {datos.truncado ? " Se leyó hasta el tope de filas: puede faltar lo más viejo." : ""}
                 </p>
               </section>
@@ -250,12 +258,42 @@ export default function CostosPage() {
   );
 }
 
-function Dato({ titulo, valor, nota }: { titulo: string; valor: string; nota?: string }) {
+function Dato({ titulo, valor }: { titulo: string; valor: string }) {
   return (
     <div className="rounded-2xl border border-line bg-card p-4">
       <p className="text-[11.5px] font-semibold uppercase tracking-wide text-[var(--text-3)]">{titulo}</p>
       <p className="mt-1 text-[22px] font-extrabold leading-none tracking-tight tabular-nums text-[var(--text)]">{valor}</p>
-      {nota && <p className="mt-1 text-[11.5px] text-[var(--text-3)]">{nota}</p>}
+    </div>
+  );
+}
+
+function TarjetaDeCanal({ c, consumeMas }: { c: ResumenDeCanal; consumeMas: boolean }) {
+  const pct = Math.round(c.parteDelCosto * 100);
+  return (
+    <div className={cn("rounded-2xl border bg-card p-4", consumeMas ? "border-brand" : "border-line")}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[14px] font-bold text-[var(--text)]">{CANAL[c.canal]}</p>
+        {consumeMas && (
+          <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">Consume más</span>
+        )}
+      </div>
+      <p className="mt-2 flex items-baseline gap-2">
+        <span className="text-[24px] font-extrabold leading-none tracking-tight tabular-nums text-[var(--text)]">{dinero(c.costo, 2)}</span>
+        <span className="text-[12px] text-[var(--text-3)]">{pct}% del costo</span>
+      </p>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface">
+        <div className="h-full rounded-full bg-brand" style={{ width: `${Math.max(pct, 1)}%` }} />
+      </div>
+      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[12.5px] tabular-nums">
+        <dt className="text-[var(--text-3)]">Conversaciones</dt>
+        <dd className="text-right font-semibold text-[var(--text)]">{miles(c.conversaciones)}</dd>
+        <dt className="text-[var(--text-3)]">Mensajes de Sofía</dt>
+        <dd className="text-right font-semibold text-[var(--text)]">{miles(c.mensajes)}</dd>
+        <dt className="text-[var(--text-3)]">Por conversación</dt>
+        <dd className="text-right font-semibold text-[var(--text)]">{dinero(c.porConversacion)}</dd>
+        <dt className="text-[var(--text-3)]">Por mensaje</dt>
+        <dd className="text-right font-semibold text-[var(--text)]">{dinero(c.porMensaje)}</dd>
+      </dl>
     </div>
   );
 }

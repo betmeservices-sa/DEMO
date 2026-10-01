@@ -1,5 +1,6 @@
 // El costo de IA de cada conversación del agente de un cliente, desde que
-// arrancó como hoy (ver lib/costos-conversacion.ts).
+// arrancó como hoy: el general, cada canal y cada conversación (ver
+// lib/costos-conversacion.ts).
 //
 // GET ?cliente=<tenant>
 //
@@ -23,6 +24,7 @@ import {
   GRACIA_MS,
   costosPorConversacion,
   resumenDeCostos,
+  resumenPorCanal,
   type MensajeDelChat,
 } from "@/lib/costos-conversacion";
 
@@ -121,6 +123,7 @@ export async function GET(req: Request) {
       ok: true,
       arranque,
       resumen: resumenDeCostos(conversaciones),
+      porCanal: resumenPorCanal(conversaciones),
       conversaciones,
       truncado: consumo.length >= TOPE_FILAS,
     });
