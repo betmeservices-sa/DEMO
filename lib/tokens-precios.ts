@@ -30,9 +30,22 @@ export const USO_CERO: UsoTokens = {
 export interface TarifaModelo {
   input: number;
   output: number;
+  /**
+   * Multiplicador de la entrada SIN caché. Para un proveedor que factura esa
+   * entrada como escritura de caché (luna), no como entrada simple.
+   */
+  multEntrada?: number;
 }
 
 export const PRECIOS_POR_MILLON: Record<string, TarifaModelo> = {
+  // LUNA, el modelo de Sofía desde el 28 de septiembre de 2026. Tarifa de
+  // lista: $0.10 entrada, $0.50 salida, lo leído de caché a la décima parte.
+  // PERO OpenAI no cobra la entrada sin caché como "input": la factura como
+  // "cache writes". Medido contra /v1/organization/costs del 28 de septiembre
+  // al 1 de octubre: nuestros tokens de entrada contra lo facturado en cache
+  // writes dan ~$0.125 por millón (1.25x), lo leído de caché exacto a $0.01 y
+  // la salida a $0.50. Sin el 1.25 el costo salía un 21% por debajo de la factura.
+  "gpt-6-luna": { input: 0.1, output: 0.5, multEntrada: 1.25 },
   "claude-haiku-4-5": { input: 1.0, output: 5.0 },
   "claude-sonnet-5": { input: 3.0, output: 15.0 },
   "claude-opus-5": { input: 5.0, output: 25.0 },
@@ -140,7 +153,7 @@ export function costoDeUso(
   const multEscritura =
     opts?.ttlCache === "1h" ? MULT_CACHE_ESCRITURA_1H : MULT_CACHE_ESCRITURA_5M;
 
-  const entrada = r6(((u.input_tokens ?? 0) / 1e6) * tarifa.input);
+  const entrada = r6(((u.input_tokens ?? 0) / 1e6) * tarifa.input * (tarifa.multEntrada ?? 1));
   const salida = r6(((u.output_tokens ?? 0) / 1e6) * tarifa.output);
   const cacheEscritura = r6(
     ((u.cache_creation_input_tokens ?? 0) / 1e6) * tarifa.input * multEscritura,

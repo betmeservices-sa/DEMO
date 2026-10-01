@@ -5,7 +5,7 @@ import { MODULOS_AGENCIA, VE, agenciaVeRuta, destinoAgencia } from "@/lib/modulo
 
 describe("modulos de la agencia", () => {
   it("solo deja las metricas", () => {
-    expect([...MODULOS_AGENCIA].sort()).toEqual(["dashboard", "llamadas", "reporte"]);
+    expect([...MODULOS_AGENCIA].sort()).toEqual(["costos", "dashboard", "llamadas", "reporte"]);
   });
 
   it("cierra la bandeja, redes y lo operativo", () => {
@@ -15,7 +15,7 @@ describe("modulos de la agencia", () => {
   });
 
   it("abre las metricas y las rutas sin modulo", () => {
-    for (const ruta of ["/dashboard", "/reporte", "/llamadas", "/privacy"]) {
+    for (const ruta of ["/dashboard", "/reporte", "/costos", "/llamadas", "/privacy"]) {
       expect(agenciaVeRuta("miagentia", ruta)).toBe(true);
     }
   });

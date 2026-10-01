@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { MODULOS_AGENCIA, MODULOS_CLINICA } from "@/lib/modulos";
@@ -63,6 +63,7 @@ const NAV: NavItem[] = [
   { id: "dashboard", href: "/dashboard", label: "Dashboard", Icon: BarChart3 },
   { id: "reporte", href: "/reporte", label: "Reporte", Icon: FileBarChart },
   { id: "auditoria", href: "/auditoria", label: "Audit logs", Icon: ScrollText },
+  { id: "costos", href: "/costos", label: "Costos de Sofía", Icon: Receipt },
   { id: "llamadas", href: "/llamadas", label: "Llamadas", Icon: PhoneCall },
   { id: "qa", href: "/qa", label: "QA", Icon: Headphones },
   { id: "agentes", href: "/agentes", label: "Agentes", Icon: Bot },
@@ -181,6 +182,8 @@ export function Sidebar({
       (item.id !== "reporte" || veReporte) &&
       // Quién entró al panel de cada cliente: también es solo de la agencia.
       (item.id !== "auditoria" || veReporte) &&
+      // Lo que cuesta operar el agente de cada cliente: de la agencia, no del cliente.
+      (item.id !== "costos" || veReporte) &&
       // La agencia es SOLO metricas de clientes: su lista cerrada manda.
       (tenant !== "miagentia" || MODULOS_AGENCIA.includes(item.id)),
       );

@@ -33,6 +33,19 @@ describe("tarifas por millón de tokens", () => {
     expect(PRECIOS_POR_MILLON["claude-opus-5"]).toEqual({ input: 5, output: 25 });
   });
 
+  it("luna: la entrada sin caché se cobra como escritura de caché (1.25x), lo leído a $0.01 y la salida a $0.50", () => {
+    expect(PRECIOS_POR_MILLON["gpt-6-luna"]).toEqual({ input: 0.1, output: 0.5, multEntrada: 1.25 });
+    // Una respuesta real de Sofía del 1 de octubre de 2026: 9.169 de entrada,
+    // 4.785 leídos de caché y 525 de salida.
+    const c = costoDeUso(uso({ input_tokens: 9169, cache_read_input_tokens: 4785, output_tokens: 525 }), "gpt-6-luna");
+    expect(c.entrada).toBeCloseTo((9169 / 1e6) * 0.125, 5);
+    expect(c.cacheLectura).toBeCloseTo((4785 / 1e6) * 0.01, 5);
+    expect(c.salida).toBeCloseTo((525 / 1e6) * 0.5, 5);
+    // Antes del 1.25 esta misma fila daba $0.001228.
+    expect(c.total).toBe(0.001457);
+    expect(c.tarifaConocida).toBe(true);
+  });
+
   it("los multiplicadores de caché son 1.25x, 2x y 0.1x", () => {
     expect(MULT_CACHE_ESCRITURA_5M).toBe(1.25);
     expect(MULT_CACHE_ESCRITURA_1H).toBe(2);

@@ -68,6 +68,9 @@ export type ModuleId =
   // El registro de quién entró al panel de cada cliente (audit log). Es de la
   // agencia: antes vivía al fondo de su tablero.
   | "auditoria"
+  // Lo que costó cada conversación del agente de un cliente (IA, por mensaje).
+  // Es de la agencia: el costo de operar el agente es nuestro, no del hotel.
+  | "costos"
   | "llamadas"
   // Escuchar lo que dijo el agente. Va aparte de "llamadas" (que es el tablero
   // de costo y volumen) porque quien hace QA no viene a mirar cifras.
@@ -115,7 +118,7 @@ export interface RoleDef {
 // marketing no gestiona casos, asi que no lo ve.
 // "mis-chats" lo ve todo el mundo: es donde caen los chats que el agente pasa a
 // una persona, y quien atiende tiene que verlos sin depender de su rol.
-const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "auditoria", "llamadas", "qa", "agentes", "settings"];
+const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "auditoria", "costos", "llamadas", "qa", "agentes", "settings"];
 export const VE: Record<RoleId, ModuleId[]> = {
   // Recepcion del consultorio es quien recibe al paciente y quien mueve la
   // fila del laboratorio: los dos modulos del modulo clinico son suyos.
@@ -173,6 +176,7 @@ export const MODULO_RUTA: Record<ModuleId, string> = {
   dashboard: "/dashboard",
   reporte: "/reporte",
   auditoria: "/auditoria",
+  costos: "/costos",
   llamadas: "/llamadas",
   qa: "/qa",
   agentes: "/agentes",
@@ -197,6 +201,7 @@ export function moduloDeRuta(pathname: string): ModuleId | null {
   if (pathname.startsWith("/talento")) return "talento";
   if (pathname.startsWith("/reporte")) return "reporte";
   if (pathname.startsWith("/auditoria")) return "auditoria";
+  if (pathname.startsWith("/costos")) return "costos";
   if (pathname.startsWith("/visitas")) return "visitas";
   if (pathname.startsWith("/cartera")) return "cartera";
   if (pathname.startsWith("/publicacion")) return "publicacion";
@@ -241,11 +246,12 @@ export function puedeVerRuta(rol: RoleId, pathname: string): boolean {
 
 // El tablero de la agencia (tenant "miagentia") es SOLO metricas de clientes:
 // el tablero por cliente (consumo, conversaciones, reservas, quien cerro), el
-// reporte de desempeno del agente de cada cliente y las llamadas con su costo.
+// reporte de desempeno del agente de cada cliente, lo que costo cada
+// conversacion del agente y las llamadas con su costo.
 // Bandeja, redes, contactos, ajustes y lo demas operativo no van: se atiende
 // desde el panel de cada cliente, no desde aca. Es una lista CERRADA, igual
 // que la de la clinica, para el menu, la portada y la puerta del servidor.
-export const MODULOS_AGENCIA: readonly ModuleId[] = ["dashboard", "reporte", "llamadas"];
+export const MODULOS_AGENCIA: readonly ModuleId[] = ["dashboard", "reporte", "costos", "llamadas"];
 
 /**
  * ¿Abre este cliente esta ruta? Solo cierra para la agencia; el resto de los
