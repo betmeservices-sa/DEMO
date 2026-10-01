@@ -17,7 +17,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
-import { MODULO_RUTA, primerModulo, puedeVerRuta, VE } from "@/lib/modulos";
+import { MODULO_RUTA, agenciaVeRuta, destinoAgencia, primerModulo, puedeVerRuta, VE } from "@/lib/modulos";
 
 const PUBLICAS = [
   "/api/auth/login",
@@ -70,6 +70,14 @@ export async function proxy(req: NextRequest) {
   if (sesion?.fijo && !puedeVerRuta(sesion.rol, pathname)) {
     const destino = MODULO_RUTA[primerModulo({ ve: VE[sesion.rol] ?? [] })];
     return NextResponse.redirect(new URL(destino, req.url));
+  }
+
+  // La agencia (miagentia) solo tiene sus metricas de clientes. Aplica a TODO
+  // login de la agencia, demo o fijo: no es una restriccion de rol sino del
+  // cliente. Entrar a "/" (la bandeja) cae en el tablero.
+  if (sesion && !agenciaVeRuta(sesion.tenant, pathname)) {
+    const destino = destinoAgencia(VE[sesion.rol] ?? []);
+    if (destino) return NextResponse.redirect(new URL(MODULO_RUTA[destino], req.url));
   }
 
   return NextResponse.next();

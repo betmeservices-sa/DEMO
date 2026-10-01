@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BadgePercent, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
-import { MODULOS_CLINICA } from "@/lib/modulos";
+import { MODULOS_AGENCIA, MODULOS_CLINICA } from "@/lib/modulos";
 import { useStore } from "@/lib/store";
 import { sinLeerPorCanal, useInterno } from "@/lib/interno-bridge";
 import { activeTenantId } from "@/lib/tenants/active";
@@ -180,7 +180,9 @@ export function Sidebar({
       // nuestra auditoria de su propio agente.
       (item.id !== "reporte" || veReporte) &&
       // Quién entró al panel de cada cliente: también es solo de la agencia.
-      (item.id !== "auditoria" || veReporte),
+      (item.id !== "auditoria" || veReporte) &&
+      // La agencia es SOLO metricas de clientes: su lista cerrada manda.
+      (tenant !== "miagentia" || MODULOS_AGENCIA.includes(item.id)),
       );
 
   // Los avisos del menu: lo que espera respuesta en cada modulo.

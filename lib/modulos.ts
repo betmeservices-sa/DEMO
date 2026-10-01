@@ -238,3 +238,26 @@ export function puedeVerRuta(rol: RoleId, pathname: string): boolean {
   if (!modulo) return true;
   return (VE[rol] ?? []).includes(modulo);
 }
+
+// El tablero de la agencia (tenant "miagentia") es SOLO metricas de clientes:
+// el tablero por cliente (consumo, conversaciones, reservas, quien cerro), el
+// reporte de desempeno del agente de cada cliente y las llamadas con su costo.
+// Bandeja, redes, contactos, ajustes y lo demas operativo no van: se atiende
+// desde el panel de cada cliente, no desde aca. Es una lista CERRADA, igual
+// que la de la clinica, para el menu, la portada y la puerta del servidor.
+export const MODULOS_AGENCIA: readonly ModuleId[] = ["dashboard", "reporte", "llamadas"];
+
+/**
+ * ¿Abre este cliente esta ruta? Solo cierra para la agencia; el resto de los
+ * clientes sigue con su menu de siempre. Las rutas sin modulo no se cierran.
+ */
+export function agenciaVeRuta(tenant: string, pathname: string): boolean {
+  if (tenant !== "miagentia") return true;
+  const modulo = moduloDeRuta(pathname);
+  return modulo === null || MODULOS_AGENCIA.includes(modulo);
+}
+
+/** A donde mandar a la agencia: su primer modulo de metricas que el rol ve. */
+export function destinoAgencia(ve: readonly ModuleId[]): ModuleId | null {
+  return MODULOS_AGENCIA.find((m) => ve.includes(m)) ?? null;
+}

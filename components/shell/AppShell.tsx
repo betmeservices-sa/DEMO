@@ -8,7 +8,7 @@ import { LiveProvider } from "@/lib/live-context";
 import { useAuth } from "@/lib/auth";
 import { activeTenant, activeTenantId } from "@/lib/tenants/active";
 import { useRole, moduloDeRuta, primerModulo, MODULO_RUTA } from "@/lib/roles";
-import { MODULOS_CLINICA } from "@/lib/modulos";
+import { MODULOS_CLINICA, agenciaVeRuta, destinoAgencia } from "@/lib/modulos";
 import { Sidebar } from "./Sidebar";
 import { LiveMount } from "./LiveMount";
 import { LoginPage } from "./LoginPage";
@@ -37,12 +37,21 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Guard de rol: si la ruta actual es un módulo que este rol NO ve, lo
   // mandamos a su primer módulo permitido. null = ruta libre (no se restringe).
+  // La agencia (miagentia) ademas tiene una lista cerrada: solo metricas de
+  // clientes. Lo que no esta ahi no se pinta, aunque el rol lo vea.
   const modulo = moduloDeRuta(pathname);
-  const permitido = modulo === null || def.ve.includes(modulo);
+  const esAgencia = Boolean(sesion) && activeTenantId() === "miagentia";
+  const permitido =
+    (modulo === null || def.ve.includes(modulo)) &&
+    (!esAgencia || agenciaVeRuta("miagentia", pathname));
 
   useEffect(() => {
-    if (!permitido) router.replace(MODULO_RUTA[primerModulo(def)]);
-  }, [permitido, def, router]);
+    if (permitido) return;
+    // A la agencia se la manda a su primer modulo de metricas; si el rol no ve
+    // ninguno se queda en "sin acceso" (mandarla a la bandeja seria un ciclo).
+    const destino = esAgencia ? destinoAgencia(def.ve) : primerModulo(def);
+    if (destino) router.replace(MODULO_RUTA[destino]);
+  }, [permitido, esAgencia, def, router]);
 
   // La clinica solo tiene sus dos pantallas: entrar cae en el consultorio y no
   // en la bandeja, que para este cliente no existe.
