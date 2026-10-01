@@ -1,5 +1,5 @@
-// El plan de conversaciones de un cliente en su ciclo de facturación: sin Day
-// Pass y Day Pass, cada una con lo incluido y su paquete adicional.
+// El plan de conversaciones de un cliente en su ciclo de facturación, contado
+// por paquetes (ver usoDelPlan en lib/plan-conversaciones.ts).
 //
 // GET ?cliente=<tenant>&ciclo=actual|anterior
 //

@@ -7,19 +7,16 @@
 // selector (el ciclo en curso o el que ya cerró, que es el que se cobra; el
 // anterior solo aparece cuando el plan ya cumplió un ciclo).
 //
-// Las filas, en el orden que pidió el usuario (2026-09-28):
-//   - Conversaciones del ciclo en total, Day Pass incluido.
-//   - Sin Day Pass: lo incluido en el plan (1.000) y, desde la 1.001, el
-//     paquete adicional.
-//   - Day Pass: lo incluido en la facturación (500) y, desde la 501, su
-//     paquete adicional.
-// Ver lib/plan-conversaciones.ts para qué cuenta como conversación.
+// Por PAQUETES (lo pidió el usuario el 2026-10-01): arriba, las conversaciones
+// del ciclo y cuántos paquetes van consumidos; abajo, el paquete que corre, con
+// sus normales y su Day Pass (que suma lo que le sobró del paquete anterior); y
+// cuándo se acabó cada paquete. Ver lib/plan-conversaciones.ts.
 
 import { useEffect, useState } from "react";
 import { Loader2, MessagesSquare, Sun, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { fechaHora, miles } from "@/lib/formato-agencia";
-import type { Contador, FilaDelPlan, PlanConversaciones, UsoDelPlan } from "@/lib/plan-conversaciones";
+import type { Bolsa, PlanConversaciones, UsoDelPlan } from "@/lib/plan-conversaciones";
 
 type Ciclo = "actual" | "anterior";
 
@@ -118,76 +115,79 @@ export function PlanDelCiclo({ cliente }: { cliente: string }) {
         )
       ) : (
         <>
-          <div className="mt-4 flex flex-wrap items-baseline gap-x-2">
-            <span className="text-[30px] font-extrabold leading-none tracking-tight text-[var(--text)]">
-              {miles(vigente.uso.total)}
-            </span>
-            <span className="text-[13px] text-[var(--text-2)]">conversaciones en total en el ciclo, Day Pass incluido</span>
+          <div className="mt-4 flex flex-wrap gap-x-10 gap-y-3">
+            <Dato valor={miles(vigente.uso.total)} texto="conversaciones en total en el ciclo, Day Pass incluido" />
+            <Dato
+              valor={miles(vigente.uso.consumidos.length)}
+              texto={`${vigente.uso.consumidos.length === 1 ? "paquete consumido" : "paquetes consumidos"} · ${
+                vigente.uso.paquete === 1 ? "va en el plan del mes" : `va en el paquete ${vigente.uso.paquete}`
+              }`}
+            />
           </div>
 
           <div className="mt-5 space-y-5">
             <Barra
-              titulo="Conversaciones incluidas en el plan"
+              titulo={vigente.uso.paquete === 1 ? "Conversaciones incluidas en el plan" : `Conversaciones · paquete ${vigente.uso.paquete}`}
               Icon={MessagesSquare}
-              c={vigente.uso.generales.plan}
-              nota={notaIncluidas(vigente.uso.generales, "sin Day Pass")}
+              b={vigente.uso.actual.generales}
+              adicional={vigente.uso.paquete > 1}
             />
             <Barra
-              titulo="Day Pass · incluidas en el plan"
+              titulo={vigente.uso.paquete === 1 ? "Day Pass · incluidas en el plan" : `Day Pass · paquete ${vigente.uso.paquete}`}
               Icon={Sun}
-              c={vigente.uso.dayPass.plan}
-              nota={notaIncluidas(vigente.uso.dayPass, "de Day Pass")}
-            />
-            <Barra
-              titulo="Paquete adicional"
-              Icon={MessagesSquare}
-              c={vigente.uso.generales.adicional}
-              adicional
-              nota={notaAdicional(vigente.uso.generales)}
-            />
-            <Barra
-              titulo="Day Pass · paquete adicional"
-              Icon={Sun}
-              c={vigente.uso.dayPass.adicional}
-              adicional
-              nota={notaAdicional(vigente.uso.dayPass)}
+              b={vigente.uso.actual.dayPass}
+              adicional={vigente.uso.paquete > 1}
             />
           </div>
+
+          {vigente.uso.consumidos.length > 0 && (
+            <ul className="mt-4 space-y-1 border-t border-line pt-3 text-[11.5px] text-[var(--text-3)]">
+              {vigente.uso.consumidos.map((p) => (
+                <li key={p.numero}>
+                  {p.numero === 1 ? "El plan" : `El paquete ${p.numero}`} se acabó el {fechaHora(p.llenoEl)}, por{" "}
+                  {p.porque === "generales" ? "las conversaciones" : "el Day Pass"}
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
     </section>
   );
 }
 
-/** "se llenaron el 20 sept, 6:44 a. m. · 1,797 sin Day Pass en el ciclo" */
-function notaIncluidas(f: FilaDelPlan, que: string): string {
-  const estado = f.llenoEl ? `se llenaron el ${fechaHora(f.llenoEl)}` : `quedan ${miles(f.plan.incluidas - f.plan.usadas)}`;
-  return `${estado} · ${miles(f.total)} ${que} en el ciclo`;
+function Dato({ valor, texto }: { valor: string; texto: string }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2">
+      <span className="text-[30px] font-extrabold leading-none tracking-tight text-[var(--text)]">{valor}</span>
+      <span className="text-[13px] text-[var(--text-2)]">{texto}</span>
+    </div>
+  );
 }
 
-function notaAdicional(f: FilaDelPlan): string {
-  const c = f.adicional;
-  if (f.llenoEl === null) return "arranca cuando se llenen las incluidas";
-  if (c.excedente > 0) return `${miles(c.excedente)} sobre el paquete adicional`;
-  return `quedan ${miles(c.incluidas - c.usadas)}`;
+/** "198 que sobraron del paquete anterior + 500 del nuevo · quedan 667" */
+function notaDeBolsa(b: Bolsa): string {
+  const quedan = b.disponibles - b.usadas;
+  const resto = quedan < 0 ? `${miles(-quedan)} de más` : `quedan ${miles(quedan)}`;
+  return b.arrastre > 0
+    ? `${miles(b.arrastre)} que sobraron del paquete anterior + ${miles(b.disponibles - b.arrastre)} del nuevo · ${resto}`
+    : resto;
 }
 
 function Barra({
   titulo,
   Icon,
-  c,
-  nota,
+  b,
   adicional = false,
 }: {
   titulo: string;
   Icon: LucideIcon;
-  c: Contador;
-  nota: string;
-  /** Las del paquete adicional van en otro color: no son lo incluido. */
+  b: Bolsa;
+  /** Un paquete adicional va en otro color: no es lo incluido en el plan. */
   adicional?: boolean;
 }) {
-  const pasado = c.excedente > 0;
-  const pct = c.incluidas === 0 ? 0 : Math.min(100, (c.usadas / c.incluidas) * 100);
+  const pasado = b.usadas > b.disponibles;
+  const pct = b.disponibles === 0 ? (b.usadas > 0 ? 100 : 0) : Math.min(100, (b.usadas / b.disponibles) * 100);
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
@@ -196,9 +196,9 @@ function Barra({
         </p>
         <p className="shrink-0 text-[13px] tabular-nums text-[var(--text-3)]">
           <span className={cn("text-[20px] font-extrabold tracking-tight", pasado ? "text-[var(--brand-red)]" : "text-[var(--text)]")}>
-            {miles(c.usadas)}
+            {miles(b.usadas)}
           </span>{" "}
-          de {miles(c.incluidas)}
+          de {miles(b.disponibles)}
         </p>
       </div>
       <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface">
@@ -207,7 +207,9 @@ function Barra({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className={cn("mt-1.5 text-[11.5px]", pasado ? "font-semibold text-[var(--brand-red)]" : "text-[var(--text-3)]")}>{nota}</p>
+      <p className={cn("mt-1.5 text-[11.5px]", pasado ? "font-semibold text-[var(--brand-red)]" : "text-[var(--text-3)]")}>
+        {notaDeBolsa(b)}
+      </p>
     </div>
   );
 }

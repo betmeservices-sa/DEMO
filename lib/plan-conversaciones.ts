@@ -1,14 +1,22 @@
 // El plan de conversaciones de un cliente en su ciclo de facturación.
 //
-// LO QUE SE ACORDÓ CON YALI (versión del 2026-09-28):
+// LO QUE SE ACORDÓ CON YALI (versión del 2026-10-01): PAQUETES.
 //
-//   - SIN DAY PASS: el plan incluye 1.000 conversaciones por ciclo. Desde la
-//     1.001 corre el paquete adicional.
-//   - DAY PASS: van aparte desde la primera. El plan incluye 500 por ciclo;
-//     desde la 501 corre su propio paquete adicional.
+//   - El plan del mes es el PRIMER paquete: 1.000 conversaciones sin Day Pass
+//     y 500 de Day Pass. Cada paquete adicional trae lo mismo.
+//   - Cuando se acaba una de las dos (casi siempre las normales), se abre el
+//     paquete siguiente: esa vuelve a contar desde cero sobre lo del paquete
+//     nuevo, y la otra suma lo que le quedaba sin usar más lo del paquete
+//     nuevo. Ej.: se acaban las 1.000 normales con 54 de Day Pass sin usar; el
+//     paquete 2 trae 1.000 normales y 54 + 500 = 554 de Day Pass.
+//   - Arriba se muestran los paquetes consumidos (el plan cuenta como uno).
 //
-// Las dos filas son independientes: una conversación de Day Pass nunca gasta
-// de las 1.000 generales, ni al revés.
+// Septiembre de 2026, con datos reales: 2.131 normales y 833 de Day Pass. El
+// plan se acabó el 20 a las 6:44 a. m. y el paquete 2 el 29 a las 6:09 p. m.,
+// los dos por las normales: 2 paquetes consumidos y el mes cerró en el 3.
+//
+// Un tipo nunca gasta del otro: una conversación de Day Pass no descuenta de
+// las normales, ni al revés.
 //
 // QUÉ ES UNA CONVERSACIÓN. Lo dice la propuesta que recibió el cliente: "una
 // sesión activa con un huésped, con validez de 24 horas". La sesión arranca
@@ -37,9 +45,9 @@ export interface Cupos {
 }
 
 export interface PlanConversaciones {
-  /** Lo que el plan incluye por ciclo. */
+  /** Lo que el plan incluye por ciclo: el paquete 1. */
   incluidas: Cupos;
-  /** El paquete adicional que corre cuando se acaba lo incluido. */
+  /** Lo que trae cada paquete adicional. */
   adicional: Cupos;
   /** Día del mes en que arranca cada ciclo. 1 = mes calendario. */
   diaDeRenovacion: number;
@@ -61,13 +69,6 @@ export const PLANES: Record<string, PlanConversaciones> = {
 /** Lo que dura una conversación, según la propuesta: 24 horas. */
 export const DURACION_CONVERSACION_MS = 24 * 60 * 60 * 1000;
 
-export interface Contador {
-  usadas: number;
-  incluidas: number;
-  /** Lo que pasó de lo incluido. 0 si no se pasó. */
-  excedente: number;
-}
-
 export interface Conversacion {
   /** El chat (teléfono o "<canal>:<persona>"). */
   chat: string;
@@ -75,30 +76,42 @@ export interface Conversacion {
   inicio: string;
 }
 
-/** Una fila del plan: lo incluido y, pasado eso, el paquete adicional. */
-export interface FilaDelPlan {
-  /** Todas las del ciclo de esta fila. */
-  total: number;
-  /** Las que cubre el plan (nunca más que lo incluido). */
-  plan: Contador;
-  /** Las que van al paquete adicional, desde la que sigue a lo incluido. */
-  adicional: Contador;
-  /** Cuándo arrancó la última que cubre el plan; null si no se llenó. */
-  llenoEl: string | null;
+export type TipoDeConversacion = keyof Cupos;
+
+/** Un tipo de conversación en el paquete que corre. */
+export interface Bolsa {
+  /** Las que van en este paquete. */
+  usadas: number;
+  /** Las que trae este paquete: lo suyo más lo que quedó del anterior. */
+  disponibles: number;
+  /** Lo que quedó sin usar del paquete anterior y se sumó a este. */
+  arrastre: number;
+}
+
+/** Un paquete que ya se acabó. */
+export interface PaqueteConsumido {
+  /** 1 = el plan del mes. */
+  numero: number;
+  /** El tipo que se acabó y abrió el paquete siguiente. */
+  porque: TipoDeConversacion;
+  /** Cuándo arrancó la última conversación de ese tipo que entró en el paquete (ISO). */
+  llenoEl: string;
 }
 
 export interface UsoDelPlan {
   /** Todas las conversaciones del ciclo, con Day Pass. */
   total: number;
-  generales: FilaDelPlan;
-  dayPass: FilaDelPlan;
+  /** Todas las del ciclo sin Day Pass. */
+  generales: number;
+  /** Todas las del ciclo de Day Pass. */
+  dayPass: number;
+  /** El paquete que corre: 1 = el plan del mes. */
+  paquete: number;
+  /** Los que ya se acabaron, en orden. */
+  consumidos: PaqueteConsumido[];
+  /** Cómo va el paquete que corre. */
+  actual: Record<TipoDeConversacion, Bolsa>;
 }
-
-const contador = (usadas: number, incluidas: number): Contador => ({
-  usadas,
-  incluidas,
-  excedente: Math.max(0, usadas - incluidas),
-});
 
 /**
  * Las conversaciones (sesiones de 24 h) a partir de las respuestas del agente,
@@ -128,19 +141,14 @@ export function conversacionesDelCiclo(respuestas: Iterable<{ waFrom: string; ts
   return out.sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio) || a.chat.localeCompare(b.chat));
 }
 
-/** Reparte una fila (ya en orden) entre lo incluido y el paquete adicional. */
-function fila(conversaciones: readonly Conversacion[], incluidas: number, adicional: number): FilaDelPlan {
-  const enPlan = Math.min(conversaciones.length, incluidas);
-  return {
-    total: conversaciones.length,
-    plan: contador(enPlan, incluidas),
-    adicional: contador(conversaciones.length - enPlan, adicional),
-    llenoEl: conversaciones.length >= incluidas && incluidas > 0 ? conversaciones[incluidas - 1]!.inicio : null,
-  };
-}
-
 /**
- * Reparte las conversaciones del ciclo en las dos filas del plan.
+ * Cuenta el ciclo por paquetes, conversación por conversación y en orden de
+ * inicio (así sale `conversacionesQueArrancanEn`).
+ *
+ * La conversación que ya no cabe abre el paquete siguiente y cuenta en él: el
+ * paquete se llenó con la anterior de su tipo, no con ella. Si el paquete
+ * adicional no trae de ese tipo, no hay a dónde pasar y queda de más en el que
+ * corre (`usadas` mayor que `disponibles`).
  *
  * `chatsDayPass` puede traer chats de otros ciclos: solo cuentan los que
  * además tienen conversaciones en este.
@@ -150,12 +158,39 @@ export function usoDelPlan(
   chatsDayPass: ReadonlySet<string>,
   p: PlanConversaciones,
 ): UsoDelPlan {
-  const dp = conversaciones.filter((c) => chatsDayPass.has(c.chat));
-  const generales = conversaciones.filter((c) => !chatsDayPass.has(c.chat));
+  const totales = { generales: 0, dayPass: 0 };
+  const disponibles = { ...p.incluidas };
+  const arrastre = { generales: 0, dayPass: 0 };
+  let usadas = { generales: 0, dayPass: 0 };
+  const ultima: Record<TipoDeConversacion, string | null> = { generales: null, dayPass: null };
+  const consumidos: PaqueteConsumido[] = [];
+  let paquete = 1;
+
+  for (const c of conversaciones) {
+    const tipo: TipoDeConversacion = chatsDayPass.has(c.chat) ? "dayPass" : "generales";
+    const otro: TipoDeConversacion = tipo === "generales" ? "dayPass" : "generales";
+    totales[tipo]++;
+    if (usadas[tipo] >= disponibles[tipo] && p.adicional[tipo] > 0) {
+      consumidos.push({ numero: paquete, porque: tipo, llenoEl: ultima[tipo] ?? c.inicio });
+      paquete++;
+      arrastre[otro] = Math.max(0, disponibles[otro] - usadas[otro]);
+      arrastre[tipo] = 0;
+      disponibles[otro] = arrastre[otro] + p.adicional[otro];
+      disponibles[tipo] = p.adicional[tipo];
+      usadas = { generales: 0, dayPass: 0 };
+    }
+    usadas[tipo]++;
+    ultima[tipo] = c.inicio;
+  }
+
+  const bolsa = (t: TipoDeConversacion): Bolsa => ({ usadas: usadas[t], disponibles: disponibles[t], arrastre: arrastre[t] });
   return {
     total: conversaciones.length,
-    generales: fila(generales, p.incluidas.generales, p.adicional.generales),
-    dayPass: fila(dp, p.incluidas.dayPass, p.adicional.dayPass),
+    generales: totales.generales,
+    dayPass: totales.dayPass,
+    paquete,
+    consumidos,
+    actual: { generales: bolsa("generales"), dayPass: bolsa("dayPass") },
   };
 }
 
