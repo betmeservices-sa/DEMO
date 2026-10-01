@@ -1,10 +1,10 @@
 "use client";
 
 // La línea de tiempo del plan de conversaciones de un cliente: cuándo arrancó
-// el ciclo, cuándo se acabó cada paquete (y cómo quedó), cuándo arrancó el
-// siguiente y con qué, cuándo se gastó el Day Pass del plan, y cómo va o cómo
-// cerró. Lo pidió el usuario el 2026-10-01 ("cuándo se gastaron las primeras
-// 1000 normales y cuándo las otras 1000 con los 500 de Day Pass").
+// el ciclo, cuándo se abrió cada paquete, cuándo se llenaron sus normales y su
+// Day Pass (los paquetes se llenan en orden: lo que le queda a uno se gasta
+// antes que lo del siguiente), y cómo va o cómo cerró. Lo pidió el usuario el
+// 2026-10-01.
 //
 // Sale de /api/agencia/plan (lib/plan-conversaciones.ts: usoDelPlan), así que
 // cuenta igual que el bloque del plan del tablero. Arranca mostrando el ciclo
@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TZ, miles } from "@/lib/formato-agencia";
-import type { Bolsa, PlanConversaciones, UsoDelPlan } from "@/lib/plan-conversaciones";
+import type { Paquete, PlanConversaciones, TipoDeConversacion, UsoDelPlan } from "@/lib/plan-conversaciones";
 
 type Ciclo = "actual" | "anterior";
 
@@ -46,6 +46,16 @@ function fecha(iso: string): string {
   return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} ${de("day")} ${de("month").replace(/\.$/, "")} · ${de("hour")}:${de("minute")} ${de("dayPeriod")}`;
 }
 
+const delPaquete = (n: number) => (n === 1 ? "del plan" : `del paquete ${n}`);
+
+interface Barra {
+  etiqueta: string;
+  usadas: number;
+  de: number;
+  color: string;
+  resto?: string;
+}
+
 interface Hito {
   ts: string;
   fecha: string;
@@ -53,95 +63,110 @@ interface Hito {
   nota?: string;
   /** Color del punto. */
   punto: string;
-  /** Color del tramo de línea que baja de este hito: el paquete que corre después. */
-  tramo: string | null;
-  barras?: { etiqueta: string; b: Bolsa; color: string; resto?: string }[];
+  barras?: Barra[];
   grande?: boolean;
 }
 
+/** El paquete anterior a `p` que todavía tenía lugar de `t` cuando `p` se abrió. */
+function anteriorConLugar(paquetes: readonly Paquete[], p: Paquete, t: TipoDeConversacion): Paquete | undefined {
+  if (!p.abre) return undefined;
+  const abre = Date.parse(p.abre);
+  return paquetes.find((q) => q.numero < p.numero && (q[t].llenoEl === null || Date.parse(q[t].llenoEl) > abre));
+}
+
 function hitosDe({ plan, ciclo, uso }: Leido, cerrado: boolean): Hito[] {
-  const hitos: Hito[] = [];
-  hitos.push({
-    ts: ciclo.desde,
-    fecha: fecha(ciclo.desde),
-    titulo: "Arranca el plan",
-    nota: `${miles(plan.incluidas.generales)} conversaciones normales y ${miles(plan.incluidas.dayPass)} de Day Pass`,
-    punto: color(1),
-    tramo: color(1),
-  });
+  const hitos: Hito[] = [
+    {
+      ts: ciclo.desde,
+      fecha: fecha(ciclo.desde),
+      titulo: "Arranca el plan",
+      nota: `${miles(plan.incluidas.generales)} conversaciones normales y ${miles(plan.incluidas.dayPass)} de Day Pass`,
+      punto: color(1),
+    },
+  ];
 
-  for (const p of uso.consumidos) {
-    const sig = p.numero + 1;
-    const otro = p.porque === "generales" ? "dayPass" : "generales";
-    const sobra = p.alLlenarse[otro].disponibles - p.alLlenarse[otro].usadas;
-    const queSeAcabo =
-      p.porque === "generales"
-        ? p.numero === 1
-          ? `Se acaban las primeras ${miles(p.alLlenarse.generales.disponibles)} normales`
-          : `Se acaban las ${miles(p.alLlenarse.generales.disponibles)} normales del paquete ${p.numero}`
-        : `Se acaba el Day Pass del paquete ${p.numero}`;
-    hitos.push({
-      ts: p.llenoEl,
-      fecha: fecha(p.llenoEl),
-      titulo: queSeAcabo,
-      punto: color(p.numero),
-      tramo: color(p.numero),
-      grande: true,
-      barras: (
-        [
-          { tipo: "generales", etiqueta: p.numero === 1 ? "Normales" : `Normales del paquete ${p.numero}`, color: color(p.numero) },
-          { tipo: "dayPass", etiqueta: p.numero === 1 ? "Day Pass" : `Day Pass del paquete ${p.numero}`, color: COLOR_DAY_PASS },
-        ] as const
-      ).map(({ tipo, etiqueta, color: c }) => ({
-        etiqueta,
-        b: p.alLlenarse[tipo],
-        color: c,
-        resto: tipo === otro && sobra > 0 ? `Sobraron ${miles(sobra)}, que pasan al paquete ${sig}` : undefined,
-      })),
-    });
-    const s = p.siguiente;
-    const conArrastre = (b: Bolsa) => (b.arrastre > 0 ? ` (${miles(b.arrastre)} que sobraron + ${miles(b.disponibles - b.arrastre)})` : "");
-    hitos.push({
-      ts: p.abreSiguiente,
-      fecha: fecha(p.abreSiguiente),
-      titulo: `Arranca el paquete ${sig}`,
-      nota: `${miles(s.generales.disponibles)} normales${conArrastre(s.generales)} y ${miles(s.dayPass.disponibles)} de Day Pass${conArrastre(s.dayPass)}`,
-      punto: color(sig),
-      tramo: color(sig),
-    });
-  }
+  for (const p of uso.paquetes) {
+    if (p.abre && p.abrioPor) {
+      const otro: TipoDeConversacion = p.abrioPor === "generales" ? "dayPass" : "generales";
+      const previo = anteriorConLugar(uso.paquetes, p, otro);
+      hitos.push({
+        ts: p.abre,
+        fecha: fecha(p.abre),
+        titulo: `Arranca el paquete ${p.numero}`,
+        nota:
+          `${miles(p.generales.incluidas)} normales y ${miles(p.dayPass.incluidas)} de Day Pass` +
+          (previo ? `. ${otro === "dayPass" ? "El Day Pass sigue" : "Las normales siguen"} saliendo ${delPaquete(previo.numero)} hasta llenarlo` : ""),
+        punto: color(p.numero),
+      });
+    }
 
-  // Cuándo se gastó el Day Pass que trae el plan. Si fue eso lo que abrió un
-  // paquete, ya está dicho arriba.
-  const dp = uso.dayPassDelPlanLlenoEl;
-  if (dp && !uso.consumidos.some((p) => p.porque === "dayPass" && p.llenoEl === dp)) {
-    const corriendo = 1 + uso.consumidos.filter((p) => Date.parse(p.abreSiguiente) <= Date.parse(dp)).length;
-    hitos.push({
-      ts: dp,
-      fecha: fecha(dp),
-      titulo: `Se acaban los ${miles(plan.incluidas.dayPass)} de Day Pass del plan`,
-      nota: corriendo > 1 ? `Desde aquí el Day Pass sale del paquete ${corriendo}` : undefined,
-      punto: COLOR_DAY_PASS,
-      tramo: color(corriendo),
-    });
+    const g = p.generales;
+    if (g.llenoEl) {
+      const quedabaDp = p.dayPass.incluidas - (g.delOtroAlLlenarse ?? 0);
+      hitos.push({
+        ts: g.llenoEl,
+        fecha: fecha(g.llenoEl),
+        titulo: `Se acaban las ${miles(g.incluidas)} normales ${delPaquete(p.numero)}`,
+        punto: color(p.numero),
+        grande: true,
+        barras: [
+          { etiqueta: `Normales ${delPaquete(p.numero)}`, usadas: g.usadas, de: g.incluidas, color: color(p.numero) },
+          {
+            etiqueta: `Day Pass ${delPaquete(p.numero)}`,
+            usadas: g.delOtroAlLlenarse ?? 0,
+            de: p.dayPass.incluidas,
+            color: COLOR_DAY_PASS,
+            resto: quedabaDp > 0 ? `Le quedaban ${miles(quedabaDp)}: se siguen gastando antes que los del paquete ${p.numero + 1}` : undefined,
+          },
+        ],
+      });
+    }
+
+    const d = p.dayPass;
+    if (d.llenoEl) {
+      const lleno = Date.parse(d.llenoEl);
+      const siguiente = uso.paquetes.find((q) => q.numero === p.numero + 1 && q.abre && Date.parse(q.abre) <= lleno);
+      hitos.push({
+        ts: d.llenoEl,
+        fecha: fecha(d.llenoEl),
+        titulo: `Se llena el Day Pass ${delPaquete(p.numero)} (${miles(d.incluidas)})`,
+        nota: siguiente ? `Desde aquí el Day Pass sale del paquete ${siguiente.numero}` : undefined,
+        punto: COLOR_DAY_PASS,
+      });
+    }
   }
 
   hitos.sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
 
+  // Cómo cerró o cómo va: de qué paquete salen ahora las normales y el Day
+  // Pass, y lo que espera en los paquetes que siguen.
+  const barras: Barra[] = [];
+  for (const t of ["generales", "dayPass"] as const) {
+    for (const p of uso.paquetes.filter((q) => q.numero >= uso.enUso[t])) {
+      barras.push({
+        etiqueta: `${t === "generales" ? "Normales" : "Day Pass"} ${delPaquete(p.numero)}`,
+        usadas: p[t].usadas,
+        de: p[t].incluidas,
+        color: t === "generales" ? color(p.numero) : COLOR_DAY_PASS,
+      });
+    }
+  }
   const fin = cerrado ? new Date(Date.parse(ciclo.hasta) - 1).toISOString() : new Date().toISOString();
   hitos.push({
     ts: fin,
     fecha: cerrado ? `${ciclo.etiqueta} · cierre` : `Ahora · ${fecha(fin)}`,
-    titulo: cerrado ? `El ciclo cierra en el paquete ${uso.paquete}` : `Va en el paquete ${uso.paquete}`,
-    punto: color(uso.paquete),
-    tramo: null,
+    titulo: cerrado ? "Así cerró el ciclo" : "Así va",
+    punto: color(uso.paquetes.length),
     grande: true,
-    barras: [
-      { etiqueta: uso.paquete === 1 ? "Normales" : `Normales del paquete ${uso.paquete}`, b: uso.actual.generales, color: color(uso.paquete) },
-      { etiqueta: uso.paquete === 1 ? "Day Pass" : `Day Pass del paquete ${uso.paquete}`, b: uso.actual.dayPass, color: COLOR_DAY_PASS },
-    ],
+    barras,
   });
   return hitos;
+}
+
+/** El paquete más nuevo abierto en ese instante: le da el color al tramo que sigue. */
+function paqueteEn(uso: UsoDelPlan, ts: string): number {
+  const t = Date.parse(ts);
+  return uso.paquetes.filter((p) => !p.abre || Date.parse(p.abre) <= t).length;
 }
 
 export function LineaDelPlan({ cliente }: { cliente: string }) {
@@ -159,7 +184,7 @@ export function LineaDelPlan({ cliente }: { cliente: string }) {
       .then(([actual, anterior]) => {
         if (!vivo) return;
         setDatos({ actual, anterior });
-        setCiclo(actual && actual.uso.consumidos.length > 0 ? "actual" : anterior ? "anterior" : "actual");
+        setCiclo(actual && actual.uso.consumidos > 0 ? "actual" : anterior ? "anterior" : "actual");
       })
       .catch(() => {
         if (vivo) setError("No se pudo leer el plan.");
@@ -178,7 +203,7 @@ export function LineaDelPlan({ cliente }: { cliente: string }) {
         <div>
           <h2 className="text-[15px] font-bold text-[var(--text)]">Paquetes del plan</h2>
           <p className="text-[12px] text-[var(--text-3)]">
-            {vigente ? `${vigente.ciclo.etiqueta} · ` : ""}cuándo se acabó cada paquete · hora de El Salvador
+            {vigente ? `${vigente.ciclo.etiqueta} · ` : ""}cada paquete se llena en orden · hora de El Salvador
           </p>
         </div>
         {datos.anterior && (
@@ -211,11 +236,11 @@ export function LineaDelPlan({ cliente }: { cliente: string }) {
           <ol className="relative mt-5 pl-9">
             {hitos.map((h, i) => (
               <li key={`${h.ts}-${i}`} className="relative pb-5 last:pb-0">
-                {h.tramo && (
+                {i < hitos.length - 1 && (
                   <span
                     aria-hidden
                     className="absolute -left-[22px] top-3 w-[3px] rounded-full"
-                    style={{ background: h.tramo, height: "100%" }}
+                    style={{ background: color(paqueteEn(vigente.uso, h.ts)), height: "100%" }}
                   />
                 )}
                 <span
@@ -231,23 +256,20 @@ export function LineaDelPlan({ cliente }: { cliente: string }) {
                 </p>
                 <p className="mt-0.5 text-[14.5px] font-extrabold tracking-tight text-[var(--text)]">{h.titulo}</p>
                 {h.nota && <p className="mt-0.5 text-[12.5px] text-[var(--text-2)]">{h.nota}</p>}
-                {h.barras && (
+                {h.barras && h.barras.length > 0 && (
                   <div className="mt-2 max-w-xl space-y-2.5 rounded-xl border border-line bg-surface p-3">
                     {h.barras.map((x) => (
                       <div key={x.etiqueta}>
                         <div className="flex items-baseline justify-between gap-2 text-[12px] text-[var(--text-2)]">
                           <span>{x.etiqueta}</span>
                           <span className="tabular-nums">
-                            <b className="text-[14px] font-extrabold text-[var(--text)]">{miles(x.b.usadas)}</b> de {miles(x.b.disponibles)}
+                            <b className="text-[14px] font-extrabold text-[var(--text)]">{miles(x.usadas)}</b> de {miles(x.de)}
                           </span>
                         </div>
                         <div className="mt-1 h-2 overflow-hidden rounded-full bg-[var(--card)]">
                           <div
                             className="h-full rounded-full"
-                            style={{
-                              width: `${x.b.disponibles > 0 ? Math.min(100, (x.b.usadas / x.b.disponibles) * 100) : 0}%`,
-                              background: x.color,
-                            }}
+                            style={{ width: `${x.de > 0 ? Math.min(100, (x.usadas / x.de) * 100) : 0}%`, background: x.color }}
                           />
                         </div>
                         {x.resto && <p className="mt-1 text-[11.5px] text-[var(--text-3)]">{x.resto}</p>}
@@ -264,9 +286,9 @@ export function LineaDelPlan({ cliente }: { cliente: string }) {
             <Total valor={miles(vigente.uso.generales)} texto="normales" />
             <Total valor={miles(vigente.uso.dayPass)} texto="de Day Pass" color={COLOR_DAY_PASS} />
             <Total
-              valor={miles(vigente.uso.consumidos.length)}
-              texto={vigente.uso.consumidos.length === 1 ? "paquete consumido" : "paquetes consumidos"}
-              color={color(Math.max(1, vigente.uso.paquete))}
+              valor={miles(vigente.uso.consumidos)}
+              texto={vigente.uso.consumidos === 1 ? "paquete consumido" : "paquetes consumidos"}
+              color={color(vigente.uso.paquetes.length)}
             />
           </div>
         </>

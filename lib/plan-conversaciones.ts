@@ -1,19 +1,22 @@
 // El plan de conversaciones de un cliente en su ciclo de facturación.
 //
-// LO QUE SE ACORDÓ CON YALI (versión del 2026-10-01): PAQUETES.
+// LO QUE SE ACORDÓ CON YALI (versión del 2026-10-01, tarde): PAQUETES QUE SE
+// LLENAN EN ORDEN.
 //
 //   - El plan del mes es el PRIMER paquete: 1.000 conversaciones sin Day Pass
 //     y 500 de Day Pass. Cada paquete adicional trae lo mismo.
-//   - Cuando se acaba una de las dos (casi siempre las normales), se abre el
-//     paquete siguiente: esa vuelve a contar desde cero sobre lo del paquete
-//     nuevo, y la otra suma lo que le quedaba sin usar más lo del paquete
-//     nuevo. Ej.: se acaban las 1.000 normales con 54 de Day Pass sin usar; el
-//     paquete 2 trae 1.000 normales y 54 + 500 = 554 de Day Pass.
-//   - Arriba se muestran los paquetes consumidos (el plan cuenta como uno).
-//
-// Septiembre de 2026, con datos reales: 2.131 normales y 833 de Day Pass. El
-// plan se acabó el 20 a las 6:44 a. m. y el paquete 2 el 29 a las 6:09 p. m.,
-// los dos por las normales: 2 paquetes consumidos y el mes cerró en el 3.
+//   - Cada paquete guarda lo suyo y se gasta en orden: una conversación usa el
+//     paquete más viejo que todavía tenga lugar de su tipo. Si se abre un
+//     paquete nuevo y al anterior le quedaba Day Pass, el Day Pass se sigue
+//     gastando del anterior hasta llenarlo, y recién ahí del nuevo (lo pidió el
+//     usuario: "se tienen que consumir del paquete anterior hasta que se
+//     llenen"). Lo mismo al revés con las normales.
+//   - Se abre un paquete cuando llega una conversación que no cabe en ninguno
+//     de los abiertos. Arriba se muestran los paquetes consumidos: los que se
+//     acabaron y obligaron a abrir otro (los abiertos menos uno).
+//   - Antes (de la mañana del 1 de octubre) lo que sobraba se sumaba al paquete
+//     nuevo ("54 + 500 = 554"): el total era el mismo, pero no se veía de qué
+//     paquete salía cada una.
 //
 // Un tipo nunca gasta del otro: una conversación de Day Pass no descuenta de
 // las normales, ni al revés.
@@ -78,30 +81,27 @@ export interface Conversacion {
 
 export type TipoDeConversacion = keyof Cupos;
 
-/** Un tipo de conversación en el paquete que corre. */
-export interface Bolsa {
-  /** Las que van en este paquete. */
+/** Lo de un tipo de conversación en un paquete. */
+export interface Cubeta {
+  /** Las que se gastaron de este paquete. */
   usadas: number;
-  /** Las que trae este paquete: lo suyo más lo que quedó del anterior. */
-  disponibles: number;
-  /** Lo que quedó sin usar del paquete anterior y se sumó a este. */
-  arrastre: number;
+  /** Las que trae el paquete. */
+  incluidas: number;
+  /** Cuándo arrancó la conversación que lo llenó (ISO); null si no se llenó. */
+  llenoEl: string | null;
+  /** Cuántas del otro tipo llevaba el mismo paquete en ese momento; null si no se llenó. */
+  delOtroAlLlenarse: number | null;
 }
 
-/** Un paquete que ya se acabó. */
-export interface PaqueteConsumido {
+export interface Paquete {
   /** 1 = el plan del mes. */
   numero: number;
-  /** El tipo que se acabó y abrió el paquete siguiente. */
-  porque: TipoDeConversacion;
-  /** Cuándo arrancó la última conversación de ese tipo que entró en el paquete (ISO). */
-  llenoEl: string;
-  /** Cómo quedó el paquete al acabarse: lo usado y lo que traía de cada tipo. */
-  alLlenarse: Record<TipoDeConversacion, Bolsa>;
-  /** Cuándo arrancó la conversación que ya no cupo y abrió el siguiente (ISO). */
-  abreSiguiente: string;
-  /** Con qué arrancó el siguiente: el tipo que se acabó en cero y el otro con su arrastre. */
-  siguiente: Record<TipoDeConversacion, Bolsa>;
+  /** Cuándo arrancó la conversación que no cabía en ningún otro y lo abrió (ISO); null para el plan, que abre con el ciclo. */
+  abre: string | null;
+  /** El tipo que no cabía cuando se abrió; null para el plan. */
+  abrioPor: TipoDeConversacion | null;
+  generales: Cubeta;
+  dayPass: Cubeta;
 }
 
 export interface UsoDelPlan {
@@ -111,18 +111,12 @@ export interface UsoDelPlan {
   generales: number;
   /** Todas las del ciclo de Day Pass. */
   dayPass: number;
-  /** El paquete que corre: 1 = el plan del mes. */
-  paquete: number;
-  /** Los que ya se acabaron, en orden. */
-  consumidos: PaqueteConsumido[];
-  /** Cómo va el paquete que corre. */
-  actual: Record<TipoDeConversacion, Bolsa>;
-  /**
-   * Cuándo se llegó a tantas de Day Pass como trae el plan (la 500 en Yali);
-   * null si no se llegó. No abre paquete (el Day Pass sigue en el paquete que
-   * corre), pero es lo que el usuario mira para saber cuándo se gastó el del plan.
-   */
-  dayPassDelPlanLlenoEl: string | null;
+  /** Los paquetes abiertos en el ciclo, en orden. El primero es el plan. */
+  paquetes: Paquete[];
+  /** Los que se acabaron y obligaron a abrir otro: los abiertos menos uno. */
+  consumidos: number;
+  /** De qué paquete sale ahora cada tipo: el más viejo que todavía tiene lugar, o el último si ya no hay. */
+  enUso: Record<TipoDeConversacion, number>;
 }
 
 /**
@@ -157,10 +151,10 @@ export function conversacionesDelCiclo(respuestas: Iterable<{ waFrom: string; ts
  * Cuenta el ciclo por paquetes, conversación por conversación y en orden de
  * inicio (así sale `conversacionesQueArrancanEn`).
  *
- * La conversación que ya no cabe abre el paquete siguiente y cuenta en él: el
- * paquete se llenó con la anterior de su tipo, no con ella. Si el paquete
- * adicional no trae de ese tipo, no hay a dónde pasar y queda de más en el que
- * corre (`usadas` mayor que `disponibles`).
+ * Cada conversación usa el paquete más viejo que todavía tenga lugar de su
+ * tipo. La que no cabe en ninguno abre un paquete nuevo y cuenta en él. Si el
+ * paquete adicional no trae de ese tipo, no hay a dónde pasar y queda de más en
+ * el último (`usadas` mayor que `incluidas`).
  *
  * `chatsDayPass` puede traer chats de otros ciclos: solo cuentan los que
  * además tienen conversaciones en este.
@@ -171,51 +165,53 @@ export function usoDelPlan(
   p: PlanConversaciones,
 ): UsoDelPlan {
   const totales = { generales: 0, dayPass: 0 };
-  const disponibles = { ...p.incluidas };
-  const arrastre = { generales: 0, dayPass: 0 };
-  let usadas = { generales: 0, dayPass: 0 };
-  const ultima: Record<TipoDeConversacion, string | null> = { generales: null, dayPass: null };
-  const consumidos: PaqueteConsumido[] = [];
-  let paquete = 1;
-  let dayPassDelPlanLlenoEl: string | null = null;
-
-  const bolsa = (t: TipoDeConversacion): Bolsa => ({ usadas: usadas[t], disponibles: disponibles[t], arrastre: arrastre[t] });
-  const bolsas = (): Record<TipoDeConversacion, Bolsa> => ({ generales: bolsa("generales"), dayPass: bolsa("dayPass") });
+  const cubeta = (incluidas: number): Cubeta => ({ usadas: 0, incluidas, llenoEl: null, delOtroAlLlenarse: null });
+  const paquetes: Paquete[] = [
+    { numero: 1, abre: null, abrioPor: null, generales: cubeta(p.incluidas.generales), dayPass: cubeta(p.incluidas.dayPass) },
+  ];
+  // El paquete más viejo con lugar, por tipo. Los paquetes se llenan en orden,
+  // así que solo avanza.
+  const cursor: Record<TipoDeConversacion, number> = { generales: 0, dayPass: 0 };
+  const lleno = (i: number, t: TipoDeConversacion) => paquetes[i]![t].usadas >= paquetes[i]![t].incluidas;
 
   for (const c of conversaciones) {
     const tipo: TipoDeConversacion = chatsDayPass.has(c.chat) ? "dayPass" : "generales";
-    const otro: TipoDeConversacion = tipo === "generales" ? "dayPass" : "generales";
     totales[tipo]++;
-    if (tipo === "dayPass" && totales.dayPass === p.incluidas.dayPass) dayPassDelPlanLlenoEl = c.inicio;
-    if (usadas[tipo] >= disponibles[tipo] && p.adicional[tipo] > 0) {
-      const alLlenarse = bolsas();
-      paquete++;
-      arrastre[otro] = Math.max(0, disponibles[otro] - usadas[otro]);
-      arrastre[tipo] = 0;
-      disponibles[otro] = arrastre[otro] + p.adicional[otro];
-      disponibles[tipo] = p.adicional[tipo];
-      usadas = { generales: 0, dayPass: 0 };
-      consumidos.push({
-        numero: paquete - 1,
-        porque: tipo,
-        llenoEl: ultima[tipo] ?? c.inicio,
-        alLlenarse,
-        abreSiguiente: c.inicio,
-        siguiente: bolsas(),
-      });
+    while (cursor[tipo] < paquetes.length && lleno(cursor[tipo], tipo)) cursor[tipo]++;
+    if (cursor[tipo] >= paquetes.length) {
+      if (p.adicional[tipo] > 0) {
+        paquetes.push({
+          numero: paquetes.length + 1,
+          abre: c.inicio,
+          abrioPor: tipo,
+          generales: cubeta(p.adicional.generales),
+          dayPass: cubeta(p.adicional.dayPass),
+        });
+      } else {
+        cursor[tipo] = paquetes.length - 1;
+      }
     }
-    usadas[tipo]++;
-    ultima[tipo] = c.inicio;
+    const paq = paquetes[cursor[tipo]]!;
+    const cub = paq[tipo];
+    cub.usadas++;
+    if (cub.usadas === cub.incluidas) {
+      cub.llenoEl = c.inicio;
+      cub.delOtroAlLlenarse = paq[tipo === "generales" ? "dayPass" : "generales"].usadas;
+    }
   }
 
+  const enUso = (t: TipoDeConversacion): number => {
+    let i = cursor[t];
+    while (i < paquetes.length - 1 && lleno(i, t)) i++;
+    return paquetes[i]!.numero;
+  };
   return {
     total: conversaciones.length,
     generales: totales.generales,
     dayPass: totales.dayPass,
-    paquete,
-    consumidos,
-    actual: bolsas(),
-    dayPassDelPlanLlenoEl,
+    paquetes,
+    consumidos: paquetes.length - 1,
+    enUso: { generales: enUso("generales"), dayPass: enUso("dayPass") },
   };
 }
 
