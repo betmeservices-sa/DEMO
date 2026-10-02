@@ -155,17 +155,18 @@ export const nissanTenant: TenantConfig = {
     // WABA de verdad. Los nombres y los textos se copian de allá para que el
     // demo sin credenciales muestre lo mismo que se manda en producción.
     {
-      name: "nissan_seguimiento_consulta",
+      name: "nissan_solicitud_registrada",
       language: "es",
-      // UTILIDAD: retoma lo que la persona pidió en la llamada, sin ofertas. La
-      // anterior (nissan_seguimiento_llamada) ofrecía fotos, precios y prueba
-      // de manejo y Meta la dejó en MARKETING; se borró el 2 de octubre de 2026.
+      // UTILIDAD: confirma el estado de lo que la persona pidió, sin ofertas.
+      // Las dos anteriores (nissan_seguimiento_llamada y
+      // nissan_seguimiento_consulta) Meta las dejó en MARKETING y se borraron el
+      // 2 de octubre de 2026.
       category: "UTILITY",
       status: "PENDING",
       components: [
         {
           type: "BODY",
-          text: "Hola {{1}}, le escribe Sofía de Nissan para dar seguimiento a la llamada de hoy sobre {{2}}. Puede responder a este mensaje con sus dudas o con la información que quedó pendiente.",
+          text: "Hola {{1}}, le confirmamos que su solicitud de información sobre {{2}} quedó registrada en Nissan El Salvador. Si necesita agregar o corregir algún dato, puede responder a este mensaje.",
           example: { body_text: [["Ana", "la X-Trail"]] },
         },
         { type: "FOOTER", text: "Nissan El Salvador" },

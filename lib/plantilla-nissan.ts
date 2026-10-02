@@ -33,26 +33,28 @@ interface Plantilla {
 
 /**
  * La de Nissan, en la cuenta de su propio número (+503 7023 3151). Enviada a
- * Meta el 2 de octubre de 2026 (id 1572681101541842).
+ * Meta el 2 de octubre de 2026 (id 2216188528952784).
  *
- * UTILIDAD Y NO MARKETING, a propósito. La anterior (nissan_seguimiento_llamada)
- * ofrecía fotos, precios y prueba de manejo, y Meta la clasificó como
- * promoción aunque saliera de una llamada que pidió la persona. Un seguimiento
- * tiene que ser actualización de lo que pidió, no una oferta: por eso este
- * texto solo retoma la llamada y abre el canal para lo pendiente.
+ * UTILIDAD Y NO MARKETING, a propósito, y costó dos intentos. Meta pasó a
+ * MARKETING tanto la que ofrecía fotos, precios y prueba de manejo
+ * (nissan_seguimiento_llamada) como la que solo decía "seguimiento a la
+ * llamada sobre la X-Trail" (nissan_seguimiento_consulta): dar seguimiento al
+ * interés por un carro, para Meta, es vender. Lo que sí es utilidad es el
+ * ESTADO de algo que la persona pidió, como las de CrediQ: por eso esta
+ * confirma que su solicitud quedó registrada y abre el canal para corregirla.
  *
  * Lleva el cliente adelante en el nombre como las de CrediQ: la WABA es UNA
  * sola para todos los demos, y un "seguimiento_llamada" a secas se lo queda el
  * primero que lo pida.
  */
 export const PROPIA: Plantilla = {
-  nombre: "nissan_seguimiento_consulta",
+  nombre: "nissan_solicitud_registrada",
   idioma: "es",
   variables: (nombre, que) => [nombre, que],
   texto: (nombre, que) =>
-    `Hola ${nombre}, le escribe Sofía de Nissan para dar seguimiento a la llamada de hoy ` +
-    `sobre ${que}. Puede responder a este mensaje con sus dudas o con la información ` +
-    `que quedó pendiente.`,
+    `Hola ${nombre}, le confirmamos que su solicitud de información sobre ${que} quedó ` +
+    `registrada en Nissan El Salvador. Si necesita agregar o corregir algún dato, puede ` +
+    `responder a este mensaje.`,
 };
 
 /**
@@ -86,7 +88,7 @@ export const PRESTADA: Plantilla = {
  * Desde el 2 de octubre de 2026 Nissan habla por su propio número (+503 7023
  * 3151, otra cuenta de WhatsApp), y ahí la prestada de CrediQ NO existe: el
  * envío fallaría. En esa cuenta están las de Nissan, todas de utilidad:
- * nissan_seguimiento_consulta (esta), nissan_continuar_cotizacion y
+ * nissan_solicitud_registrada (esta), nissan_cotizacion_pendiente y
  * nissan_datos_cotizacion. Mientras Meta no apruebe esta, el seguimiento no
  * sale, igual que antes de tener la prestada.
  */
