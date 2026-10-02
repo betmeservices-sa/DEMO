@@ -1,3 +1,4 @@
+import { credencialesWa } from "./wa-credenciales";
 // Gestión de plantillas (message templates) de WhatsApp vía Meta Cloud API.
 // Las plantillas son los mensajes pre-aprobados por Meta que se usan para INICIAR
 // conversación (fuera de la ventana de 24h). Se crean/listan/borran contra la
@@ -34,14 +35,27 @@ export interface NuevoTemplate {
   ejemplos?: string[]; // valores de ejemplo para {{1}}, {{2}}, ... (los exige Meta)
 }
 
-function creds(): { token: string; waba: string } | null {
+function credsEnv(): { token: string; waba: string } | null {
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   const waba = process.env.WHATSAPP_WABA_ID;
   return token && waba ? { token, waba } : null;
 }
 
+// LAS PLANTILLAS SE CREAN EN LA WABA DEL CLIENTE, no en la de la demo.
+//
+// El 28 de septiembre de 2026 se creó una plantilla para Yali desde el panel y
+// quedó en el almacén FAKE: este módulo solo miraba las variables de entorno,
+// que en producción son las de la demo, mientras que los mensajes de Yali
+// salen con la conexión del cliente (wa_connections). Primero esa conexión,
+// como en lib/wa-credenciales.ts; el entorno queda de respaldo.
+async function credsDe(tenant: TenantId): Promise<{ token: string; waba: string } | null> {
+  const propias = await credencialesWa(tenant);
+  if (propias?.wabaId) return { token: propias.token, waba: propias.wabaId };
+  return credsEnv();
+}
+
 export function tieneCredsTemplates(): boolean {
-  return creds() !== null;
+  return credsEnv() !== null;
 }
 
 // Cuenta cuántas variables {{n}} usa el texto (devuelve el índice más alto).
@@ -117,7 +131,7 @@ export async function listarTemplates(
   demo: boolean;
   error?: string;
 }> {
-  const c = creds();
+  const c = await credsDe(tenant);
   if (!c) return { ok: true, templates: storeDe(tenant), demo: true };
 
   const url = `${GRAPH}/${c.waba}/message_templates?fields=id,name,status,category,language,components&limit=200`;
@@ -174,7 +188,7 @@ export async function crearTemplate(
   }
 
   const components = construirComponents(input);
-  const c = creds();
+  const c = await credsDe(tenant);
 
   if (!c) {
     const t: WaTemplate = {
@@ -234,7 +248,7 @@ export async function eliminarTemplate(
   demo: boolean;
   error?: string;
 }> {
-  const c = creds();
+  const c = await credsDe(tenant);
   if (!c) {
     fakeStores.set(tenant, storeDe(tenant).filter((t) => t.name !== name));
     return { ok: true, demo: true };
