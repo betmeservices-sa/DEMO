@@ -155,18 +155,17 @@ export const nissanTenant: TenantConfig = {
     // WABA de verdad. Los nombres y los textos se copian de allá para que el
     // demo sin credenciales muestre lo mismo que se manda en producción.
     {
-      name: "nissan_seguimiento_llamada",
+      name: "nissan_seguimiento_consulta",
       language: "es",
-      // MARKETING porque así la reclasificó Meta al enviarla: ofrecer fotos,
-      // precios y una prueba de manejo es promoción aunque salga de una llamada
-      // que pidió la persona. Se acepta a propósito (allow_category_change): la
-      // alternativa era el rechazo.
-      category: "MARKETING",
-      status: "APPROVED",
+      // UTILIDAD: retoma lo que la persona pidió en la llamada, sin ofertas. La
+      // anterior (nissan_seguimiento_llamada) ofrecía fotos, precios y prueba
+      // de manejo y Meta la dejó en MARKETING; se borró el 2 de octubre de 2026.
+      category: "UTILITY",
+      status: "PENDING",
       components: [
         {
           type: "BODY",
-          text: "Hola {{1}}, le saluda Sofía de Nissan. Gracias por su llamada: sigo por acá con lo de {{2}}. Con gusto le mando fotos y precios, o le agendo una prueba de manejo cuando guste.",
+          text: "Hola {{1}}, le escribe Sofía de Nissan para dar seguimiento a la llamada de hoy sobre {{2}}. Puede responder a este mensaje con sus dudas o con la información que quedó pendiente.",
           example: { body_text: [["Ana", "la X-Trail"]] },
         },
         { type: "FOOTER", text: "Nissan El Salvador" },

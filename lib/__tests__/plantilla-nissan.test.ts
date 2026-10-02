@@ -95,8 +95,8 @@ describe("cómo queda el mensaje", () => {
     }
   });
 
-  it("la de Nissan sigue declarada, para volver cuando Meta la apruebe", () => {
-    expect(PROPIA.nombre).toBe("nissan_seguimiento_llamada");
+  it("la de Nissan es la de utilidad, la que existe en la cuenta de su número", () => {
+    expect(PROPIA.nombre).toBe("nissan_seguimiento_consulta");
     expect(PROPIA.variables("Ana", "X-Trail")).toEqual(["Ana", "X-Trail"]);
   });
 });

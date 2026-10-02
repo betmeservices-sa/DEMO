@@ -32,21 +32,27 @@ interface Plantilla {
 }
 
 /**
- * La de Nissan. Enviada a Meta el 21 de septiembre de 2026 (id
- * 1274453414764609) y todavía en revisión.
+ * La de Nissan, en la cuenta de su propio número (+503 7023 3151). Enviada a
+ * Meta el 2 de octubre de 2026 (id 1572681101541842).
+ *
+ * UTILIDAD Y NO MARKETING, a propósito. La anterior (nissan_seguimiento_llamada)
+ * ofrecía fotos, precios y prueba de manejo, y Meta la clasificó como
+ * promoción aunque saliera de una llamada que pidió la persona. Un seguimiento
+ * tiene que ser actualización de lo que pidió, no una oferta: por eso este
+ * texto solo retoma la llamada y abre el canal para lo pendiente.
  *
  * Lleva el cliente adelante en el nombre como las de CrediQ: la WABA es UNA
  * sola para todos los demos, y un "seguimiento_llamada" a secas se lo queda el
  * primero que lo pida.
  */
 export const PROPIA: Plantilla = {
-  nombre: "nissan_seguimiento_llamada",
+  nombre: "nissan_seguimiento_consulta",
   idioma: "es",
   variables: (nombre, que) => [nombre, que],
   texto: (nombre, que) =>
-    `Hola ${nombre}, le saluda Sofía de Nissan. Gracias por su llamada: sigo por acá ` +
-    `con lo de ${que}. Con gusto le mando fotos y precios, o le agendo una prueba de ` +
-    `manejo cuando guste.`,
+    `Hola ${nombre}, le escribe Sofía de Nissan para dar seguimiento a la llamada de hoy ` +
+    `sobre ${que}. Puede responder a este mensaje con sus dudas o con la información ` +
+    `que quedó pendiente.`,
 };
 
 /**
@@ -75,10 +81,16 @@ export const PRESTADA: Plantilla = {
 };
 
 /**
- * La que sale. Cuando Meta apruebe la de Nissan, acá se cambia PRESTADA por
- * PROPIA y no hay que tocar nada más.
+ * La que sale: la de Nissan.
+ *
+ * Desde el 2 de octubre de 2026 Nissan habla por su propio número (+503 7023
+ * 3151, otra cuenta de WhatsApp), y ahí la prestada de CrediQ NO existe: el
+ * envío fallaría. En esa cuenta están las de Nissan, todas de utilidad:
+ * nissan_seguimiento_consulta (esta), nissan_continuar_cotizacion y
+ * nissan_datos_cotizacion. Mientras Meta no apruebe esta, el seguimiento no
+ * sale, igual que antes de tener la prestada.
  */
-export const ACTIVA: Plantilla = PRESTADA;
+export const ACTIVA: Plantilla = PROPIA;
 
 /** Minutos entre colgar y el mensaje. */
 export const ESPERA_MIN = 1;
