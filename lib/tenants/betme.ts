@@ -78,9 +78,10 @@ export const betmeTenant: TenantConfig = {
   ],
   seed: betmeSeed,
   simulacion: betmeSimulacion,
-  // Número real de BetMe: los candidatos los atiende una persona hasta que el
-  // cliente apruebe al agente.
-  ai: { systemPrompt: SYSTEM_PROMPT, nombre: "Sara", respondeSolo: false },
+  // Número real de BetMe: Sara contesta según el interruptor de ESE número
+  // (wa_connections.ia_activa), no según el global del panel. Aprobado por el
+  // cliente el 2026-10-05; para que vuelva a atender una persona, se apaga ahí.
+  ai: { systemPrompt: SYSTEM_PROMPT, nombre: "Sara" },
   dashboard: [
     { label: "Conversaciones hoy", icon: "MessageSquare", kind: "metric", metricLabel: "Conversaciones hoy", fallback: 0 },
     { label: "Tiempo de respuesta", icon: "Clock", kind: "metric", metricLabel: "Tiempo de respuesta", fallback: "6 min" },
