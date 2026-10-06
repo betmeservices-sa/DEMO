@@ -5,6 +5,7 @@ import { HeartPulse, CarFront, Bot, Hotel, Building2, Stethoscope, Briefcase } f
 import { activeTenant } from "@/lib/tenants/active";
 import { PromericaLogo } from "@/components/ui/PromericaLogo";
 import { YaliLogo } from "@/components/ui/YaliLogo";
+import { PizzaHutLogo } from "@/components/ui/PizzaHutLogo";
 
 const WORDMARK_ICONS = { HeartPulse, CarFront, Bot, Hotel, Building2, Stethoscope, Briefcase } as const;
 
@@ -17,6 +18,7 @@ export function Brand({ compact = false }: { compact?: boolean }) {
   // Logos dibujados en SVG: ganan sobre logoSrc y sobre el wordmark genérico.
   if (brand.logoComponent === "promerica") return <PromericaLogo compact={compact} />;
   if (brand.logoComponent === "yali") return <YaliLogo compact={compact} />;
+  if (brand.logoComponent === "pizzahut") return <PizzaHutLogo compact={compact} />;
 
   if (brand.logoSrc) {
     return (

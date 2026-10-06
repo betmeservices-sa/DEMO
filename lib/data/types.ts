@@ -48,6 +48,8 @@ export type DepartmentId =
   | "cobranza"
   // BetMe Services: reclutamiento de asistentes virtuales bilingues
   | "reclutamiento"
+  // Pizza Hut: propuestas de organizadores para vender en sus eventos
+  | "eventos"
   // Todavía nadie dijo de qué es. Existe para no tener que mentir: antes toda
   // conversación nueva nacía con el departamento por defecto del cliente, así
   // que en Yali TODO entraba marcado como "Reservas", incluida una queja.

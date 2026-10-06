@@ -317,7 +317,7 @@ export default function BandejaPage() {
                   void accionMeta({ ...meta, accion: "escribiendo" });
                   return;
                 }
-                if (activa.canal !== "whatsapp") return;
+                if (activa.canal !== "whatsapp" || activa.id.startsWith(SIM_PREFIJO)) return;
                 const ultimoEntrante = [...mensajesActivos]
                   .reverse()
                   .find((m) => m.autor === "cliente");
@@ -392,6 +392,11 @@ export default function BandejaPage() {
               onSendTemplate={
                 activa.canal === "whatsapp" && contactoActivo.telefono
                   ? async ({ name, language, variables, texto }) => {
+                      // Conversación simulada: la plantilla queda solo en pantalla.
+                      if (activa.id.startsWith(SIM_PREFIJO)) {
+                        dispatch({ type: "SEND_MESSAGE", conversationId: activa.id, texto, staffId: yo });
+                        return;
+                      }
                       const r = await fetch("/api/whatsapp/send-template", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -426,8 +431,8 @@ export default function BandejaPage() {
                   await accionMeta({ ...meta, accion: "reaccionar", mid: messageId, emoji });
                   return;
                 }
-                // WhatsApp.
-                if (activa.canal !== "whatsapp" || !contactoActivo.telefono) return;
+                // WhatsApp. Las simuladas no reaccionan hacia afuera.
+                if (activa.canal !== "whatsapp" || !contactoActivo.telefono || activa.id.startsWith(SIM_PREFIJO)) return;
                 try {
                   await fetch("/api/whatsapp/react", {
                     method: "POST",
@@ -444,6 +449,16 @@ export default function BandejaPage() {
               onAttach={async (file) => {
                 // Solo aplica a conversaciones de WhatsApp.
                 if (activa.canal !== "whatsapp" || !contactoActivo.telefono) return;
+                // Conversación simulada: el adjunto queda solo en pantalla.
+                if (activa.id.startsWith(SIM_PREFIJO)) {
+                  dispatch({
+                    type: "SEND_MESSAGE",
+                    conversationId: activa.id,
+                    texto: file.type.startsWith("image/") ? "[imagen enviada]" : `[documento: ${file.name}]`,
+                    staffId: yo,
+                  });
+                  return;
+                }
                 const fd = new FormData();
                 fd.append("to", contactoActivo.telefono);
                 fd.append("file", file);

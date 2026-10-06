@@ -29,6 +29,7 @@ import { ReservasDeContacto } from "@/components/contactos/ReservasDeContacto";
 import { Avatar, inicialesDe } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HuespedPms } from "@/components/hotel/HuespedPms";
+import { OrganizadoresPizza } from "@/components/eventos/OrganizadoresPizza";
 
 interface ContactoDTO {
   telefono: string;
@@ -114,7 +115,14 @@ function parseCSV(texto: string): string[][] {
   return filas.filter((r) => r.some((c) => c.trim() !== ""));
 }
 
+// Pizza Hut ve a sus organizadores armados desde las propuestas de eventos y
+// la bandeja, con sus etiquetas y sus propuestas.
 export default function ContactosPage() {
+  if (activeTenantId() === "pizzahut") return <OrganizadoresPizza />;
+  return <ContactosGeneral />;
+}
+
+function ContactosGeneral() {
   const router = useRouter();
   const tags = activeTenant().tags;
   const [contactos, setContactos] = useState<ContactoDTO[]>([]);

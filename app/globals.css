@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ── Tema por cliente (tenant) ──
@@ -365,6 +366,68 @@
 /* La barra de scroll clara de BetMe. */
 [data-tenant="betme"] ::-webkit-scrollbar-thumb:hover {
   background: #a9bccf;
+}
+
+/* Pizza Hut El Salvador: los tokens de su sitio (pizzahut.com.sv). Va DESPUÉS
+   del bloque de marca unificada para ganarle con la misma especificidad.
+
+   Rojo de marca #C8102E con #A50A23 para hover y pressed; negro #231F20 para
+   el texto y para los botones primarios, que en su sitio son negros; y su
+   escala de grises (#4F4C4D, #7B7979, #A7A5A6, #D3D2D2, #E9E9E9, #F8F8F8).
+
+   EL ROJO DE ALARMA NO ES EL DE LA MARCA. Con el rojo en el menú y en los
+   acentos, un aviso del mismo rojo deja de leerse como aviso, así que lo que
+   se vence (un primer contacto pasado de 24 horas) va en ámbar quemado.
+
+   Dos grises se oscurecen solo para TEXTO: el #7B7979 de su sitio da 4.1:1
+   sobre #F8F8F8 y el verde #6A8B29 da 3.9:1 sobre blanco, los dos por debajo
+   del 4.5:1 de WCAG AA. Los originales siguen como tokens propios (--ph-*)
+   para fondos, puntos y barras, donde no hay texto encima. Por lo mismo, los
+   colores de etapa son para puntos y bordes: el texto va siempre en tinta.
+
+   Contraste medido sobre el fondo #F8F8F8: tinta #231F20 15.4:1, secundario
+   #4F4C4D 8.0:1, terciario #6B6869 5.2:1, rojo #C8102E 5.5:1, alarma #B54708
+   5.1:1 y verde #557021 5.3:1. Sobre la tarjeta blanca todos suben. Lo cubre
+   pizzahut.test.ts. */
+[data-tenant="pizzahut"] {
+  --brand-blue: #c8102e;
+  --brand-blue-dark: #a50a23;
+  --brand-green: #557021;
+  --brand-red: #b54708;
+  --brand-accent: #231f20;
+  --brand-accent-soft: #e9e9e9;
+
+  --surface: #f8f8f8;
+  --surface-2: #e9e9e9;
+  --card: #ffffff;
+  --border: #e9e9e9;
+  --border-2: #d3d2d2;
+  --text: #231f20;
+  --text-2: #4f4c4d;
+  --text-3: #6b6869;
+
+  /* Tokens propios del tablero de eventos. */
+  --ph-negro: #231f20;
+  --ph-gris: #7b7979;
+  --ph-gris-claro: #a7a5a6;
+  --ph-verde: #7ca331;
+  --ph-verde-fondo: #f2f6ea;
+  --ph-alarma-fondo: #fdf0e6;
+  --ph-rojo-fondo: #fbe9ec;
+  /* Color de cada etapa (puntos, barras y el calendario). */
+  --ph-etapa-nueva: #231f20;
+  --ph-etapa-revision: #7b7979;
+  --ph-etapa-contactado: #d08a00;
+  --ph-etapa-negociacion: #c8102e;
+  --ph-etapa-confirmada: #7ca331;
+  --ph-etapa-descartada: #a7a5a6;
+
+  --font-app: 'Montserrat', Arial, system-ui, sans-serif;
+}
+
+/* La barra de scroll clara de Pizza Hut. */
+[data-tenant="pizzahut"] ::-webkit-scrollbar-thumb:hover {
+  background: #a7a5a6;
 }
 
 

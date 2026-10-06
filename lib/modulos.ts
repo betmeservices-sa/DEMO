@@ -34,6 +34,9 @@ export type ModuleId =
   | "perfiles"
   | "entrevistas"
   | "onboarding"
+  // Pizza Hut: las propuestas de organizadores para vender en sus eventos
+  // (lista, tablero por etapa y calendario). Es el corazon de ese panel.
+  | "eventos"
   | "visitas"
   | "cartera"
   | "publicacion"
@@ -90,6 +93,19 @@ export const MODULOS_CLINICA: readonly ModuleId[] = [
   "mensajes",
 ];
 
+// El menu de Pizza Hut, EN ESTE ORDEN. Es una lista cerrada como la de la
+// clinica: su panel gira alrededor de las propuestas de eventos, y lo demas
+// (redes, tickets, chat interno) aca solo haria ruido.
+export const MODULOS_PIZZAHUT: readonly ModuleId[] = [
+  "dashboard",
+  "bandeja",
+  "eventos",
+  "llamadas",
+  "contactos",
+  "agentes",
+  "settings",
+];
+
 export interface RoleDef {
   id: RoleId;
   nombre: string;
@@ -118,11 +134,11 @@ export interface RoleDef {
 // marketing no gestiona casos, asi que no lo ve.
 // "mis-chats" lo ve todo el mundo: es donde caen los chats que el agente pasa a
 // una persona, y quien atiende tiene que verlos sin depender de su rol.
-const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "auditoria", "costos", "llamadas", "qa", "agentes", "settings"];
+const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "auditoria", "costos", "llamadas", "qa", "agentes", "settings"];
 export const VE: Record<RoleId, ModuleId[]> = {
   // Recepcion del consultorio es quien recibe al paciente y quien mueve la
   // fila del laboratorio: los dos modulos del modulo clinico son suyos.
-  recepcion: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "perfiles", "entrevistas", "onboarding", "visitas", "cartera", "consultorio", "laboratorio", "imagenologia", "mensajes", "interno", "comentarios"],
+  recepcion: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "perfiles", "entrevistas", "onboarding", "eventos", "visitas", "cartera", "consultorio", "laboratorio", "imagenologia", "mensajes", "interno", "comentarios"],
   // Atencion es quien da la cara: contesta lo privado y lo publico, trabaja
   // los casos que el agente no resuelve (los de pago van a Veronica desde el
   // kickoff), habla con el equipo, y VE COMO VA EL HOTEL: Veronica y Olga son
@@ -134,8 +150,8 @@ export const VE: Record<RoleId, ModuleId[]> = {
   gerente_marketing: TODO,
   // El medico ve su consultorio (sus pacientes, sus recetas), pero no el
   // mostrador del laboratorio: esa fila no es suya.
-  medico: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "imagenologia", "mensajes", "interno"],
-  jefe: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "visitas", "cartera", "publicacion", "cobros", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard"],
+  medico: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "eventos", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "imagenologia", "mensajes", "interno"],
+  jefe: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "visitas", "cartera", "publicacion", "cobros", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard"],
   admin: TODO,
 };
 
@@ -157,6 +173,7 @@ export const MODULO_RUTA: Record<ModuleId, string> = {
   perfiles: "/talento/perfiles",
   entrevistas: "/talento/entrevistas",
   onboarding: "/talento/onboarding",
+  eventos: "/eventos",
   visitas: "/visitas",
   cartera: "/cartera",
   publicacion: "/publicacion",
@@ -199,6 +216,7 @@ export function moduloDeRuta(pathname: string): ModuleId | null {
   if (pathname.startsWith("/talento/entrevistas")) return "entrevistas";
   if (pathname.startsWith("/talento/onboarding")) return "onboarding";
   if (pathname.startsWith("/talento")) return "talento";
+  if (pathname.startsWith("/eventos")) return "eventos";
   if (pathname.startsWith("/reporte")) return "reporte";
   if (pathname.startsWith("/auditoria")) return "auditoria";
   if (pathname.startsWith("/costos")) return "costos";

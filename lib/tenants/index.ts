@@ -13,6 +13,7 @@ import { yalyTenant } from "./yaly";
 import { consultorioTenant } from "./consultorio";
 import { nissanTenant } from "./nissan";
 import { betmeTenant } from "./betme";
+import { pizzahutTenant } from "./pizzahut";
 
 export type { TenantConfig, TenantId } from "./types";
 
@@ -28,6 +29,7 @@ export const TENANTS: Record<TenantId, TenantConfig> = {
   consultorio: consultorioTenant,
   nissan: nissanTenant,
   betme: betmeTenant,
+  pizzahut: pizzahutTenant,
 };
 
 // Tenant por defecto (SSR / antes de login). No es visible: la UI se pinta tras
@@ -46,7 +48,8 @@ export function isTenantId(v: string | null | undefined): v is TenantId {
     v === "yaly" ||
     v === "consultorio" ||
     v === "nissan" ||
-    v === "betme"
+    v === "betme" ||
+    v === "pizzahut"
   );
 }
 
@@ -81,6 +84,8 @@ export const DEMO_LOGINS: DemoLogin[] = [
   { usuario: "demoagentia", password: "demon", tenant: "nissan" },
   // BetMe Services: el centro de reclutamiento (pipeline, perfiles, vacantes).
   { usuario: "demoagentia", password: "demob", tenant: "betme" },
+  // Pizza Hut El Salvador: las propuestas de eventos que entran por llamada y chat.
+  { usuario: "demoagentia", password: "demop", tenant: "pizzahut" },
   // Acceso directo al dashboard de llamadas (tenant miagentia).
   // OJO: esta clave queda visible mientras el repo sea publico. Para cerrarla,
   // hacer el repo privado o mover las credenciales a la env LOGIN_PASSWORDS.

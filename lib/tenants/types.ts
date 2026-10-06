@@ -31,7 +31,8 @@ export type TenantId =
   | "yaly"
   | "consultorio"
   | "nissan"
-  | "betme";
+  | "betme"
+  | "pizzahut";
 
 // Datos semilla (mock) de un tenant. Misma forma que el antiguo lib/data/seed.
 export interface TenantSeed {
@@ -62,7 +63,7 @@ export interface TenantBrand {
   // Logo dibujado en SVG dentro del componente, para marcas cuyo logotipo no
   // sobrevive a un <img> (fondo blanco quemado, baja resolución) y que además
   // necesitan la tipografía de la app. Gana sobre logoSrc y wordmark.
-  logoComponent?: "promerica" | "yali";
+  logoComponent?: "promerica" | "yali" | "pizzahut";
   wordmark?: {
     icon: "HeartPulse" | "CarFront" | "Bot" | "Hotel" | "Building2" | "Stethoscope" | "Briefcase";
     /**

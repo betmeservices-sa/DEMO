@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
-import { MODULOS_AGENCIA, MODULOS_CLINICA } from "@/lib/modulos";
+import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_PIZZAHUT } from "@/lib/modulos";
 import { useStore } from "@/lib/store";
 import { sinLeerPorCanal, useInterno } from "@/lib/interno-bridge";
 import { activeTenantId } from "@/lib/tenants/active";
@@ -44,6 +44,7 @@ const NAV: NavItem[] = [
   { id: "perfiles", href: "/talento/perfiles", label: "Perfiles", Icon: UserSearch },
   { id: "entrevistas", href: "/talento/entrevistas", label: "Entrevistas", Icon: CalendarCheck },
   { id: "onboarding", href: "/talento/onboarding", label: "Onboarding", Icon: Rocket },
+  { id: "eventos", href: "/eventos", label: "Eventos", Icon: PartyPopper },
   { id: "visitas", href: "/visitas", label: "Visitas", Icon: CalendarClock },
   { id: "cartera", href: "/cartera", label: "Cartera", Icon: Building2 },
   { id: "publicacion", href: "/publicacion", label: "Publicación", Icon: Share2 },
@@ -146,7 +147,14 @@ export function Sidebar({
   // (el doctor, el laboratorio y lo que ve el paciente). Bandeja, contactos,
   // redes, comentarios y dashboard son de los otros clientes y aca solo hacen
   // ruido, asi que su menu se arma aparte en vez de filtrarse.
-  const visibles = veClinica
+  // Pizza Hut tambien arma su menu aparte, y en su propio orden: primero el
+  // tablero, despues lo que entra (bandeja), las propuestas y las llamadas.
+  const vePizza = tenant === "pizzahut";
+  const visibles = vePizza
+    ? MODULOS_PIZZAHUT.map((id) => NAV.find((item) => item.id === id)).filter(
+        (item): item is NavItem => Boolean(item) && def.ve.includes((item as NavItem).id),
+      )
+    : veClinica
     ? NAV.filter((item) => MODULOS_CLINICA.includes(item.id) && def.ve.includes(item.id))
     : NAV.filter(
     (item) =>
@@ -162,6 +170,8 @@ export function Sidebar({
       (item.id !== "ventas" || veNissan) &&
       (!TALENTO.includes(item.id) || veBetme) &&
       (item.id !== "contactos" || !veBetme) &&
+      // Eventos es solo de Pizza Hut, que arma su menu arriba.
+      item.id !== "eventos" &&
       (item.id !== "visitas" || veInmobiliaria) &&
       (item.id !== "cartera" || veInmobiliaria) &&
       (item.id !== "publicacion" || veInmobiliaria) &&

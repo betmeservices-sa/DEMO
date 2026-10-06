@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Bot, PhoneOff, RefreshCw } from "lucide-react";
 import { AgenteCard } from "@/components/agentes/AgenteCard";
 import { PanelAgente } from "@/components/agentes/PanelAgente";
@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { activeTenantId } from "@/lib/tenants/active";
 import { esAgencia } from "@/lib/tenants/voz";
 import type { AgenteRecord, NumeroRecord } from "@/lib/vapi";
+import { DanielaPerfil } from "@/components/eventos/DanielaPerfil";
 
 interface Respuesta {
   source: "vapi" | "demo";
@@ -18,7 +19,20 @@ interface Respuesta {
 
 type Seccion = "script" | "numeros" | "llamar";
 
+// Pizza Hut presenta primero a Daniela (qué atiende y qué pregunta) y debajo
+// la tarjeta de siempre, con su línea y el marcador para probarla.
 export default function AgentesPage() {
+  if (activeTenantId() === "pizzahut") return <AgentesGeneral antes={<DanielaPerfil />} mostrar={marcaEscrita} />;
+  return <AgentesGeneral />;
+}
+
+// El guion de voz escribe la marca como se PRONUNCIA ("Pizza Jat"), para que la
+// voz no la diga en inglés. En pantalla se lee como se escribe.
+function marcaEscrita(a: AgenteRecord): AgenteRecord {
+  return a.primerMensaje ? { ...a, primerMensaje: a.primerMensaje.replace(/pizza\s+jat/gi, "Pizza Hut") } : a;
+}
+
+function AgentesGeneral({ antes, mostrar }: { antes?: ReactNode; mostrar?: (a: AgenteRecord) => AgenteRecord }) {
   const [data, setData] = useState<Respuesta | null>(null);
   const [numeros, setNumeros] = useState<NumeroRecord[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -57,7 +71,7 @@ export default function AgentesPage() {
     void sincronizar();
   }, [sincronizar]);
 
-  const agentes = data?.agentes ?? [];
+  const agentes = useMemo(() => (data?.agentes ?? []).map((a) => (mostrar ? mostrar(a) : a)), [data, mostrar]);
   const abierto = useMemo(
     () => (panel ? agentes.find((a) => a.id === panel.id) : undefined),
     [panel, agentes],
@@ -94,6 +108,7 @@ export default function AgentesPage() {
       </header>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-5">
+        {antes}
         {data?.error && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-900">
             {agencia ? (

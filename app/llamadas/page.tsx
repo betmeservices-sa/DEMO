@@ -13,6 +13,7 @@ import { PlanBucket } from "@/components/calls/PlanBucket";
 import { categoriaOutcome, resumirLlamadas } from "@/lib/calls-metrics";
 import { ETIQUETA_OUTCOME } from "@/lib/calls-format";
 import { activeTenantId } from "@/lib/tenants/active";
+import { LlamadasPizza } from "@/components/eventos/LlamadasPizza";
 import type { CallMetrics, CallOutcome, CallRecord } from "@/lib/data/types";
 
 interface Respuesta {
@@ -37,7 +38,14 @@ type FiltroOut = "todos" | CallOutcome;
 // el peso de un date picker.
 type FiltroDias = 0 | 1 | 7 | 30;
 
+// Pizza Hut tiene su propia vista: la línea de eventos con lo que atendió
+// Daniela, sus propuestas y lo de fuera de horario, guardado por su webhook.
 export default function LlamadasPage() {
+  if (activeTenantId() === "pizzahut") return <LlamadasPizza />;
+  return <LlamadasGeneral />;
+}
+
+function LlamadasGeneral() {
   const [data, setData] = useState<Respuesta | null>(null);
   const [cargando, setCargando] = useState(true);
   const [tab, setTab] = useState<Tab>("estadisticas");
