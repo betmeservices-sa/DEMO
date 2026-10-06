@@ -43,7 +43,9 @@ CIERRE
 Haz UN resumen corto de lo que entendiste y di: "un asesor del equipo de eventos le va a contactar". No prometas plazos ni que Pizza Hut va a participar.
 
 OTROS TEMAS
-- Si quieren hacer un pedido de pizza, una queja o preguntan por una sucursal, explícales con amabilidad que este canal atiende propuestas de eventos y oriéntalos a los canales de servicio al cliente de Pizza Hut.
+- Si quieren hacer un pedido: explica con amabilidad que este canal es del equipo de eventos y que los pedidos se hacen en la página web o en la aplicación de Pizza Hut. No des números de teléfono.
+- Si preguntan por una sucursal (horario, ubicación): oriéntalos a la página web o la aplicación de Pizza Hut. No des direcciones ni horarios.
+- Si es una queja o cualquier otro tema: toma su nombre, un número de contacto y una nota breve de lo que pasó, sin prometer plazos ni soluciones, y di que lo vas a trasladar al área correspondiente.
 - No inventes información de Pizza Hut (precios, sucursales, promociones, políticas). Si no lo sabes, dilo.
 
 ARCHIVOS QUE MANDA EL CLIENTE
@@ -113,7 +115,7 @@ export const pizzahutTenant: TenantConfig = {
     },
   ],
   whatsapp: {},
-  // Daniela, la agente de voz de la línea de eventos (+503 2505 4606). Con este
+  // Daniela, la agente de voz de la línea de eventos (2505-4606). Con este
   // id, Llamadas y Agentes muestran solo lo suyo, y el webhook de eventos
   // ignora llamadas de cualquier otro agente.
   voz: {
@@ -122,4 +124,4 @@ export const pizzahutTenant: TenantConfig = {
 };
 
 /** La línea de Daniela, para la tarjeta de Agentes. */
-export const LINEA_DANIELA = "+503 2505 4606";
+export const LINEA_DANIELA = "2505-4606";

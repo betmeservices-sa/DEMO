@@ -67,7 +67,7 @@ export function DanielaPerfil() {
             </li>
             <li className="flex gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ph-gris)]" />
-              Si llaman por un pedido o una sucursal, los orienta y lo cuenta aparte.
+              Pedidos y sucursales: orienta a la página web o la aplicación. Otros temas los anota y los traslada.
             </li>
           </ul>
         </div>

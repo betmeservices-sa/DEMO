@@ -172,6 +172,18 @@ export const DEPARTAMENTOS_SV = [
   "Usulután",
 ];
 
+/**
+ * Un teléfono como se lee en El Salvador: "9255-4457". Llega como sea
+ * ("+50392554457", "92554457", "9255 4457"); uno que no es de 8 dígitos
+ * locales se deja como vino.
+ */
+export function telefonoLegible(v: string | null | undefined): string {
+  const crudo = (v ?? "").trim();
+  const d = crudo.replace(/\D/g, "");
+  const local = d.length === 11 && d.startsWith("503") ? d.slice(3) : d;
+  return local.length === 8 ? `${local.slice(0, 4)}-${local.slice(4)}` : crudo;
+}
+
 /** Horario del equipo de eventos. Lo de afuera lo atiende solo Daniela. */
 export const HORARIO_OFICINA = { desde: 8, hasta: 17, dias: [1, 2, 3, 4, 5] };
 export const TEXTO_HORARIO_OFICINA = "lunes a viernes, de 8:00 a 17:00";

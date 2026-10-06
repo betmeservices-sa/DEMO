@@ -1466,27 +1466,193 @@ function azar(semilla: string): () => number {
   };
 }
 
-const RESUMEN_MOTIVO: Record<Exclude<MotivoLlamada, "propuesta">, string[]> = {
+// Lo que no fue propuesta, con lo que dijo Daniela. Sigue su guion: los
+// pedidos van a la página web o la aplicación (sin dar teléfonos), no da
+// horarios ni direcciones de sucursales, y cualquier otro tema lo anota
+// (nombre, número y una nota) y lo traslada al área correspondiente, sin
+// prometer plazos.
+interface VarianteRuido {
+  resumen: string;
+  dialogo: string[]; // "AI: ..." / "User: ..."
+}
+
+const RUIDO: Record<Exclude<MotivoLlamada, "propuesta">, VarianteRuido[]> = {
   pedido: [
-    "Llamó para pedir pizza a domicilio. Daniela le explicó que esta línea atiende propuestas de eventos y le indicó los canales de pedidos de Pizza Hut.",
-    "Quería hacer un pedido para una fiesta familiar de 10 personas. Daniela le orientó a los canales de pedidos.",
+    {
+      resumen: "Quería pedir dos pizzas a domicilio. Daniela le explicó que esta línea es del equipo de eventos y que los pedidos se hacen en la página web o en la aplicación de Pizza Hut.",
+      dialogo: [
+        "User: Buenas, quería pedir dos pizzas grandes a domicilio.",
+        "AI: Con gusto le oriento. Esta línea es del equipo de eventos; los pedidos se hacen en la página web o en la aplicación de Pizza Hut. ¿Le puedo ayudar con algo más?",
+        "User: Ah, va, gracias.",
+      ],
+    },
+    {
+      resumen: "Buscaba encargar pizzas para una fiesta familiar de diez personas. Daniela le orientó a la página web o la aplicación de Pizza Hut.",
+      dialogo: [
+        "User: Hola, voy a tener una fiesta en mi casa el sábado, como para diez personas, y quería encargar las pizzas.",
+        "AI: ¡Qué bueno! Esta línea atiende propuestas de organizadores de eventos; un pedido como el suyo lo puede hacer en la página web o en la aplicación de Pizza Hut.",
+        "User: Perfecto, ahí lo hago.",
+      ],
+    },
+    {
+      resumen: "Preguntó si podía hacer su pedido por teléfono. Daniela le indicó que los pedidos se hacen en la página web o en la aplicación de Pizza Hut.",
+      dialogo: [
+        "User: ¿Aquí puedo hacer un pedido por teléfono?",
+        "AI: Esta línea es del equipo de eventos. Los pedidos se hacen en la página web o en la aplicación de Pizza Hut. ¿Algo más en lo que le ayude?",
+        "User: No, gracias.",
+      ],
+    },
+    {
+      resumen: "Quería agregar una bebida a un pedido que ya había hecho. Daniela le explicó que esta línea es de eventos y le orientó a la página web o la aplicación de Pizza Hut.",
+      dialogo: [
+        "User: Buenas, hice un pedido hace rato y quería agregarle una bebida.",
+        "AI: Le entiendo. Esta línea es del equipo de eventos y no maneja pedidos; le recomiendo revisarlo en la página web o en la aplicación de Pizza Hut.",
+        "User: Ah, ok, gracias.",
+      ],
+    },
   ],
   sucursal: [
-    "Preguntó por el horario de una sucursal. Daniela le orientó al sitio web de Pizza Hut para ver sucursales y horarios.",
-    "Consultó si hay una sucursal cerca de su colonia. Daniela le indicó dónde consultar las sucursales.",
+    {
+      resumen: "Preguntó a qué hora cierra una sucursal. Daniela le orientó a la página web o la aplicación de Pizza Hut para consultarlo.",
+      dialogo: [
+        "User: Buenas tardes, ¿a qué hora cierra la sucursal de mi colonia?",
+        "AI: Esta línea es del equipo de eventos. Los horarios de cada sucursal los puede consultar en la página web o en la aplicación de Pizza Hut. ¿Algo más en lo que le ayude?",
+        "User: No, eso era, gracias.",
+      ],
+    },
+    {
+      resumen: "Quería saber si hay una sucursal cerca de su trabajo. Daniela le orientó a la página web o la aplicación de Pizza Hut para buscarla.",
+      dialogo: [
+        "User: Hola, ¿hay alguna sucursal cerca de donde trabajo?",
+        "AI: Desde la línea de eventos no tengo esa información; en la página web o en la aplicación de Pizza Hut puede ver las sucursales más cercanas.",
+        "User: Va, gracias.",
+      ],
+    },
+    {
+      resumen: "Consultó si una sucursal tiene área de juegos para niños. Daniela le orientó a la página web o la aplicación de Pizza Hut.",
+      dialogo: [
+        "User: ¿Me puede decir si la sucursal de Santa Tecla tiene área de juegos?",
+        "AI: Eso no lo manejo desde la línea de eventos; la información de cada sucursal está en la página web o en la aplicación de Pizza Hut.",
+        "User: Ok, gracias.",
+      ],
+    },
   ],
   seguimiento: [
-    "Organizador que ya había dejado una propuesta preguntó por el estado. Daniela tomó nota y avisó al asesor asignado.",
-    "Llamó para agregar un dato a su propuesta: el aforo subió. Daniela lo anotó para el asesor.",
+    {
+      resumen: "Organizador que ya había dejado una propuesta preguntó si ya la revisaron. Daniela tomó su nombre y el del evento y le avisó al asesor asignado.",
+      dialogo: [
+        "User: Hola, yo había llamado la semana pasada por un evento y quería saber si ya lo revisaron.",
+        "AI: Claro que sí. ¿Me dice su nombre y el nombre del evento para avisarle al asesor que lo lleva?",
+        "User: Es para el festival de la colonia, a nombre de Rodrigo.",
+        "AI: Listo, ya quedó anotado y se lo paso al asesor. ¡Que tenga buen día!",
+      ],
+    },
+    {
+      resumen: "Llamó para avisar que el aforo de su evento subió a 6,000 personas. Daniela lo anotó para el asesor.",
+      dialogo: [
+        "User: Buenas, ya habíamos dejado una propuesta y le quería actualizar un dato: ahora esperamos como seis mil personas.",
+        "AI: Gracias por avisar. ¿A nombre de quién quedó la propuesta?",
+        "User: De la asociación de comerciantes del centro.",
+        "AI: Perfecto, ya lo anoté para el asesor.",
+      ],
+    },
+    {
+      resumen: "El organizador movió una semana la fecha de su torneo. Daniela anotó la nueva fecha y le avisó al asesor.",
+      dialogo: [
+        "User: Le llamo porque movimos la fecha del torneo una semana.",
+        "AI: Entendido. ¿Me confirma la nueva fecha y el nombre del evento?",
+        "User: Sería el sábado siguiente, es el torneo del cantón.",
+        "AI: Listo, queda anotado para el asesor.",
+      ],
+    },
+    {
+      resumen: "Preguntó a dónde mandar los documentos que le pidió el asesor. Daniela tomó nota para que el asesor le contacte con esos detalles.",
+      dialogo: [
+        "User: Ya hablé con un asesor y me pidió unos documentos, ¿a dónde los mando?",
+        "AI: Le tomo nota para que el asesor le contacte con esos detalles. ¿Me dice su nombre y el evento?",
+        "User: Claro, es la feria del colegio, habla Patricia.",
+        "AI: Gracias, ya quedó anotado.",
+      ],
+    },
+    {
+      resumen: "Avisó que ya le aprobaron el permiso municipal para su festival. Daniela lo anotó para el asesor.",
+      dialogo: [
+        "User: Buenas, solo para avisar que ya nos aprobaron el permiso de la alcaldía para el festival.",
+        "AI: ¡Qué buena noticia! ¿A nombre de qué evento lo anoto?",
+        "User: Del festival de la playa.",
+        "AI: Listo, ya se lo paso al asesor.",
+      ],
+    },
   ],
   proveedor: [
-    "Proveedor de toldos y mobiliario ofreciendo sus servicios para eventos. Daniela tomó sus datos para el área de compras.",
-    "Empresa de sonido ofreciendo servicios. Daniela le pidió enviar su información por correo.",
+    {
+      resumen: "Proveedor de toldos y mobiliario ofreciendo sus servicios. Daniela tomó su nombre, su número y una nota, y lo trasladó al área correspondiente.",
+      dialogo: [
+        "User: Buenas, le hablo de una empresa de toldos y mobiliario, queremos ofrecer nuestros servicios para sus eventos.",
+        "AI: Gracias por tomarnos en cuenta. Le tomo su nombre, un número de contacto y una nota breve para trasladarlo al área correspondiente.",
+        "User: Claro, se los dicto.",
+        "AI: Listo, ya quedó anotado.",
+      ],
+    },
+    {
+      resumen: "Empresa de sonido e iluminación ofreciendo servicios. Daniela tomó sus datos y los trasladó al área correspondiente.",
+      dialogo: [
+        "User: Hola, tenemos una empresa de sonido e iluminación para eventos y queríamos presentarnos.",
+        "AI: Con gusto. ¿Me da su nombre, un número de contacto y qué servicios ofrecen? Lo traslado al área correspondiente.",
+        "User: Sí, se lo dicto.",
+        "AI: Gracias, ya quedó anotado.",
+      ],
+    },
+    {
+      resumen: "Imprenta ofreciendo material promocional. Daniela tomó sus datos para trasladarlos al área correspondiente, sin comprometer una respuesta.",
+      dialogo: [
+        "User: Buenas, somos una imprenta y hacemos material para eventos: banners, afiches, todo eso.",
+        "AI: Gracias por llamar. Le tomo su nombre y un número de contacto y lo traslado al área correspondiente.",
+        "User: Perfecto, gracias.",
+      ],
+    },
   ],
-  equivocado: ["Número equivocado: buscaba otra empresa.", "Colgó al saber que era la línea de eventos de Pizza Hut."],
+  equivocado: [
+    {
+      resumen: "Número equivocado: buscaba un taller mecánico.",
+      dialogo: ["User: ¿Aló? ¿Es el taller?", "AI: No, se comunicó con Pizza Hut, área de eventos.", "User: Ah, disculpe, me equivoqué."],
+    },
+    {
+      resumen: "Colgó al saber que era la línea de eventos de Pizza Hut.",
+      dialogo: ["User: Ah, perdón, me equivoqué de número."],
+    },
+    {
+      resumen: "Número equivocado: buscaba una farmacia.",
+      dialogo: ["User: Buenas, ¿es la farmacia?", "AI: No, esta es la línea de eventos de Pizza Hut.", "User: Ay, disculpe."],
+    },
+  ],
   otro: [
-    "Preguntó si Pizza Hut tiene vacantes. Daniela le indicó que esta línea es para propuestas de eventos.",
-    "Consultó por una promoción vista en redes. Daniela le orientó a los canales de servicio al cliente.",
+    {
+      resumen: "Preguntó si Pizza Hut tiene vacantes. Daniela tomó su nombre, su número y una nota para trasladarlo al área correspondiente.",
+      dialogo: [
+        "User: Buenas, quería saber si están contratando personal.",
+        "AI: Esta línea es del equipo de eventos, pero con gusto le tomo su nombre, un número de contacto y una nota para trasladarlo al área correspondiente.",
+        "User: Sí, por favor.",
+        "AI: Listo, ya quedó anotado.",
+      ],
+    },
+    {
+      resumen: "Consultó por una promoción que vio en redes. Daniela anotó su consulta y la trasladó al área correspondiente.",
+      dialogo: [
+        "User: Buenas, quería preguntar por una promoción que vi en redes.",
+        "AI: Le tomo su nombre, un número de contacto y la consulta, y la traslado al área correspondiente.",
+        "User: Va, gracias.",
+      ],
+    },
+    {
+      resumen: "Queja por un pedido que llegó tarde. Daniela tomó su nombre, su número y lo que pasó, y lo trasladó al área correspondiente sin prometer plazos.",
+      dialogo: [
+        "User: Buenas, hice un pedido y me llegó una hora tarde.",
+        "AI: Lamento lo que pasó. Le tomo su nombre, un número de contacto y una nota de lo sucedido para trasladarlo al área correspondiente.",
+        "User: Está bien, se lo doy.",
+        "AI: Gracias, ya quedó anotado.",
+      ],
+    },
   ],
 };
 
@@ -1559,6 +1725,8 @@ export function llamadasDeMuestra(propuestas: Propuesta[], ahora: number = Date.
     });
   }
 
+  const rueda: Partial<Record<MotivoLlamada, number>> = {};
+  const inicioRueda = Math.round(Date.parse(`${desde}T12:00:00Z`) / 86_400_000);
   for (let i = 0; i < dias; i++) {
     const dia = sumarDias(desde, i);
     const r = azar(`ph-${dia}`);
@@ -1570,7 +1738,6 @@ export function llamadasDeMuestra(propuestas: Propuesta[], ahora: number = Date.
       const inicio = Date.parse(isoDeSV(dia, hora, minuto));
       if (inicio > ahora - 10 * 60_000) continue; // nada en el futuro
       const motivo = elegir(MOTIVOS_RUIDO, r()).m;
-      const textos = RESUMEN_MOTIVO[motivo];
       const dur = motivo === "equivocado" ? 12 + Math.floor(r() * 30) : 35 + Math.floor(r() * 130);
       out.push({
         id: `muestra-${dia}-${k + 1}`,
@@ -1579,12 +1746,20 @@ export function llamadasDeMuestra(propuestas: Propuesta[], ahora: number = Date.
         inicio: new Date(inicio).toISOString(),
         fin: new Date(inicio + dur * 1000).toISOString(),
         duracionSeg: dur,
-        resumen: textos[Math.floor(r() * textos.length)],
+        resumen: "", // se reparte abajo, en orden de llegada
         grabacion: true,
         esPropuesta: false,
         motivo,
       });
     }
+  }
+  // Las variantes de un mismo motivo van en rueda y en orden de llegada: dos
+  // seguimientos seguidos nunca cuentan lo mismo hasta agotar la lista.
+  const ruido = out.filter((l) => !l.esPropuesta).sort((a, b) => a.inicio.localeCompare(b.inicio));
+  for (const l of ruido) {
+    const motivo = l.motivo as Exclude<MotivoLlamada, "propuesta">;
+    const turno = (rueda[motivo] = (rueda[motivo] ?? inicioRueda) + 1);
+    l.resumen = RUIDO[motivo][turno % RUIDO[motivo].length].resumen;
   }
   return out.sort((a, b) => b.inicio.localeCompare(a.inicio));
 }
@@ -1604,31 +1779,12 @@ export function transcripcionDeMuestra(llamada: LlamadaEvento, propuesta?: Propu
   ai("Gracias por llamar a Pizza Hut. Le saluda Daniela, del área de eventos. ¿En qué le puedo ayudar?");
 
   if (!propuesta || !llamada.esPropuesta) {
-    const m = llamada.motivo;
-    if (m === "pedido") {
-      user("Buenas, quería pedir dos pizzas grandes a domicilio.");
-      ai("Con gusto le oriento. Esta línea atiende propuestas para eventos; para pedidos a domicilio puede usar los canales de pedidos de Pizza Hut. ¿Le puedo ayudar con algo más?");
-      user("Ah, va, gracias.");
-    } else if (m === "sucursal") {
-      user("Buenas tardes, ¿a qué hora cierra la sucursal de mi colonia?");
-      ai("Esta línea es para propuestas de eventos, pero le cuento dónde ver sucursales y horarios: en el sitio web de Pizza Hut aparece cada una. ¿Algo más en lo que le ayude?");
-      user("No, eso era, gracias.");
-    } else if (m === "seguimiento") {
-      user("Hola, yo había llamado la semana pasada por un evento y quería saber si ya lo revisaron.");
-      ai("Claro que sí. ¿Me dice su nombre y el nombre del evento para avisarle al asesor que lo lleva?");
-      user("Sí, con gusto, se lo dicto.");
-      ai("Listo, ya quedó anotado. El asesor le va a contactar. ¡Que tenga buen día!");
-    } else if (m === "proveedor") {
-      user("Buenas, le hablo de una empresa de toldos y mobiliario, queríamos ofrecer nuestros servicios para sus eventos.");
-      ai("Gracias por tomarnos en cuenta. Esta línea recibe propuestas de eventos; le pido enviar su información por correo para que la revise el área correspondiente.");
-    } else if (m === "equivocado") {
-      user("¿Aló? ¿Es el taller?");
-      ai("No, se comunicó con Pizza Hut, área de eventos.");
-      user("Ah, disculpe, me equivoqué.");
-    } else {
-      user("Buenas, quería preguntar por una promoción que vi en redes.");
-      ai("Esta línea es para propuestas de eventos; para promociones le recomiendo los canales de servicio al cliente de Pizza Hut. ¿Le ayudo con algo más?");
-    }
+    // La conversación de la variante que corresponde al resumen de la llamada.
+    const variante = Object.values(RUIDO)
+      .flat()
+      .find((v) => v.resumen === llamada.resumen);
+    if (variante) L.push(...variante.dialogo);
+    else user("Buenas, quería hacer una consulta.");
     return L.join("\n");
   }
 
@@ -1673,7 +1829,7 @@ export function transcripcionDeMuestra(llamada: LlamadaEvento, propuesta?: Propu
   ai("Perfecto. Para que un asesor le contacte, ¿me confirma su nombre, su cargo y un número de teléfono?");
   user(
     `${d.contacto_nombre ? `Soy ${d.contacto_nombre}` : "Mi nombre es"}${d.contacto_cargo ? `, ${d.contacto_cargo.toLowerCase()}` : ""}. ${
-      d.contacto_telefono ? `Mi número es ${d.contacto_telefono.slice(0, 4)} ${d.contacto_telefono.slice(4)}.` : "Puede llamarme a este mismo número."
+      d.contacto_telefono ? `Mi número es ${d.contacto_telefono.slice(0, 4)}-${d.contacto_telefono.slice(4)}.` : "Puede llamarme a este mismo número."
     }`,
   );
   ai(`Gracias${d.contacto_nombre ? `, ${d.contacto_nombre.split(" ")[0]}` : ""}. Un asesor del equipo de eventos le va a contactar para revisar los detalles. ¡Que tenga buen día!`);

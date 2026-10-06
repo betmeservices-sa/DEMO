@@ -12,7 +12,7 @@ import { aplicarMovimientos, validarMovimiento } from "@/lib/eventos/estado";
 import { datosVacios } from "@/lib/eventos/contrato";
 import { resumirTablero, fueraDeHorario } from "@/lib/eventos/metricas";
 import { diaSV, isoDeSV } from "@/lib/eventos/fechas";
-import { ASESORES } from "@/lib/eventos/catalogo";
+import { ASESORES, telefonoLegible } from "@/lib/eventos/catalogo";
 
 const CSS = fs.readFileSync(path.resolve(__dirname, "../../app/globals.css"), "utf8");
 
@@ -177,6 +177,30 @@ describe("muestra de eventos", () => {
       const t = transcripcionDeMuestra(l, ps.find((p) => p.id === l.propuestaId));
       expect(t).not.toMatch(/[\u2014\u2013]/);
     }
+  });
+
+  it("las llamadas que no fueron propuesta varían y siguen el guion", () => {
+    const ls = llamadasDeMuestra(ps, AHORA);
+    for (const m of ["seguimiento", "pedido", "sucursal"] as const) {
+      const xs = ls.filter((l) => l.motivo === m).map((l) => l.resumen);
+      // Dos seguidas del mismo motivo nunca dicen lo mismo.
+      for (let i = 1; i < xs.length; i++) expect(xs[i], `${m} ${i}`).not.toBe(xs[i - 1]);
+    }
+    for (const l of ls.filter((x) => !x.esPropuesta)) {
+      // Pedidos y sucursales van a la página web o la aplicación; nunca una dirección ni un teléfono.
+      if (l.motivo === "pedido" || l.motivo === "sucursal") expect(l.resumen).toMatch(/página web o (en )?la aplicación/);
+      expect(l.resumen.toLowerCase()).not.toMatch(/canales de pedidos|dirección|queda en/);
+      // La transcripción es la de su propio resumen, no una genérica.
+      expect(transcripcionDeMuestra(l).split("\n").length).toBeGreaterThan(1);
+    }
+  });
+
+  it("los teléfonos se leen como 9255-4457", () => {
+    expect(telefonoLegible("+50392554457")).toBe("9255-4457");
+    expect(telefonoLegible("92554457")).toBe("9255-4457");
+    expect(telefonoLegible("2505 4606")).toBe("2505-4606");
+    expect(telefonoLegible("+14155550100")).toBe("+14155550100");
+    expect(telefonoLegible("")).toBe("");
   });
 
   it("las llamadas de muestra no caen en el futuro y las de propuesta apuntan a una propuesta", () => {

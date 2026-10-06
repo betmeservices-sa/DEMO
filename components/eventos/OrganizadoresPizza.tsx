@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Mail, MessageCircle, Phone, Search } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { Propuesta } from "@/lib/eventos/tipos";
-import { NOMBRE_CANAL, tagDeTipo } from "@/lib/eventos/catalogo";
+import { NOMBRE_CANAL, tagDeTipo, telefonoLegible } from "@/lib/eventos/catalogo";
 import { fechaCorta } from "@/lib/eventos/fechas";
 import { activeTenant } from "@/lib/tenants/active";
 import { Avatar, inicialesDe } from "@/components/ui/Avatar";
@@ -31,9 +31,7 @@ interface Organizador {
   real: boolean;
 }
 
-function telefonoBonito(t: string): string {
-  return t.length === 8 ? `${t.slice(0, 4)} ${t.slice(4)}` : t;
-}
+const telefonoBonito = telefonoLegible;
 
 export function armarOrganizadores(propuestas: Propuesta[]): Organizador[] {
   const mapa = new Map<string, Organizador>();

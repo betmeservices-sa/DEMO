@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Moon, PartyPopper, PhoneIncoming, RefreshCw, Search, Timer, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { LlamadaEvento, MotivoLlamada } from "@/lib/eventos/tipos";
-import { NOMBRE_MOTIVO } from "@/lib/eventos/catalogo";
+import { NOMBRE_MOTIVO, telefonoLegible } from "@/lib/eventos/catalogo";
 import { diaHora, duracion } from "@/lib/eventos/fechas";
 import { fueraDeHorario } from "@/lib/eventos/metricas";
 import { transcripcionDeMuestra } from "@/lib/eventos/semilla";
@@ -66,10 +66,11 @@ export function LlamadasPizza() {
 
       <div className="flex-1 space-y-4 overflow-y-auto p-5">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <Cifra Icon={PhoneIncoming} valor={miles(llamadas.length)} label="Atendidas por Daniela" pie={reales ? `${reales} reales` : undefined} />
-          <Cifra Icon={PartyPopper} valor={propuestas} label="Dejaron una propuesta" pie={llamadas.length ? `${Math.round((propuestas / llamadas.length) * 100)}% de las llamadas` : undefined} />
-          <Cifra Icon={Moon} valor={fuera} label="Fuera de horario" pie="Noches y fines de semana" />
-          <Cifra Icon={Timer} valor={duracion(promedio)} label="Duración promedio" />
+          {/* Mientras carga, puntos y no ceros: un 0 se lee como "no llamó nadie". */}
+          <Cifra Icon={PhoneIncoming} valor={datos ? miles(llamadas.length) : "..."} label="Atendidas por Daniela" pie={reales ? `${reales} reales` : undefined} />
+          <Cifra Icon={PartyPopper} valor={datos ? propuestas : "..."} label="Dejaron una propuesta" pie={llamadas.length ? `${Math.round((propuestas / llamadas.length) * 100)}% de las llamadas` : undefined} />
+          <Cifra Icon={Moon} valor={datos ? fuera : "..."} label="Fuera de horario" pie="Noches y fines de semana" />
+          <Cifra Icon={Timer} valor={datos ? duracion(promedio) : "..."} label="Duración promedio" />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -96,7 +97,7 @@ export function LlamadasPizza() {
           </select>
           <Interruptor activo={soloFuera} onClick={() => setSoloFuera((x) => !x)} texto="Fuera de horario" />
           <Interruptor activo={soloReales} onClick={() => setSoloReales((x) => !x)} texto="Solo reales" />
-          <span className="ml-auto text-[12px] text-[var(--text-3)]">{filtradas.length} llamadas</span>
+          <span className="ml-auto text-[12px] text-[var(--text-3)]">{datos ? `${filtradas.length} llamadas` : "Cargando..."}</span>
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-sm">
@@ -119,7 +120,7 @@ export function LlamadasPizza() {
                       {fueraDeHorario(l.inicio) && <Moon size={12} className="text-[var(--text-3)]" aria-label="Fuera de horario" />}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[12px] text-[var(--text-2)]">{l.numero || "Oculto"}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[12px] text-[var(--text-2)]">{l.numero ? telefonoLegible(l.numero) : "Oculto"}</td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-[12.5px] text-[var(--text-2)]">{duracion(l.duracionSeg)}</td>
                   <td className="px-3 py-2.5">
                     <span className="flex items-center gap-1.5">
@@ -228,7 +229,7 @@ function DetalleLlamada({
               {llamada.esPropuesta ? "Propuesta de evento" : NOMBRE_MOTIVO[llamada.motivo]}
               {real && <RealBadge />}
             </p>
-            <h2 className="text-[17px] font-extrabold text-[var(--text)]">{llamada.numero || "Número oculto"}</h2>
+            <h2 className="text-[17px] font-extrabold text-[var(--text)]">{llamada.numero ? telefonoLegible(llamada.numero) : "Número oculto"}</h2>
             <p className="text-[12.5px] text-[var(--text-2)]">
               {diaHora(llamada.inicio)} · {duracion(llamada.duracionSeg)}
               {fueraDeHorario(llamada.inicio) ? " · fuera de horario" : ""}

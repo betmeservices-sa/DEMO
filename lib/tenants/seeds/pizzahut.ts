@@ -126,7 +126,7 @@ export const pizzahutSeed: TenantSeed = {
 
     // sim-ph10: Lorena quería pedir pizza. Daniela la orienta.
     { id: "m49", conversationId: "sim-ph10", autor: "cliente", texto: "Buenas, quiero pedir 3 pizzas grandes para mi casa.", ts: haceH(5.2) },
-    { id: "m50", conversationId: "sim-ph10", autor: "staff", staffId: "ia", texto: "¡Hola! Este canal atiende propuestas para eventos. Para pedidos a domicilio puede usar los canales de pedidos de Pizza Hut. ¿Le ayudo con algo más?", ts: haceH(5.2) },
+    { id: "m50", conversationId: "sim-ph10", autor: "staff", staffId: "ia", texto: "¡Hola! Este canal es del equipo de eventos. Los pedidos se hacen en la página web o en la aplicación de Pizza Hut. ¿Le ayudo con algo más?", ts: haceH(5.2) },
     { id: "m51", conversationId: "sim-ph10", autor: "cliente", texto: "Ah ok, gracias.", ts: haceH(5) },
   ],
   internalChannels: [

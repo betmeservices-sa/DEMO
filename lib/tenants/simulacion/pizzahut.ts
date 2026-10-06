@@ -39,7 +39,7 @@ export const pizzahutSimulacion: TenantSimulacion = {
     },
     {
       entra: "Quiero pedir una pizza a domicilio.",
-      responde: "Este canal atiende propuestas para eventos. Para pedidos a domicilio puede usar los canales de pedidos de Pizza Hut. ¿Le ayudo con algo más?",
+      responde: "Este canal es del equipo de eventos. Los pedidos se hacen en la página web o en la aplicación de Pizza Hut. ¿Le ayudo con algo más?",
     },
   ],
   contactos: [

@@ -31,6 +31,7 @@ import {
   NOMBRE_TOLDO,
   asesorDe,
   nombreTipo,
+  telefonoLegible,
 } from "@/lib/eventos/catalogo";
 import { diaHora, duracion, fechaLarga, haceCuanto } from "@/lib/eventos/fechas";
 import { transcripcionDeMuestra } from "@/lib/eventos/semilla";
@@ -85,7 +86,7 @@ export function FichaEvento({
   }
 
   const tel = d.contacto_telefono;
-  const telBonito = tel.length === 8 ? `${tel.slice(0, 4)} ${tel.slice(4)}` : tel;
+  const telBonito = telefonoLegible(tel);
 
   function accion(tipo: "llamar" | "whatsapp" | "correo") {
     if (esMuestra) {
@@ -493,7 +494,7 @@ function LlamadaOrigen({ llamada, p }: { llamada: LlamadaEvento; p: Fila["p"] })
         </span>
         <span>{diaHora(llamada.inicio)}</span>
         <span>Duración {duracion(llamada.duracionSeg)}</span>
-        {llamada.numero && <span>Desde {llamada.numero}</span>}
+        {llamada.numero && <span>Desde {telefonoLegible(llamada.numero)}</span>}
         {real && <RealBadge />}
       </div>
       {real && llamada.grabacion ? (

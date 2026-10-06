@@ -530,8 +530,8 @@ export default function BandejaPage() {
           ) : (
             <EmptyState
               Icon={MessageSquareDashed}
-              titulo="Selecciona una conversacion"
-              descripcion="Elige un mensaje de la lista para ver y responder la conversacion."
+              titulo="Selecciona una conversación"
+              descripcion="Elige un mensaje de la lista para ver y responder la conversación."
             />
           )}
         </section>
