@@ -5,6 +5,7 @@ import {
   type OpcionesMemoria,
 } from "@/lib/memoria-webhook";
 import { anotarLlamadaEnSolicitud } from "@/lib/ventas-llamada";
+import { aceptaWhatsapp } from "@/lib/acepta-whatsapp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,8 +51,9 @@ const OPCIONES: OpcionesMemoria = {
     // TRES estados, no dos. `true` dijo que sí, `false` dijo que NO, y sin
     // valor es que no se llegó a preguntar (no contestó el teléfono, cayó al
     // buzón, colgó antes). A ese último se le escribe igual, y por eso no se
-    // puede colapsar con un `=== true`.
-    agendo: typeof d.acepta_whatsapp === "boolean" ? d.acepta_whatsapp : undefined,
+    // puede colapsar con un `=== true`. Vapi lo manda como "si" / "no" /
+    // "sin_respuesta" (ver lib/acepta-whatsapp.ts).
+    agendo: aceptaWhatsapp(d.acepta_whatsapp),
     resumen: comoTexto(d.resumen) ?? comoTexto(resumen),
   }),
   // La redacción del concesionario diría "lo quiere para quince mil dólares".
