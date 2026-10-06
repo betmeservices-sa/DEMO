@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   if (!r.ok) {
     return NextResponse.json({ ok: false, error: r.error }, { status: 502 });
   }
-  return NextResponse.json({ ok: true, templates: r.templates, demo: r.demo });
+  return NextResponse.json({ ok: true, templates: r.templates, demo: r.demo, sinNumero: r.sinNumero ?? false });
 }
 
 // POST: crea una plantilla en Meta. Body = NuevoTemplate.

@@ -46,12 +46,19 @@ function credsEnv(): { token: string; waba: string } | null {
 // El 28 de septiembre de 2026 se creó una plantilla para Yali desde el panel y
 // quedó en el almacén FAKE: este módulo solo miraba las variables de entorno,
 // que en producción son las de la demo, mientras que los mensajes de Yali
-// salen con la conexión del cliente (wa_connections). Primero esa conexión,
-// como en lib/wa-credenciales.ts; el entorno queda de respaldo.
+// salen con la conexión del cliente (wa_connections).
+//
+// Y UN CLIENTE SIN NÚMERO PROPIO NO HEREDA LAS PLANTILLAS DE OTRO. Antes, sin
+// conexión propia, se caía al entorno, que es el número de la demo: Pizza Hut y
+// el hospital listaban las plantillas de CrediQ (la WABA de Grupo Q) y desde su
+// panel se podía crearle o borrarle plantillas a esa cuenta. Ahora se listan con
+// las MISMAS credenciales con que se envía (lib/wa-credenciales.ts): el número
+// propio, o el de la demo solo para el cliente al que lo apunta el interruptor.
+// El resto ve únicamente las suyas de demostración (TenantConfig.waTemplates).
 async function credsDe(tenant: TenantId): Promise<{ token: string; waba: string } | null> {
-  const propias = await credencialesWa(tenant);
-  if (propias?.wabaId) return { token: propias.token, waba: propias.wabaId };
-  return credsEnv();
+  const c = await credencialesWa(tenant);
+  if (c?.origen === "demo" && TENANTS[tenant].whatsapp?.plantillasDelNumeroDemo === false) return null;
+  return c?.wabaId ? { token: c.token, waba: c.wabaId } : null;
 }
 
 export function tieneCredsTemplates(): boolean {
@@ -129,10 +136,15 @@ export async function listarTemplates(
   ok: boolean;
   templates: WaTemplate[];
   demo: boolean;
+  /**
+   * Hay credenciales de WhatsApp en el entorno, pero este cliente no tiene
+   * número: no es "falta configurar", es que no le toca ninguna cuenta.
+   */
+  sinNumero?: boolean;
   error?: string;
 }> {
   const c = await credsDe(tenant);
-  if (!c) return { ok: true, templates: storeDe(tenant), demo: true };
+  if (!c) return { ok: true, templates: storeDe(tenant), demo: true, sinNumero: credsEnv() !== null };
 
   const url = `${GRAPH}/${c.waba}/message_templates?fields=id,name,status,category,language,components&limit=200`;
   const res = await fetch(url, {

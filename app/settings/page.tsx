@@ -170,7 +170,8 @@ export default function SettingsPage() {
       const d = await res.json();
       if (d.ok) {
         setTemplates(d.templates);
-        setDemo(d.demo);
+        // Sin número propio no es un problema de configuración: no se avisa.
+        setDemo(d.demo && !d.sinNumero);
       } else {
         setErrorLista(d.error ?? "No se pudieron cargar las plantillas.");
       }
@@ -665,9 +666,6 @@ export default function SettingsPage() {
               <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-line bg-card py-10 text-center">
                 <FileText size={26} className="text-[var(--text-3)]" />
                 <p className="text-sm font-semibold text-[var(--text)]">Aún no hay plantillas</p>
-                <p className="max-w-xs text-[12.5px] text-[var(--text-3)]">
-                  Crea tu primera plantilla con el formulario de la izquierda.
-                </p>
               </div>
             )}
 

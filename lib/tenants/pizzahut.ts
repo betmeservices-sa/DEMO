@@ -96,25 +96,12 @@ export const pizzahutTenant: TenantConfig = {
     { label: "Conversaciones hoy", icon: "MessageSquare", kind: "metric", metricLabel: "Conversaciones hoy", fallback: 0 },
     { label: "Sin asignar", icon: "Inbox", kind: "sinAsignar" },
   ],
-  // Plantilla de demostración: sin credenciales de Meta, la pestaña muestra
-  // esta. No existe en ninguna cuenta de WhatsApp todavía.
-  waTemplates: [
-    {
-      name: "pizzahut_propuesta_recibida",
-      language: "es",
-      category: "UTILITY",
-      status: "PENDING",
-      components: [
-        {
-          type: "BODY",
-          text: "Hola {{1}}, recibimos su propuesta para {{2}}. Un asesor del equipo de eventos de Pizza Hut le contactará para revisar los detalles.",
-          example: { body_text: [["Diego", "la Noche de Bandas Nacionales"]] },
-        },
-        { type: "FOOTER", text: "Pizza Hut El Salvador" },
-      ],
-    },
-  ],
-  whatsapp: {},
+  // Sin plantillas propias todavía: Pizza Hut no tiene número de WhatsApp
+  // conectado, y las de otra cuenta no se le muestran (lib/wa-templates.ts).
+  waTemplates: [],
+  // Las plantillas del número de la demo son de otra empresa: nunca se le
+  // muestran a Pizza Hut, ni con el interruptor apuntándole ese número.
+  whatsapp: { plantillasDelNumeroDemo: false },
   // Daniela, la agente de voz de la línea de eventos (2505-4606). Con este
   // id, Llamadas y Agentes muestran solo lo suyo, y el webhook de eventos
   // ignora llamadas de cualquier otro agente.

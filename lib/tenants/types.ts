@@ -108,6 +108,12 @@ export interface TenantWhatsApp {
   // para armar los links `wa.me` que el negocio pone en la bio de cada perfil
   // (ver lib/origen-sede.ts). No es el phoneNumberId, que es un id interno.
   numeroPublico?: string;
+  /**
+   * false = las plantillas de la cuenta del número de la demo nunca se le
+   * muestran, ni aunque el interruptor le apunte ese número. Para clientes cuya
+   * marca no puede aparecer junto a plantillas de otra empresa. Default: true.
+   */
+  plantillasDelNumeroDemo?: boolean;
 }
 
 // Agente de voz del tenant. La cuenta de voz es UNA sola y tiene agentes de
