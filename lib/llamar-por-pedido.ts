@@ -21,6 +21,7 @@ import { normalizarDestinoSV } from "./phone";
 import { decidirLlamada, esAfirmativo, intencionDeLlamada, type MensajeDelHilo } from "./pedido-de-llamada";
 import { assistantCampanasDeTenant, esDelTenant } from "./tenants/voz";
 import type { TenantId } from "./tenants/types";
+import { TENANTS } from "./tenants";
 import { fetchVapiAgentes, hayLlaveVapi, lanzarLlamadaVapi } from "./vapi";
 import { enviarTextoWa } from "./wa-send";
 import { addOutbound, mensajesAnteriores } from "./wa-store";
@@ -79,6 +80,9 @@ export async function atenderPedidoDeLlamada(opts: {
     sinDueno: !convs.find((c) => c.wa_from === telefono)?.asignado_a,
     ahora: new Date(),
     horaLocal: horaSV(new Date()),
+    // Donde la de voz y la de WhatsApp son la misma Sofía, la llamada se
+    // presenta con la marca y el trato del panel.
+    presentacion: TENANTS[tenant].voz?.mismaAgente,
   });
 
   if (!decision.llamar && !decision.pregunta) return `no se llamó: ${decision.motivo}`;

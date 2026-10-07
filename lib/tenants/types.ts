@@ -151,6 +151,14 @@ export interface TenantVoz {
    * Sin este campo, una tanda de reactivacion cae en el de primer contacto.
    */
   assistantIdReactivacion?: string;
+  /**
+   * La agente de voz y la de WhatsApp son LA MISMA (el panel comercial: Sofía
+   * en los dos canales). Cambia lo que pasa cuando alguien pide por WhatsApp
+   * que le llamen: la llamada se presenta con esta marca y este trato, y el
+   * agente de WhatsApp no le contesta aparte ese pedido, porque ya le avisó
+   * por escrito y le está marcando ella misma. Sin esto, como siempre.
+   */
+  mismaAgente?: { marca: string; tuteo?: boolean };
 }
 
 // --- Simulación de bandeja en vivo (el interruptor "En vivo" del demo) ---

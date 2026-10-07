@@ -279,6 +279,10 @@ export async function POST(req: Request) {
       //
       // Las razones para NO llamar (que son más que las de llamar) están en
       // lib/pedido-de-llamada.ts, que es puro y probado.
+      // Los mensajes que ya se atendieron llamando. Donde la de voz y la de
+      // WhatsApp son la misma agente, esa ya le avisó y le está marcando: que
+      // además le conteste por escrito sería otra Sofía hablando encima.
+      const llamando = new Set<string>();
       for (const t of entrantes) {
         try {
           const r = await atenderPedidoDeLlamada({
@@ -287,6 +291,7 @@ export async function POST(req: Request) {
             texto: t.texto,
           });
           if (r !== "no lo pidió") console.log(`[pedido-llamada] ${t.from}: ${r}`);
+          if (r === "llamando" && TENANTS[tenantActivo].voz?.mismaAgente) llamando.add(t.wamid);
         } catch (e) {
           console.error("[pedido-llamada] falló:", e);
         }
@@ -313,7 +318,7 @@ export async function POST(req: Request) {
 
       if (TENANTS[tenantActivo].ai.respondeSolo !== false) {
         await Promise.all(
-          entrantes.map((t) =>
+          entrantes.filter((t) => !llamando.has(t.wamid)).map((t) =>
             programarRespuestaIA({
               from: t.from,
               triggerWamid: t.wamid,

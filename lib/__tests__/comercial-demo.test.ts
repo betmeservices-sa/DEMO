@@ -63,3 +63,11 @@ describe("Sofía en modo demo", () => {
     expect(guion).not.toContain("—");
   });
 });
+
+describe("Sofía también llama", () => {
+  it("sabe que si le piden 'llámame' el sistema marca, y no dice que no puede", () => {
+    expect(guion).toMatch(/SI TE PIDE QUE LA LLAMES/);
+    expect(guion).toMatch(/te estoy marcando ahora mismo/);
+    expect(guion).toMatch(/Nunca digas que no puedes hacer llamadas/);
+  });
+});

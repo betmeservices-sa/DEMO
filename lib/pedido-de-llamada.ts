@@ -31,6 +31,8 @@ export const HASTA_HORA = 20;
 
 /** Lo que se le responde por escrito al pedir la llamada. Y es la marca. */
 export const AVISO_LLAMANDO = "le estamos marcando ahora mismo";
+/** Lo mismo, de tú (el panel comercial, donde Sofía tutea). También es marca. */
+export const AVISO_LLAMANDO_TU = "te estoy marcando ahora mismo";
 
 /** Sin tildes, en minúsculas y con los espacios parejos. */
 function plano(texto: string): string {
@@ -142,6 +144,17 @@ export function pideLlamada(texto: string): boolean {
 
 /** La pregunta que se le hace tras una llamada que no se completó. Y es la marca. */
 export const PREGUNTA_VOLVER = "¿Quiere que le llame de vuelta ahora?";
+/** Lo mismo, de tú. También es marca. */
+export const PREGUNTA_VOLVER_TU = "¿Quieres que te llame de vuelta ahora?";
+
+/**
+ * Con qué marca y trato se presenta la llamada que pidieron por escrito. Sin
+ * esto, como siempre: "Sofía de CrediQ", de usted.
+ */
+export interface PresentacionLlamada {
+  marca: string;
+  tuteo?: boolean;
+}
 
 /**
  * "Sí", "claro", "dale, por favor": la respuesta a la pregunta de si le
@@ -197,6 +210,8 @@ export interface EntradaLlamada {
   ahora: Date;
   /** La hora de El Salvador, que la resuelve quien llama para no atar la zona acá. */
   horaLocal: number;
+  /** Marca y trato del panel; sin esto, "Sofía de CrediQ" de usted. */
+  presentacion?: PresentacionLlamada;
 }
 
 export type Decision =
@@ -219,7 +234,8 @@ function ultimoSaliente(hilo: MensajeDelHilo[]): MensajeDelHilo | undefined {
 export function decidirLlamada(e: EntradaLlamada): Decision {
   let intencion = intencionDeLlamada(e.texto);
   // "Sí" a la pregunta de si le llamamos de vuelta: cuenta como pedirlo.
-  if (!intencion && esAfirmativo(e.texto) && ultimoSaliente(e.hilo)?.texto.includes(PREGUNTA_VOLVER)) {
+  const ultimaSalida = ultimoSaliente(e.hilo)?.texto ?? "";
+  if (!intencion && esAfirmativo(e.texto) && (ultimaSalida.includes(PREGUNTA_VOLVER) || ultimaSalida.includes(PREGUNTA_VOLVER_TU))) {
     intencion = "llamar";
   }
   if (!intencion) return { llamar: false, motivo: "no pidió que lo llamaran" };
@@ -247,7 +263,11 @@ export function decidirLlamada(e: EntradaLlamada): Decision {
       .sort((a, b) => b - a)[0];
   const ultimaRespuesta = ultimo(
     "out",
-    (m) => m.texto.includes(AVISO_LLAMANDO) || m.texto.includes(PREGUNTA_VOLVER),
+    (m) =>
+      m.texto.includes(AVISO_LLAMANDO) ||
+      m.texto.includes(AVISO_LLAMANDO_TU) ||
+      m.texto.includes(PREGUNTA_VOLVER) ||
+      m.texto.includes(PREGUNTA_VOLVER_TU),
   );
   const ultimoDeLaPersona = ultimo("in");
   if (ultimaRespuesta && ultimoDeLaPersona && ultimaRespuesta > ultimoDeLaPersona) {
@@ -255,7 +275,15 @@ export function decidirLlamada(e: EntradaLlamada): Decision {
   }
 
   const nombre = primerNombre(e.nombre);
+  const pres = e.presentacion;
 
+  if (intencion === "preguntar" && pres?.tuteo) {
+    return {
+      llamar: false,
+      motivo: "se le preguntó si quiere que le llamen de vuelta",
+      pregunta: `${nombre ? `No te preocupes, ${nombre}.` : "No te preocupes."} ${PREGUNTA_VOLVER_TU}`,
+    };
+  }
   if (intencion === "preguntar") {
     return {
       llamar: false,
@@ -264,6 +292,20 @@ export function decidirLlamada(e: EntradaLlamada): Decision {
     };
   }
   const contexto = contextoDelChat(e.hilo);
+
+  if (pres) {
+    const marca = pres.marca;
+    return {
+      llamar: true,
+      contexto,
+      primerMensaje: pres.tuteo
+        ? `Hola${nombre ? ` ${nombre}` : ""}, soy Sofía de ${marca}. Te llamo como me pediste por WhatsApp. ¿Puedes hablar ahora?`
+        : `Hola${nombre ? ` ${nombre}` : ""}, le saluda Sofía de ${marca}. Le marco como me pidió por WhatsApp. ¿Puede hablar ahora?`,
+      aviso: pres.tuteo
+        ? `${nombre ? `${nombre}, con` : "Con"} gusto: ${AVISO_LLAMANDO_TU}.`
+        : `${nombre ? `${nombre}, con` : "Con"} gusto: ${AVISO_LLAMANDO}.`,
+    };
+  }
 
   return {
     llamar: true,
