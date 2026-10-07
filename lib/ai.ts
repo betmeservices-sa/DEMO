@@ -25,6 +25,7 @@ import { contextoSucursal, interpretarSucursal } from "./sucursal-gate";
 import { bloquePromociones, usaPromos } from "./promos";
 import { listarPromos } from "./promos-store";
 import { sumarUso, USO_CERO, type UsoTokens } from "./tokens-precios";
+import { crearMensajePorOpenAI, modeloOpenAI } from "./ai-cliente-openai";
 import type { MimeImagenIA } from "./wa-media";
 import type { TipoTicket } from "./tickets";
 import { areaYaliPara } from "./tickets-tenant";
@@ -44,6 +45,12 @@ const MODEL = process.env.AI_MODEL || "claude-haiku-4-5";
 /** El modelo con el que responde el agente (lo lee el panel de consumo). */
 export function modeloActivo(): string {
   return MODEL;
+}
+
+/** Si este cliente contesta con luna (OpenAI) en vez de Claude. */
+export function usaLuna(tenantId?: TenantId): boolean {
+  const t = tenantId && TENANTS[tenantId] ? TENANTS[tenantId] : activeTenant();
+  return t.ai.modelo === "luna";
 }
 
 // La persona (system prompt) depende del tenant. En el webhook real se pasa el
@@ -359,10 +366,12 @@ function toolElegirHotel(tenantId?: TenantId): Anthropic.Tool | null {
   };
 }
 
-// El panel comercial es la DEMO de Mia: lo que agende ahi es de mentira, y con
-// las herramientas de agenda caeria en una agenda real. Se queda con reaccionar
-// (guardar_datos_contacto se agrega aparte, para todos).
-const TOOLS_DEMO_COMERCIAL = TOOLS_BASE.filter((t) => t.name === "reaccionar");
+// Sin herramientas de agenda. El panel comercial es la DEMO de Mia: lo que
+// agende ahi es de mentira. El hospital atiende pacientes REALES en su numero, y
+// esa agenda no es la del hospital: Claudia toma la solicitud y el personal
+// confirma. Se quedan con reaccionar (guardar_datos_contacto se agrega aparte,
+// para todos).
+const TOOLS_SIN_AGENDA = TOOLS_BASE.filter((t) => t.name === "reaccionar");
 
 function toolsPara(tenantId?: TenantId): Anthropic.Tool[] {
   const base =
@@ -370,8 +379,8 @@ function toolsPara(tenantId?: TenantId): Anthropic.Tool[] {
       ? TOOLS_HOTEL
       : tenantId === "yaly"
         ? TOOLS_YALI
-        : tenantId === "comercial"
-          ? TOOLS_DEMO_COMERCIAL
+        : tenantId === "comercial" || tenantId === "hospital"
+          ? TOOLS_SIN_AGENDA
           : TOOLS_BASE;
   const elegir = toolElegirHotel(tenantId);
   return elegir ? [...base, elegir] : base;
@@ -758,11 +767,18 @@ export async function generarRespuesta(
     ...toolsPara(contexto?.tenantId),
   ];
 
+  // Luna o Claude, según el cliente. Con luna el tope sube: razona antes de
+  // contestar y lo que piensa cuenta contra el tope; si se agota, la respuesta
+  // llega vacía. 2000 es el de Yali. Es un techo, no se cobra lo que no usa.
+  const luna = usaLuna(contexto?.tenantId);
+  const modelo = luna ? modeloOpenAI() : MODEL;
+
   const imagenes = historial.reduce((n, t) => n + (t.imagenes?.length ?? 0), 0);
   // Se mide UNA vez, sobre el envío inicial. Las imágenes se quedan en
   // `messages` durante todo el bucle de herramientas, así que viajan (y se
   // cobran) en cada llamada: por eso al final se multiplica por `llamadas`.
-  const tokensImagenPorLlamada = await medirTokensImagen(system, tools, messages);
+  // Contar tokens es de la API de Anthropic: con luna queda en 0, no se inventa.
+  const tokensImagenPorLlamada = luna ? 0 : await medirTokensImagen(system, tools, messages);
 
   let uso: UsoTokens = { ...USO_CERO };
   let llamadas = 0;
@@ -773,13 +789,8 @@ export async function generarRespuesta(
   const vigilarPago = contexto?.tenantId === "yaly";
   let corregidoPago = false;
   for (let i = 0; i < 6; i++) {
-    const res = await client.messages.create({
-      model: MODEL,
-      max_tokens: 500,
-      system,
-      tools,
-      messages,
-    });
+    const args = { model: modelo, max_tokens: luna ? 2000 : 500, system, tools, messages };
+    const res = luna ? await crearMensajePorOpenAI(args) : await client.messages.create(args);
     llamadas++;
     uso = sumarUso(uso, usoDeRespuesta(res.usage));
 
@@ -825,7 +836,7 @@ export async function generarRespuesta(
   return {
     texto: texto || "Disculpe, ¿me lo puede repetir por favor?",
     uso,
-    modelo: MODEL,
+    modelo,
     llamadas,
     tokensImagen: tokensImagenPorLlamada * Math.max(llamadas, 1),
     imagenes,
