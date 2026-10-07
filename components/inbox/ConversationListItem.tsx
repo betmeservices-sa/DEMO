@@ -25,6 +25,8 @@ export function ConversationListItem({
     <button
       type="button"
       onClick={onClick}
+      data-item-conv=""
+      data-activa={activa ? "" : undefined}
       className={cn(
         "flex w-full gap-3 border-b border-line/70 px-3.5 py-3 text-left transition",
         activa ? "bg-brand/5" : "hover:bg-surface",

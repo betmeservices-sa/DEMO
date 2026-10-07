@@ -50,6 +50,11 @@ export type DepartmentId =
   | "reclutamiento"
   // Pizza Hut: propuestas de organizadores para vender en sus eventos
   | "eventos"
+  // Caja de Credito de Chalatenango: lo que pregunta cualquiera (horarios,
+  // agencias, productos, credito) y lo de las tarjetas de credito. Los cobros
+  // usan "cobranza", el mismo que el banco.
+  | "consultas"
+  | "tarjetas"
   // Todavía nadie dijo de qué es. Existe para no tener que mentir: antes toda
   // conversación nueva nacía con el departamento por defecto del cliente, así
   // que en Yali TODO entraba marcado como "Reservas", incluida una queja.

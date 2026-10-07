@@ -19,6 +19,7 @@ import { ConversationList, type ListaItem } from "@/components/inbox/Conversatio
 import { Thread } from "@/components/inbox/Thread";
 import { ContextPanel } from "@/components/inbox/ContextPanel";
 import { estadoVentana } from "@/lib/ventana";
+import { enArea, useArea } from "@/lib/area-shell";
 import type { ConversationStatus, DepartmentId } from "@/lib/data/types";
 
 const FILTROS_INICIALES: Filtros = {
@@ -62,6 +63,9 @@ export default function BandejaPage() {
   // Solo gerencia/jefatura/dirección pueden borrar y bloquear una conversación.
   const puedeBloquear = rol === "gerente_marketing" || rol === "jefe" || rol === "admin";
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIALES);
+  // El area de las pestanas de arriba (solo en los paneles que la tienen, como
+  // la Caja). En los demas siempre es "todos" y no filtra nada.
+  const area = useArea();
   // "todas" o el id de una página: la bandeja de una sola marca (su
   // Facebook y su Instagram juntos), y de ahí los filtros de siempre.
   const [pagina, setPagina] = useState<string>("todas");
@@ -118,6 +122,7 @@ export default function BandejaPage() {
         return true;
       })
       .filter((c) => filtros.departamento === "todos" || c.departamento === filtros.departamento)
+      .filter((c) => enArea(area, c.departamento))
       .sort((a, b) => b.ultimoMensajeTs.localeCompare(a.ultimoMensajeTs))
       .map((conversation) => ({
         conversation,
@@ -125,7 +130,7 @@ export default function BandejaPage() {
         ultimo: ultimoDe.get(conversation.id),
         escribiendo: escribiendo.has(conversation.id),
       }));
-  }, [state.conversations, filtros, pagina, contactoDe, ultimoDe, escribiendo]);
+  }, [state.conversations, filtros, area, pagina, contactoDe, ultimoDe, escribiendo]);
 
   const activa = activaId ? state.conversations.find((c) => c.id === activaId) ?? null : null;
   const contactoActivo = activa ? contactoDe.get(activa.contactId)! : null;
@@ -236,6 +241,21 @@ export default function BandejaPage() {
     dispatch({ type: "MARK_READ", conversationId: id });
   }, [dispatch]);
 
+  // Lo mismo, pero con la bandeja ya abierta: la búsqueda y las notificaciones
+  // del shell flotante abren una conversación sin salir de esta pantalla, y el
+  // efecto de arriba solo corre al montar.
+  useEffect(() => {
+    function abrir(e: Event) {
+      const id = (e as CustomEvent<string>).detail;
+      if (!id) return;
+      sessionStorage.removeItem("ccg.abrirConv");
+      setActivaId(id);
+      dispatch({ type: "MARK_READ", conversationId: id });
+    }
+    window.addEventListener("ccg:abrir-conv", abrir);
+    return () => window.removeEventListener("ccg:abrir-conv", abrir);
+  }, [dispatch]);
+
   // "Iniciar conversación" desde la pestaña Contactos: abre (o crea) el chat.
   useEffect(() => {
     const raw = sessionStorage.getItem("ccg.iniciarConv");
@@ -258,6 +278,7 @@ export default function BandejaPage() {
     <div className="flex h-full flex-col">
       {/* Top bar (se oculta en movil cuando hay una conversacion abierta) */}
       <header
+        data-panel="cabecera"
         className={cn(
           "items-center justify-between border-b border-line bg-card px-5 py-3 lg:flex",
           activa ? "hidden lg:flex" : "flex",
@@ -277,9 +298,10 @@ export default function BandejaPage() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      <div data-bandeja="cuerpo" className="flex min-h-0 flex-1">
         {/* Columna 1: lista */}
         <section
+          data-panel="lista"
           className={cn(
             "shrink-0 flex-col border-r border-line bg-card lg:flex lg:w-[340px]",
             activa ? "hidden" : "flex w-full",
@@ -296,7 +318,7 @@ export default function BandejaPage() {
         </section>
 
         {/* Columna 2: hilo */}
-        <section className={cn("min-w-0 flex-1 flex-col", activa ? "flex" : "hidden lg:flex")}>
+        <section data-panel="hilo" className={cn("min-w-0 flex-1 flex-col", activa ? "flex" : "hidden lg:flex")}>
           {activa && contactoActivo ? (
             <Thread
               key={activa.id}
@@ -538,7 +560,7 @@ export default function BandejaPage() {
 
         {/* Columna 3: contexto (estatica en desktop) */}
         {activa && contactoActivo && (
-          <div className="hidden lg:flex">
+          <div data-panel="contexto" className="hidden lg:flex">
             <ContextPanel
               conversation={activa}
               contact={contactoActivo}

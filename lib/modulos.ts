@@ -102,6 +102,19 @@ export const MODULOS_CLINICA: readonly ModuleId[] = [
 // contactos. Sin ajustes: ahi viven interruptores que mueven a todo el demo.
 export const MODULOS_COMERCIAL: readonly ModuleId[] = ["leads", "bandeja", "contactos"];
 
+// El riel de la Caja de Credito de Chalatenango, EN ESTE ORDEN: la bandeja es
+// el centro de su panel, despues el tablero, los contactos, el chat del equipo
+// y la agente de voz de demostracion. Sin ajustes: ahi viven interruptores que
+// mueven a todo el demo, y este panel no tiene nada propio que configurar.
+export const MODULOS_CAJA: readonly ModuleId[] = [
+  "bandeja",
+  "dashboard",
+  "contactos",
+  "interno",
+  "llamadas",
+  "agentes",
+];
+
 // El menu de Pizza Hut, EN ESTE ORDEN. Es una lista cerrada como la de la
 // clinica: su panel gira alrededor de las propuestas de eventos, y lo demas
 // (redes, tickets, chat interno) aca solo haria ruido.

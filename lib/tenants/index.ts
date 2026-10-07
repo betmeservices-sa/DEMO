@@ -15,6 +15,7 @@ import { nissanTenant } from "./nissan";
 import { betmeTenant } from "./betme";
 import { pizzahutTenant } from "./pizzahut";
 import { comercialTenant } from "./comercial";
+import { chalatenangoTenant } from "./chalatenango";
 
 export type { TenantConfig, TenantId } from "./types";
 
@@ -32,6 +33,7 @@ export const TENANTS: Record<TenantId, TenantConfig> = {
   betme: betmeTenant,
   pizzahut: pizzahutTenant,
   comercial: comercialTenant,
+  chalatenango: chalatenangoTenant,
 };
 
 // Tenant por defecto (SSR / antes de login). No es visible: la UI se pinta tras
@@ -52,7 +54,8 @@ export function isTenantId(v: string | null | undefined): v is TenantId {
     v === "nissan" ||
     v === "betme" ||
     v === "pizzahut" ||
-    v === "comercial"
+    v === "comercial" ||
+    v === "chalatenango"
   );
 }
 
@@ -92,6 +95,9 @@ export const DEMO_LOGINS: DemoLogin[] = [
   // MiAgentIA Comercial: el panel de las asesoras (leads de conferencia y el
   // WhatsApp comercial). Va aparte de demok, que es el tablero de la agencia.
   { usuario: "demoagentia", password: "demoa", tenant: "comercial" },
+  // Caja de Credito de Chalatenango: la bandeja partida en consultas
+  // generales, cobros y tarjetas de credito, con su cara propia (riel flotante).
+  { usuario: "demoagentia", password: "demochalate", tenant: "chalatenango" },
   // Acceso directo al dashboard de llamadas (tenant miagentia).
   // OJO: esta clave queda visible mientras el repo sea publico. Para cerrarla,
   // hacer el repo privado o mover las credenciales a la env LOGIN_PASSWORDS.

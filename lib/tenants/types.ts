@@ -33,7 +33,8 @@ export type TenantId =
   | "nissan"
   | "betme"
   | "pizzahut"
-  | "comercial";
+  | "comercial"
+  | "chalatenango";
 
 // Datos semilla (mock) de un tenant. Misma forma que el antiguo lib/data/seed.
 export interface TenantSeed {
@@ -64,7 +65,7 @@ export interface TenantBrand {
   // Logo dibujado en SVG dentro del componente, para marcas cuyo logotipo no
   // sobrevive a un <img> (fondo blanco quemado, baja resolución) y que además
   // necesitan la tipografía de la app. Gana sobre logoSrc y wordmark.
-  logoComponent?: "promerica" | "yali" | "pizzahut";
+  logoComponent?: "promerica" | "yali" | "pizzahut" | "chalatenango";
   wordmark?: {
     icon: "HeartPulse" | "CarFront" | "Bot" | "Hotel" | "Building2" | "Stethoscope" | "Briefcase";
     /**
@@ -159,6 +160,12 @@ export interface TenantVoz {
    * por escrito y le está marcando ella misma. Sin esto, como siempre.
    */
   mismaAgente?: { marca: string; tuteo?: boolean };
+  /**
+   * Como se llama la agente de voz, para los textos que la nombran (la casilla
+   * de "llamar a los importados" en Contactos). Sin esto, "Sofía", que es la
+   * de casi todos.
+   */
+  nombre?: string;
 }
 
 // --- Simulación de bandeja en vivo (el interruptor "En vivo" del demo) ---
@@ -270,4 +277,18 @@ export interface TenantConfig {
   waTemplates: WaTemplate[];
   whatsapp?: TenantWhatsApp;
   voz?: TenantVoz;
+  /**
+   * La cara del panel. Sin esto, la de siempre: barra lateral blanca con el
+   * menu entero. "flotante" es el riel oscuro de iconos a la izquierda, la
+   * barra de arriba con las areas del cliente como pestanas y las tarjetas
+   * flotando sobre el fondo (components/shell/flotante). Se elige por cliente
+   * y no con ifs en cada componente: cambiarle la cara a uno no mueve a otro.
+   */
+  shell?: "flotante";
+  /**
+   * Las areas en las que se parte el trabajo del cliente, en el orden de las
+   * pestanas de arriba. Cada una es un departamento de su semilla: elegir una
+   * filtra la bandeja y el tablero. Solo lo lee el shell "flotante".
+   */
+  areas?: DepartmentId[];
 }

@@ -12,6 +12,7 @@ import { MODULOS_CLINICA, agenciaVeRuta, destinoAgencia } from "@/lib/modulos";
 import { Sidebar } from "./Sidebar";
 import { LiveMount } from "./LiveMount";
 import { LoginPage } from "./LoginPage";
+import { ShellFlotante } from "./flotante/ShellFlotante";
 
 // Rutas públicas que NO llevan el chrome del dashboard (sidebar, store, etc.).
 // "/portal" es el portal del paciente de la clínica: entra con su correo, sin
@@ -84,6 +85,20 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
   if (!sesion) {
     return <LoginPage onLogin={login} />;
+  }
+
+  // Clientes con la cara "flotante" (riel de iconos, areas como pestanas,
+  // tarjetas sobre el fondo). La eleccion es por cliente, en su TenantConfig:
+  // los demas paneles siguen con la barra lateral de siempre.
+  if (activeTenant().shell === "flotante") {
+    return (
+      <StoreProvider>
+        <LiveProvider>
+          <LiveMount />
+          <ShellFlotante onLogout={logout}>{permitido ? children : <SinAcceso />}</ShellFlotante>
+        </LiveProvider>
+      </StoreProvider>
+    );
   }
 
   return (

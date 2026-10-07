@@ -11,8 +11,9 @@ import { Desplegable } from "@/components/ui/Desplegable";
 // transmite. Justo este control es el que más se usa en una demostración en
 // vivo, así que era el peor lugar para tener ese problema.
 //
-// Abre hacia ARRIBA porque vive al pie de la barra lateral.
-export function RoleSwitcher() {
+// Abre hacia ARRIBA porque vive al pie de la barra lateral. En el shell
+// flotante vive en el menu del usuario, arriba a la derecha, y abre hacia abajo.
+export function RoleSwitcher({ arriba = true }: { arriba?: boolean }) {
   const { rol, setRol, def } = useRole();
 
   // Cuenta de una persona: no hay nada que elegir. Se muestra con qué perfil
@@ -40,7 +41,7 @@ export function RoleSwitcher() {
         valor={rol}
         onChange={(v) => setRol(v as typeof rol)}
         etiquetaAria="Ver la app como otro perfil"
-        arriba
+        arriba={arriba}
         opciones={Object.values(ROLES).map((r) => ({ valor: r.id, etiqueta: r.nombre }))}
       />
     </div>

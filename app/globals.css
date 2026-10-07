@@ -2,6 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ── Tema por cliente (tenant) ──
@@ -429,6 +430,49 @@
 /* La barra de scroll clara de Pizza Hut. */
 [data-tenant="pizzahut"] ::-webkit-scrollbar-thumb:hover {
   background: #a7a5a6;
+}
+
+/* Caja de Credito de Chalatenango va en CLARO, con los dos colores REALES de
+   su sitio (leidos de cajachalatenango.com.sv/css/style.css): el verde #006341,
+   que es el color de toda la marca, y el lima #C4D600 de las franjas y los
+   titulos. Tipografia: Open Sans, la del cuerpo de su hoja de estilos (los
+   titulos del sitio van en Harabara, una fuente propia que no se trae).
+   El lima da 1.6:1 sobre blanco: es relleno (la marca del activo en el riel,
+   barras, puntos), NUNCA texto. Para texto con ese tono va el oliva #5B6B00.
+   Contraste medido sobre el fondo #F1F5EF: tinta #14261C 14.4:1, secundario
+   #455149 7.5:1, terciario #5B6860 5.3:1, verde #006341 6.7:1, oliva #5B6B00
+   5.4:1, verde de estado #1F7A3A 4.9:1, rojo #B3261E 5.9:1; sobre la tarjeta
+   blanca todos suben, y el verde con el lima da 4.5:1. Lo cubre
+   chalatenango-tema.test.ts. */
+[data-tenant="chalatenango"] {
+  --brand-blue: #006341;
+  --brand-blue-dark: #004a30;
+  --brand-green: #1f7a3a;
+  --brand-red: #b3261e;
+  --brand-accent: #5b6b00;
+  --brand-accent-soft: #f5f9dc;
+
+  --surface: #f1f5ef;
+  --surface-2: #e5ede3;
+  --card: #ffffff;
+  --border: #dfe7dc;
+  --border-2: #c7d3c4;
+  --text: #14261c;
+  --text-2: #455149;
+  --text-3: #5b6860;
+
+  /* Tokens propios del shell flotante. */
+  --caja-lima: #c4d600;
+  --caja-lima-suave: #eef4c2;
+  --caja-ambar: #a14b00;
+  --caja-azul: #2b5d8c;
+
+  --font-app: 'Open Sans', Arial, system-ui, sans-serif;
+}
+
+/* La barra de scroll clara de la Caja. */
+[data-tenant="chalatenango"] ::-webkit-scrollbar-thumb:hover {
+  background: #a9b8a6;
 }
 
 
@@ -862,4 +906,105 @@ select:-webkit-autofill {
     border: 0;
     box-shadow: none;
   }
+}
+
+/* ── Shell "flotante" (components/shell/flotante) ──
+   Hoy lo usa solo la Caja de Credito de Chalatenango. Todo va colgado de
+   [data-shell="flotante"], que solo existe en ese shell: los paneles de
+   siempre no heredan ni una regla. Los colores salen de los tokens del tema
+   del cliente (--brand-*, --surface, --card...), nunca de hex sueltos. */
+[data-shell="flotante"] {
+  --sombra-flotante: 0 1px 2px rgb(20 38 28 / 0.05), 0 12px 32px -18px rgb(20 38 28 / 0.22);
+  --sombra-levantada: 0 2px 4px rgb(20 38 28 / 0.06), 0 20px 40px -18px rgb(20 38 28 / 0.28);
+  background:
+    radial-gradient(900px 480px at 8% -12%, color-mix(in srgb, var(--caja-lima, var(--brand-accent)) 16%, transparent), transparent 70%),
+    radial-gradient(1000px 640px at 105% -5%, color-mix(in srgb, var(--brand-blue) 10%, transparent), transparent 65%),
+    var(--surface);
+}
+
+/* El riel y la barra de abajo: el verde de la marca, en pastilla. */
+[data-shell="flotante"] .caja-riel {
+  background: linear-gradient(180deg, var(--brand-blue), var(--brand-blue-dark));
+  box-shadow: 0 18px 40px -20px color-mix(in srgb, var(--brand-blue-dark) 80%, transparent);
+}
+
+/* La barra de arriba: una pastilla blanca apenas translucida. */
+[data-shell="flotante"] .caja-barra {
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  box-shadow: var(--sombra-flotante);
+  border: 1px solid var(--border);
+}
+
+[data-shell="flotante"] .caja-tarjeta {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: var(--sombra-flotante);
+}
+
+[data-shell="flotante"] .caja-tooltip {
+  transition: opacity 150ms ease;
+}
+
+/* Lo que se levanta al pasar el mouse (tarjetas del tablero, urgentes). */
+[data-shell="flotante"] .levanta {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+[data-shell="flotante"] .levanta:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sombra-levantada);
+}
+
+/* La bandeja: lista, conversacion y contexto como tarjetas separadas. */
+[data-shell="flotante"] [data-panel="cabecera"] {
+  background: transparent;
+  border: 0;
+  padding: 0.125rem 0.25rem 0.75rem;
+}
+[data-shell="flotante"] [data-bandeja="cuerpo"] {
+  gap: 0.75rem;
+}
+[data-shell="flotante"] [data-panel="lista"],
+[data-shell="flotante"] [data-panel="hilo"],
+[data-shell="flotante"] [data-panel="contexto"] > aside {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: var(--sombra-flotante);
+  overflow: hidden;
+}
+[data-shell="flotante"] [data-panel="hilo"] > div {
+  background: color-mix(in srgb, var(--surface) 45%, var(--card));
+}
+[data-shell="flotante"] [data-panel="lista"] [data-item-conv] {
+  border-bottom: 0;
+  border-radius: 0.875rem;
+  margin: 2px 6px;
+  width: calc(100% - 12px);
+}
+[data-shell="flotante"] [data-panel="lista"] [data-activa] {
+  background: color-mix(in srgb, var(--caja-lima, var(--brand-accent)) 22%, var(--card));
+  box-shadow: inset 3px 0 0 var(--brand-blue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-shell="flotante"] .levanta:hover {
+    transform: none;
+  }
+}
+
+/* En celular la cabecera de la bandeja se acomoda en dos filas: el titulo y,
+   debajo, los interruptores, sin partir "Modo IA" en dos lineas. */
+@media (max-width: 1023px) {
+  [data-shell="flotante"] [data-panel="cabecera"] {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  [data-shell="flotante"] [data-panel="cabecera"] > div:first-child {
+    flex-basis: 100%;
+  }
+}
+[data-shell="flotante"] [data-panel="cabecera"] button {
+  white-space: nowrap;
 }

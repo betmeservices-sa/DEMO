@@ -356,7 +356,7 @@ function ContactosGeneral() {
               onChange={(e) => setLlamarAlImportar(e.target.checked)}
               className="h-3.5 w-3.5 accent-[var(--brand-blue)]"
             />
-            Llamar a los importados con Sofía
+            Llamar a los importados con {activeTenant().voz?.nombre ?? "Sofía"}
             {llamarAlImportar && (
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                 lanza llamadas reales, máximo 25
