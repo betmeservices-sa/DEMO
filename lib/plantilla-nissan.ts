@@ -47,14 +47,19 @@ interface Plantilla {
  * sola para todos los demos, y un "seguimiento_llamada" a secas se lo queda el
  * primero que lo pida.
  */
+// 2026-10-07: pasa a `nissan_solicitud_recibida`. La anterior
+// (nissan_solicitud_registrada) llevaba 12 horas en revisión en la cuenta nueva
+// del 6970 6697, y esta existe con el MISMO nombre en las dos cuentas que la
+// mandan: la de Nissan (AgentIA) y la de Grupo Q, que la usa cuando en su panel
+// la llamada la hace el agente de Nissan.
 export const PROPIA: Plantilla = {
-  nombre: "nissan_solicitud_registrada",
+  nombre: "nissan_solicitud_recibida",
   idioma: "es",
   variables: (nombre, que) => [nombre, que],
   texto: (nombre, que) =>
-    `Hola ${nombre}, le confirmamos que su solicitud de información sobre ${que} quedó ` +
-    `registrada en Nissan El Salvador. Si necesita agregar o corregir algún dato, puede ` +
-    `responder a este mensaje.`,
+    `Hola ${nombre}, recibimos su solicitud de información sobre ${que} en Nissan El ` +
+    `Salvador y ya quedó registrada. Si necesita agregar o corregir algún dato, responda ` +
+    `a este mensaje.`,
 };
 
 /**

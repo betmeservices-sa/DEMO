@@ -155,7 +155,7 @@ export const nissanTenant: TenantConfig = {
     // WABA de verdad. Los nombres y los textos se copian de allá para que el
     // demo sin credenciales muestre lo mismo que se manda en producción.
     {
-      name: "nissan_solicitud_registrada",
+      name: "nissan_solicitud_recibida",
       language: "es",
       // UTILIDAD: confirma el estado de lo que la persona pidió, sin ofertas.
       // Las dos anteriores (nissan_seguimiento_llamada y
@@ -166,7 +166,7 @@ export const nissanTenant: TenantConfig = {
       components: [
         {
           type: "BODY",
-          text: "Hola {{1}}, le confirmamos que su solicitud de información sobre {{2}} quedó registrada en Nissan El Salvador. Si necesita agregar o corregir algún dato, puede responder a este mensaje.",
+          text: "Hola {{1}}, recibimos su solicitud de información sobre {{2}} en Nissan El Salvador y ya quedó registrada. Si necesita agregar o corregir algún dato, responda a este mensaje.",
           example: { body_text: [["Ana", "la X-Trail"]] },
         },
         { type: "FOOTER", text: "Nissan El Salvador" },
