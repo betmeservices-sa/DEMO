@@ -1,8 +1,9 @@
 // Los leads de las landings de conferencia (miagentia.com/sandra y /andrea)
 // para la pantalla /leads de la agencia.
 //
-// Solo para la agencia (sesion con `todos` o tenant miagentia), igual que el
-// resumen del tablero: son datos de prospectos de MiAgentIA, no de un cliente.
+// Solo para el panel comercial de MiAgentIA (tenant "comercial", login demoa)
+// y la cuenta de la agencia con `todos`: son prospectos de MiAgentIA, no de un
+// cliente, y el tablero de la agencia (demok) no los muestra.
 
 import { NextResponse } from "next/server";
 import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
@@ -15,8 +16,8 @@ const SIN_CACHE = { "Cache-Control": "no-store" };
 export async function GET(req: Request) {
   const sesion = await leerSesion(sesionDeCookieHeader(req.headers.get("cookie")));
   if (!sesion) return NextResponse.json({ ok: false, error: "No autenticado" }, { status: 401 });
-  if (!sesion.todos && sesion.tenant !== "miagentia") {
-    return NextResponse.json({ ok: false, error: "Solo para la agencia" }, { status: 403 });
+  if (!sesion.todos && sesion.tenant !== "comercial") {
+    return NextResponse.json({ ok: false, error: "Solo para el panel comercial" }, { status: 403 });
   }
   if (!hayLlaveLeads()) {
     return NextResponse.json(

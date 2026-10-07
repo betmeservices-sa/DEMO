@@ -76,7 +76,8 @@ export type ModuleId =
   | "costos"
   | "llamadas"
   // Los leads de las landings de conferencia de miagentia.com (/sandra y
-  // /andrea): quien dejo sus datos o pidio la llamada demo. Es de la agencia.
+  // /andrea): quien dejo sus datos o pidio la llamada demo. Solo en el panel
+  // comercial de MiAgentIA (tenant "comercial").
   | "leads"
   // Escuchar lo que dijo el agente. Va aparte de "llamadas" (que es el tablero
   // de costo y volumen) porque quien hace QA no viene a mirar cifras.
@@ -95,6 +96,11 @@ export const MODULOS_CLINICA: readonly ModuleId[] = [
   "jefatura",
   "mensajes",
 ];
+
+// El menu de MiAgentIA Comercial (las asesoras), EN ESTE ORDEN: primero los
+// leads, que es para lo que entran, despues el WhatsApp comercial y sus
+// contactos. Sin ajustes: ahi viven interruptores que mueven a todo el demo.
+export const MODULOS_COMERCIAL: readonly ModuleId[] = ["leads", "bandeja", "contactos"];
 
 // El menu de Pizza Hut, EN ESTE ORDEN. Es una lista cerrada como la de la
 // clinica: su panel gira alrededor de las propuestas de eventos, y lo demas
@@ -270,12 +276,11 @@ export function puedeVerRuta(rol: RoleId, pathname: string): boolean {
 // El tablero de la agencia (tenant "miagentia") es SOLO metricas de clientes:
 // el tablero por cliente (consumo, conversaciones, reservas, quien cerro), el
 // reporte de desempeno del agente de cada cliente, lo que costo cada
-// conversacion del agente, las llamadas con su costo y los leads de las
-// landings de conferencia de miagentia.com.
+// conversacion del agente y las llamadas con su costo.
 // Bandeja, redes, contactos, ajustes y lo demas operativo no van: se atiende
 // desde el panel de cada cliente, no desde aca. Es una lista CERRADA, igual
 // que la de la clinica, para el menu, la portada y la puerta del servidor.
-export const MODULOS_AGENCIA: readonly ModuleId[] = ["dashboard", "reporte", "costos", "llamadas", "leads"];
+export const MODULOS_AGENCIA: readonly ModuleId[] = ["dashboard", "reporte", "costos", "llamadas"];
 
 /**
  * ¿Abre este cliente esta ruta? Solo cierra para la agencia; el resto de los

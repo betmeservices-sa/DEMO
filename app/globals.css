@@ -54,7 +54,8 @@
 }
 
 /* MiAgentIA: violeta de la landing (miagentia.com) + cian como acento */
-[data-tenant="miagentia"] {
+[data-tenant="miagentia"],
+[data-tenant="comercial"] {
   --brand-blue: #7c3aed; /* violeta de marca, legible sobre blanco */
   --brand-blue-dark: #6d28d9;
   --brand-green: #2e9e5b;

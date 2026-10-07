@@ -110,8 +110,9 @@ export function useAuth() {
     // El demo abre como Gerente de Marketing (acceso total).
     window.localStorage.setItem(ROL_KEY, "gerente_marketing");
     setActiveTenant(tenant);
-    // Recarga para que el tenant activo aplique en toda la app.
-    window.location.assign("/");
+    // Recarga para que el tenant activo aplique en toda la app. El panel
+    // comercial abre en sus leads, que es para lo que entran las asesoras.
+    window.location.assign(tenant === "comercial" ? "/leads" : "/");
     return { tipo: "ok" };
   }
 

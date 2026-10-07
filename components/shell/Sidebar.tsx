@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, UserPlus, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
-import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_PIZZAHUT } from "@/lib/modulos";
+import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_PIZZAHUT } from "@/lib/modulos";
 import { useStore } from "@/lib/store";
 import { sinLeerPorCanal, useInterno } from "@/lib/interno-bridge";
 import { activeTenantId } from "@/lib/tenants/active";
@@ -151,8 +151,12 @@ export function Sidebar({
   // Pizza Hut tambien arma su menu aparte, y en su propio orden: primero el
   // tablero, despues lo que entra (bandeja), las propuestas y las llamadas.
   const vePizza = tenant === "pizzahut";
-  const visibles = vePizza
-    ? MODULOS_PIZZAHUT.map((id) => NAV.find((item) => item.id === id)).filter(
+  // MiAgentIA Comercial (las asesoras) tambien arma su menu aparte: leads,
+  // bandeja y contactos, en ese orden.
+  const veComercial = tenant === "comercial";
+  const listaCerrada = vePizza ? MODULOS_PIZZAHUT : veComercial ? MODULOS_COMERCIAL : null;
+  const visibles = listaCerrada
+    ? listaCerrada.map((id) => NAV.find((item) => item.id === id)).filter(
         (item): item is NavItem => Boolean(item) && def.ve.includes((item as NavItem).id),
       )
     : veClinica
@@ -195,8 +199,8 @@ export function Sidebar({
       (item.id !== "auditoria" || veReporte) &&
       // Lo que cuesta operar el agente de cada cliente: de la agencia, no del cliente.
       (item.id !== "costos" || veReporte) &&
-      // Los leads de las landings de conferencia son prospectos de MiAgentIA.
-      (item.id !== "leads" || veReporte) &&
+      // Los leads de conferencia son solo del panel comercial, que arma su menu arriba.
+      item.id !== "leads" &&
       // La agencia es SOLO metricas de clientes: su lista cerrada manda.
       (tenant !== "miagentia" || MODULOS_AGENCIA.includes(item.id)),
       );

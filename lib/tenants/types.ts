@@ -32,7 +32,8 @@ export type TenantId =
   | "consultorio"
   | "nissan"
   | "betme"
-  | "pizzahut";
+  | "pizzahut"
+  | "comercial";
 
 // Datos semilla (mock) de un tenant. Misma forma que el antiguo lib/data/seed.
 export interface TenantSeed {

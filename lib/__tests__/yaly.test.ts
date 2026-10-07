@@ -263,14 +263,17 @@ describe("configuración del agente", () => {
 
   // Lista cerrada a propósito: prender la visión en un cliente nuevo obliga a
   // pasar por acá, y por la prueba de abajo que revisa su guion.
-  it("solo yaly y miagentia ven imágenes", () => {
+  // "comercial" (el panel de las asesoras de MiAgentIA) usa el guion de Mia
+  // tal cual, que dice que ve las fotos: sin la vision ese guion mentiria.
+  it("solo yaly, miagentia y comercial ven imágenes", () => {
     expect(TENANTS.yaly.ai.imagenes).toBe(true);
     expect(TENANTS.miagentia.ai.imagenes).toBe(true);
+    expect(TENANTS.comercial.ai.systemPrompt).toBe(TENANTS.miagentia.ai.systemPrompt);
     const conVision = Object.values(TENANTS)
       .filter((t) => t.ai.imagenes === true)
       .map((t) => t.id)
       .sort();
-    expect(conVision).toEqual(["miagentia", "yaly"]);
+    expect(conVision).toEqual(["comercial", "miagentia", "yaly"]);
   });
 
   // La otra mitad del guardarraíl: el guion de quien SÍ ve tiene que decirlo, o

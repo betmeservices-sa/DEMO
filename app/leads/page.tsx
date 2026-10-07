@@ -4,8 +4,9 @@
 // landings del QR (miagentia.com/sandra y /andrea). Se refresca sola cada 30
 // segundos y al volver a la pestana, para tenerla abierta durante el evento.
 //
-// Solo para la agencia (lib/modulos: MODULOS_AGENCIA). Los datos salen de
-// /api/agencia/leads, que devuelve 403 a cualquiera que no sea la agencia.
+// Solo en el panel comercial de MiAgentIA (lib/modulos: MODULOS_COMERCIAL).
+// Los datos salen de /api/agencia/leads, que devuelve 403 a cualquier otro
+// cliente.
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Download, Loader2, Mail, MessageCircle, Phone, Search, UserPlus } from "lucide-react";
