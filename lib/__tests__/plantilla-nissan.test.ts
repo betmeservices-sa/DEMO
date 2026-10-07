@@ -99,4 +99,10 @@ describe("cómo queda el mensaje", () => {
     expect(PROPIA.nombre).toBe("nissan_solicitud_registrada");
     expect(PROPIA.variables("Ana", "X-Trail")).toEqual(["Ana", "X-Trail"]);
   });
+
+  it("al colgar sale la de datos para la cotización, con el nombre como única variable", () => {
+    expect(ACTIVA.nombre).toBe("nissan_datos_cotizacion");
+    expect(ACTIVA.variables("Ana", "X-Trail")).toEqual(["Ana"]);
+    expect(ACTIVA.texto("Ana", "X-Trail")).toContain("1. Modelo y versión\n2. Forma de pago");
+  });
 });

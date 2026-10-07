@@ -83,16 +83,33 @@ export const PRESTADA: Plantilla = {
 };
 
 /**
- * La que sale: la de Nissan.
- *
- * Desde el 2 de octubre de 2026 Nissan habla por su propio número (+503 7023
- * 3151, otra cuenta de WhatsApp), y ahí la prestada de CrediQ NO existe: el
- * envío fallaría. En esa cuenta están las de Nissan, todas de utilidad:
- * nissan_solicitud_registrada (esta), nissan_cotizacion_pendiente y
- * nissan_datos_cotizacion. Mientras Meta no apruebe esta, el seguimiento no
- * sale, igual que antes de tener la prestada.
+ * La que pide los datos para completar la cotización. UNA SOLA VARIABLE, el
+ * nombre: el cuerpo aprobado no lleva el modelo.
  */
-export const ACTIVA: Plantilla = PROPIA;
+export const DATOS_COTIZACION: Plantilla = {
+  nombre: "nissan_datos_cotizacion",
+  idioma: "es",
+  variables: (nombre) => [nombre],
+  // Con los saltos de línea tal como está aprobada.
+  texto: (nombre) =>
+    `Hola ${nombre}, para completar la cotización que solicitó en Nissan necesitamos confirmar estos datos:\n` +
+    `1. Modelo y versión\n` +
+    `2. Forma de pago: contado o financiamiento\n` +
+    `3. Si incluirá un vehículo en parte de pago\n` +
+    `4. Día y hora para la prueba de manejo, si la solicitó\n\n` +
+    `Puede responder por este mismo medio.`,
+};
+
+/**
+ * La que sale al minuto de colgar.
+ *
+ * Desde el 2026-10-07, por pedido del usuario ("la 3"), es la de los datos para
+ * la cotización, no la de "su solicitud quedó registrada". Las tres de Nissan
+ * (nissan_solicitud_registrada, nissan_cotizacion_pendiente y
+ * nissan_datos_cotizacion) están aprobadas, de utilidad, en la cuenta
+ * "Miagentia" (3204425946419192), que es donde vive el 6970 6697.
+ */
+export const ACTIVA: Plantilla = DATOS_COTIZACION;
 
 /** Minutos entre colgar y el mensaje. */
 export const ESPERA_MIN = 1;
