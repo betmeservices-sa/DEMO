@@ -171,9 +171,13 @@ export interface EntradaPlantilla {
 /**
  * PASO 1, al colgar: los requisitos.
  *
- * No se manda si dijo que no, si no sabemos su nombre, si ya se le había
- * mandado, si el número no sirve, o si la ventana de 24 h está abierta, porque
- * ahí el texto libre llega igual y sale gratis.
+ * No se manda si dijo que no, si no sabemos su nombre o si el número no sirve.
+ *
+ * SE MANDA AUNQUE LA VENTANA DE 24 H ESTÉ ABIERTA (2026-10-07). Antes, si la
+ * persona había escrito en las últimas 24 h, esto devolvía "se le puede
+ * escribir directo"... y nadie le escribía: no había texto libre de respaldo, y
+ * quien no contestaba la llamada se quedaba sin seguimiento. Una plantilla de
+ * utilidad se puede mandar con la ventana abierta y ahí Meta no la cobra.
  */
 export function decidirPlantilla(e: EntradaPlantilla): Decision {
   // Solo el "no" expreso cierra la puerta. No contestar no es negarse.
@@ -188,11 +192,6 @@ export function decidirPlantilla(e: EntradaPlantilla): Decision {
   // cumple. Antes valía una sola vez en la vida del número y eso dejaba mudas
   // las llamadas siguientes: la persona colgaba esperando el mensaje y no le
   // llegaba nada. Esto sale UNA vez por llamada, no lo repite ningún barrido.
-  const entrante = ultimoEntrante(e.hilo);
-  if (entrante && e.ahora.getTime() - entrante < VENTANA_MS) {
-    return { enviar: false, motivo: "la ventana de 24 h está abierta: se le puede escribir directo" };
-  }
-
   return conNombre(REQUISITOS, nombre);
 }
 

@@ -79,12 +79,14 @@ describe("1. al colgar salen los REQUISITOS", () => {
     ["el número no sirve", { telefono: "123" }, /sin n[úu]mero/],
     ["no sabemos cómo se llama", { nombre: null }, /nombre/],
     ["el agente transcribió un relleno", { nombre: "no especificado" }, /nombre/],
-    [
-      "la ventana de 24 h está abierta",
-      { hilo: [{ direction: "in", texto: "hola", ts: haceMin(120) }] },
-      /ventana de 24/,
-    ],
   ];
+
+  it("se manda aunque la ventana de 24 h esté abierta (antes se callaba y no salía nada)", () => {
+    const r = base({ hilo: [{ direction: "in", texto: "hola", ts: haceMin(120) }] });
+    expect(r.enviar).toBe(true);
+    if (!r.enviar) return;
+    expect(r.plantilla).toBe("crediq_seguimiento_requisitos");
+  });
 
   for (const [que, extra, motivo] of noSeManda) {
     it(`no se manda: ${que}`, () => {
