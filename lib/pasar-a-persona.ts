@@ -45,6 +45,7 @@ export interface Traspaso {
  * que sí cuando el traspaso no ocurrió es peor que no decirle nada.
  */
 export async function pasarAPersona(
+  tenant: string,
   telefono: string,
   motivo: Motivo,
   departamento?: string,
@@ -56,8 +57,8 @@ export async function pasarAPersona(
     // El orden importa: primero se apaga el agente. Si se asignara primero y
     // fallara el apagado, quedarían los dos contestando, que es justo lo que
     // esto viene a evitar.
-    await setChatOverride(telefono, false);
-    await upsertConversacion({
+    await setChatOverride(tenant, telefono, false);
+    await upsertConversacion(tenant, {
       wa_from: telefono,
       asignado_a: para,
       estado: "en_progreso",

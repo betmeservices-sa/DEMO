@@ -61,7 +61,7 @@ export async function atenderPedidoDeLlamada(opts: {
 
   const [{ mensajes }, convs, ficha] = await Promise.all([
     mensajesAnteriores(telefono, null, HILO, tenant),
-    getConversaciones(),
+    getConversaciones(tenant),
     getContacto(normalizarTelefono(telefono)).catch(() => null),
   ]);
 

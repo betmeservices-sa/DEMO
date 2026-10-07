@@ -263,12 +263,12 @@ describe("configuración del agente", () => {
 
   // Lista cerrada a propósito: prender la visión en un cliente nuevo obliga a
   // pasar por acá, y por la prueba de abajo que revisa su guion.
-  // "comercial" (el panel de las asesoras de MiAgentIA) usa el guion de Mia
-  // tal cual, que dice que ve las fotos: sin la vision ese guion mentiria.
+  // "comercial" es la demo de Mia en el WhatsApp de las asesoras: las fotos
+  // son parte de lo que se muestra, y su guion lo dice.
   it("solo yaly, miagentia y comercial ven imágenes", () => {
     expect(TENANTS.yaly.ai.imagenes).toBe(true);
     expect(TENANTS.miagentia.ai.imagenes).toBe(true);
-    expect(TENANTS.comercial.ai.systemPrompt).toBe(TENANTS.miagentia.ai.systemPrompt);
+    expect(TENANTS.comercial.ai.imagenes).toBe(true);
     const conVision = Object.values(TENANTS)
       .filter((t) => t.ai.imagenes === true)
       .map((t) => t.id)

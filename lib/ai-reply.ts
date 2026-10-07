@@ -124,7 +124,7 @@ export async function programarRespuestaIA(opts: {
 
   try {
     // Activa si: override del chat (si existe) o, si no, el interruptor global.
-    if (!(await getChatAiActiva(opts.from, opts.iaDelNumero ?? null))) return;
+    if (!(await getChatAiActiva(tenantId, opts.from, opts.iaDelNumero ?? null))) return;
 
     // Tramo 1: silencio. Le damos tiempo a que termine sin mostrarle nada.
     await sleep(DELAY_MIN_MS);
@@ -180,7 +180,7 @@ export async function programarRespuestaIA(opts: {
     // como está y el staff puede reactivarla desde la bandeja).
     if (decision.tipo === "handoff_sucursal" || decision.tipo === "cerrar_por_limite") {
       await enviarYGuardar(opts.from, decision.texto, tenantId);
-      await setChatOverride(opts.from, false);
+      await setChatOverride(tenantId, opts.from, false);
       console.warn(
         `IA: chat ${opts.from} pasa a una persona (${decision.tipo}). Tope: ${limiteDe(cfg.ai.limiteMensajes)} mensajes.`,
       );
@@ -221,7 +221,7 @@ export async function programarRespuestaIA(opts: {
       const apartado = await recibirComprobante(tenantId, `wa:${opts.from}`, { mid: ultimo.waId });
       if (apartado) {
         await enviarYGuardar(opts.from, textoComprobanteRecibido(), tenantId);
-        await pasarAPersona(opts.from, "pago", "reservas");
+        await pasarAPersona(tenantId, opts.from, "pago", "reservas");
         return;
       }
     }

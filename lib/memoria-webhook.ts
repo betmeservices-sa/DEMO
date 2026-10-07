@@ -258,7 +258,7 @@ async function mandarPlantillaTrasLlamada(
     });
   }
   // Cuando conteste, que le responda Sofía.
-  await encenderIaSiNadieDecidio(paraWhatsApp);
+  await encenderIaSiNadieDecidio(tenant, paraWhatsApp);
 
   // El recordatorio se AGENDA acá, que es el único momento en que sabemos que
   // hay uno que esperar. Antes lo buscaba un barrido cada minuto sobre todas

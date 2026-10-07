@@ -49,7 +49,7 @@ vi.mock("@/lib/wa-store", () => ({
 const chatApagado = vi.fn();
 vi.mock("@/lib/ai-store", () => ({
   getChatAiActiva: async () => true,
-  setChatOverride: async (from: string, activa: boolean) => chatApagado(from, activa),
+  setChatOverride: async (_tenant: string, from: string, activa: boolean) => chatApagado(from, activa),
 }));
 
 vi.mock("@/lib/wa-send", () => ({

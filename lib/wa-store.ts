@@ -271,28 +271,43 @@ export async function clearHistory(tenant?: string): Promise<void> {
   await borrarConsumo(tenant);
 }
 
-// Borra TODO lo de UN número (mensajes, adjuntos, contacto, metadatos y estado
-// de IA). Lo usa "Borrar y bloquear"; el bloqueo real (que no vuelva a escribir)
-// lo hace la Block Users API en lib/wa-send.
-export async function borrarConversacionCompleta(from: string): Promise<void> {
+// Borra TODO lo de UN número en UN panel (mensajes, adjuntos, contacto,
+// metadatos y estado de IA). Lo usa "Borrar y bloquear"; el bloqueo real (que
+// no vuelva a escribir) lo hace la Block Users API en lib/wa-send.
+//
+// Solo el panel desde donde se apretó: hasta 2026-10-07 borraba a esa persona
+// de TODOS los clientes, porque cada tabla se filtraba solo por teléfono.
+export async function borrarConversacionCompleta(tenant: string, from: string): Promise<void> {
   const sb = getSupabase();
   if (!sb) {
     for (let i = mem.length - 1; i >= 0; i--) {
-      if (mem[i].from === from) mem.splice(i, 1);
+      if (mem[i].from === from && mem[i].tenant === tenant) mem.splice(i, 1);
     }
     return;
   }
+  // Los adjuntos no llevan tenant: se borran los de los mensajes de ESTE panel,
+  // y por eso va antes de borrar los mensajes.
+  const { data: conAdjunto } = await sb
+    .from("wa_messages")
+    .select("media_id")
+    .eq("tenant", tenant)
+    .eq("wa_from", from)
+    .not("media_id", "is", null);
+  const mediaIds = (conAdjunto ?? []).map((r) => (r as { media_id: string }).media_id).filter(Boolean);
+  if (mediaIds.length > 0) {
+    const { error } = await sb.from("wa_adjuntos").delete().eq("wa_from", from).in("media_id", mediaIds);
+    if (error) console.error(`Supabase borrar wa_adjuntos de ${from}:`, error.message);
+  }
   const tablas = [
     "wa_messages",
-    "wa_adjuntos",
     "wa_contacts",
-    "wa_conversaciones",
-    "ai_paused",
+    "wa_conversacion_estado",
+    "ai_chat",
     "wa_sucursal", // la sede que había elegido: si vuelve, se le pregunta de nuevo
     "ai_uso_tokens", // su consumo de IA
   ];
   for (const t of tablas) {
-    const { error } = await sb.from(t).delete().eq("wa_from", from);
+    const { error } = await sb.from(t).delete().eq("tenant", tenant).eq("wa_from", from);
     if (error) console.error(`Supabase borrar ${t} de ${from}:`, error.message);
   }
 }

@@ -356,9 +356,20 @@ function toolElegirHotel(tenantId?: TenantId): Anthropic.Tool | null {
   };
 }
 
+// El panel comercial es la DEMO de Mia: lo que agende ahi es de mentira, y con
+// las herramientas de agenda caeria en una agenda real. Se queda con reaccionar
+// (guardar_datos_contacto se agrega aparte, para todos).
+const TOOLS_DEMO_COMERCIAL = TOOLS_BASE.filter((t) => t.name === "reaccionar");
+
 function toolsPara(tenantId?: TenantId): Anthropic.Tool[] {
   const base =
-    tenantId === "hotel" ? TOOLS_HOTEL : tenantId === "yaly" ? TOOLS_YALI : TOOLS_BASE;
+    tenantId === "hotel"
+      ? TOOLS_HOTEL
+      : tenantId === "yaly"
+        ? TOOLS_YALI
+        : tenantId === "comercial"
+          ? TOOLS_DEMO_COMERCIAL
+          : TOOLS_BASE;
   const elegir = toolElegirHotel(tenantId);
   return elegir ? [...base, elegir] : base;
 }
@@ -585,7 +596,7 @@ export async function ejecutarHerramienta(
         const motivo = t.tipo === "membresia" ? "socio" : t.tipo === "pago" ? "pago" : "reclamo";
         traspaso = acciones?.onPasarAPersona
           ? await acciones.onPasarAPersona(motivo, ticket.area)
-          : await pasarAPersona(contexto?.telefono ?? "", motivo, ticket.area);
+          : await pasarAPersona(contexto?.tenantId ?? "yaly", contexto?.telefono ?? "", motivo, ticket.area);
       }
 
       return JSON.stringify({

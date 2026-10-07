@@ -22,10 +22,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Número inválido" }, { status: 400 });
   }
 
-  // 1. Bloquear en WhatsApp (que no vuelva a escribir).
-  const bloqueo = await bloquearNumeroWa(from, { tenant: tenantFromRequest(req) });
-  // 2. Borrar toda la conversación de la base (aunque el bloqueo falle).
-  await borrarConversacionCompleta(from);
+  const tenant = tenantFromRequest(req);
+  // 1. Bloquear en WhatsApp (que no vuelva a escribir) en el número de ESTE panel.
+  const bloqueo = await bloquearNumeroWa(from, { tenant });
+  // 2. Borrar su conversación de ESTE panel (aunque el bloqueo falle). Lo que
+  //    esa persona tenga con otros clientes no se toca.
+  await borrarConversacionCompleta(tenant, from);
 
   return NextResponse.json({ ok: true, bloqueado: bloqueo.ok, error: bloqueo.error });
 }

@@ -119,6 +119,27 @@ export async function conexionPorPhoneNumberId(phoneNumberId: string): Promise<W
   return null;
 }
 
+/**
+ * Enciende o apaga la IA en TODOS los números de un cliente (lo que hace el
+ * "Modo IA" de arriba en un panel con número propio). Solo los de ese cliente.
+ */
+export async function fijarIaDeLosNumerosDe(tenant: string, activa: boolean): Promise<number> {
+  const propias = memoria.get(tenant);
+  if (propias) memoria.set(tenant, propias.map((c) => ({ ...c, iaActiva: activa })));
+  const sb = getSupabase(tenant);
+  if (!sb) return propias?.length ?? 0;
+  const { data, error } = await sb
+    .from("wa_connections")
+    .update({ ia_activa: activa })
+    .eq("tenant", tenant)
+    .select("phone_number_id");
+  if (error) {
+    console.error("[wa-conexiones] fijar IA:", error.message);
+    return 0;
+  }
+  return (data ?? []).length;
+}
+
 export async function borrarConexionWa(tenant: string, phoneNumberId: string): Promise<void> {
   memoria.set(tenant, (memoria.get(tenant) ?? []).filter((c) => c.phoneNumberId !== phoneNumberId));
   const sb = getSupabase(tenant);

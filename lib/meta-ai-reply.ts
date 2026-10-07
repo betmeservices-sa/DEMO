@@ -98,7 +98,7 @@ export async function pasarAPersonaMeta(
   try {
     // Primero se apaga el agente: si se asignara primero y fallara el
     // apagado, quedarían los dos contestando.
-    await setChatOverride(clave, false);
+    await setChatOverride(t.tenant, clave, false);
     await upsertConversacionMeta(t.tenant, clave, {
       asignadoA: para,
       estado: "en_progreso",
@@ -127,7 +127,7 @@ export async function programarRespuestaIAMeta(t: TurnoMeta): Promise<void> {
 
   try {
     // Activa si: override del chat (si existe) o, si no, el interruptor global.
-    if (!(await getChatAiActiva(clave))) return;
+    if (!(await getChatAiActiva(t.tenant, clave))) return;
 
     const cx = await conexionDe(t.tenant, t.pageId);
     if (!cx) return;

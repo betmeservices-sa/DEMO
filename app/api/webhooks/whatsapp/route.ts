@@ -238,7 +238,7 @@ export async function POST(req: Request) {
         // ya se guardaron: si el traspaso falla, el audio igual quedó en el
         // hilo y alguien lo va a ver.
         for (const numero of audiosParaPersona) {
-          const r = await pasarAPersona(numero, "audio", "reservas");
+          const r = await pasarAPersona(tenantActivo, numero, "audio", "reservas");
           if (!r.ok) console.error("[whatsapp] no se pudo pasar el audio a una persona:", r.error);
           // Y no se le contesta con el agente aunque en el mismo lote haya
           // llegado texto: quien manda un audio y un texto seguidos espera que

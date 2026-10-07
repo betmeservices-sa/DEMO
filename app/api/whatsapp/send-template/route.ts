@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   }
   // La IA queda encendida en este chat: cuando la persona conteste la
   // plantilla, Sofía sigue la conversación.
-  await setChatOverride(normalizarDestinoSV(to)?.replace(/\D/g, "") ?? to, true);
+  await setChatOverride(tenantFromRequest(req), normalizarDestinoSV(to)?.replace(/\D/g, "") ?? to, true);
   if (env.id) {
     const texto = body.texto?.trim() || `[plantilla: ${name}]`;
     await addOutbound({ waId: env.id, to, texto, ts: new Date().toISOString(), tenant: tenantFromRequest(req) });

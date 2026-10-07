@@ -236,7 +236,7 @@ export async function GET(req: Request) {
         });
       }
       // Cuando conteste, que le responda Sofía.
-      await encenderIaSiNadieDecidio(destino);
+      await encenderIaSiNadieDecidio(tenant, destino);
       await cerrarCita(tenant, cita.id, "enviado");
       enviados.push(telefono);
       console.log(`[recordatorio] ${tenant} ${telefono}: enviado ${decision.plantilla}.`);

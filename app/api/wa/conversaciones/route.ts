@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getConversaciones, upsertConversacion } from "@/lib/conv-store";
+import { tenantFromRequest } from "@/lib/tenants/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// GET -> { conversaciones: Conversacion[] }
-export async function GET() {
-  const conversaciones = await getConversaciones();
+// GET -> { conversaciones: Conversacion[] } de ESTE panel.
+export async function GET(req: Request) {
+  const conversaciones = await getConversaciones(tenantFromRequest(req));
   return NextResponse.json({ conversaciones });
 }
 
@@ -60,6 +61,6 @@ export async function POST(req: Request) {
     patch.departamento = body.departamento;
   }
 
-  await upsertConversacion(patch);
+  await upsertConversacion(tenantFromRequest(req), patch);
   return NextResponse.json({ ok: true });
 }

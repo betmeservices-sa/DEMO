@@ -14,12 +14,14 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const from = new URL(req.url).searchParams.get("from")?.trim() || "";
   if (!from) return NextResponse.json({ activa: false, overridden: false });
-  const ov = await getChatOverride(from);
-  const activa = await getChatAiActiva(from, await iaDeLosNumerosDe(tenantFromRequest(req)));
+  const tenant = tenantFromRequest(req);
+  const ov = await getChatOverride(tenant, from);
+  const activa = await getChatAiActiva(tenant, from, await iaDeLosNumerosDe(tenant));
   return NextResponse.json({ activa, overridden: ov !== null });
 }
 
-// POST { from, activa } -> fija el override de la IA para esa conversacion.
+// POST { from, activa } -> fija el override de la IA para esa conversacion de
+// ESTE panel. Los otros paneles donde escriba la misma persona no se tocan.
 // activa=true la enciende (aunque el global este off); false la apaga.
 export async function POST(req: Request) {
   let body: { from?: string; activa?: boolean };
@@ -33,6 +35,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Falta 'from'" }, { status: 400 });
   }
   const activa = Boolean(body.activa);
-  await setChatOverride(from, activa);
+  await setChatOverride(tenantFromRequest(req), from, activa);
   return NextResponse.json({ ok: true, activa });
 }
