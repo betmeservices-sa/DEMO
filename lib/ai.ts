@@ -28,6 +28,9 @@ import { sumarUso, USO_CERO, type UsoTokens } from "./tokens-precios";
 import type { MimeImagenIA } from "./wa-media";
 import type { TipoTicket } from "./tickets";
 import { areaYaliPara } from "./tickets-tenant";
+// Lo que se habló por teléfono con esa persona (solo paneles donde la de voz y
+// la de WhatsApp son la misma agente, ver lib/llamada-contexto.ts).
+import { contextoDeLlamadaPara } from "./llamada-contexto";
 import { pasarAPersona, type Motivo, type Traspaso } from "./pasar-a-persona";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -749,7 +752,7 @@ export async function generarRespuesta(
 
   const system = `${systemPromptFor(contexto?.tenantId)}${contextoSucursal(
     contexto?.sucursal ?? null,
-  )}${contexto?.pedirSede ? contextoPedirSede(contexto?.tenantId) : ""}${await contextoPromociones(contexto?.tenantId)}${contexto?.plantillaCrediQ ? contextoCrediQ(contexto.plantillaCrediQ) : ""}\n\n${contextoTemporal(contexto?.tenantId)}`;
+  )}${contexto?.pedirSede ? contextoPedirSede(contexto?.tenantId) : ""}${await contextoPromociones(contexto?.tenantId)}${contexto?.plantillaCrediQ ? contextoCrediQ(contexto.plantillaCrediQ) : ""}${await contextoDeLlamadaPara(contexto?.tenantId, contexto?.telefono)}\n\n${contextoTemporal(contexto?.tenantId)}`;
   const tools: Anthropic.Tool[] = [
     toolGuardarContacto(contexto?.tenantId),
     ...toolsPara(contexto?.tenantId),

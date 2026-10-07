@@ -1,4 +1,4 @@
-// MiAgentIA Comercial: el WhatsApp donde Mia hace la demo a quien viene de la
+// MiAgentIA Comercial: el WhatsApp donde Sofía hace la demo a quien viene de la
 // conferencia. Lo que no puede pasar: que agende en una agenda real, que dé
 // precios, o que arranque como una venta general en vez de la demostración.
 import { describe, expect, it } from "vitest";
@@ -23,7 +23,15 @@ describe("el panel comercial", () => {
   });
 });
 
-describe("Mia en modo demo", () => {
+describe("Sofía en modo demo", () => {
+  it("es Sofía, la misma de la llamada, y sabe usar lo que se habló por teléfono", () => {
+    expect(TENANTS.comercial.ai.nombre).toBe("Sofía");
+    expect(guion).toMatch(/Eres Sofía, la asistente virtual de MiAgentIA/);
+    expect(guion).toMatch(/eres la MISMA Sofía/);
+    expect(guion).toMatch(/SI YA HABLASTE CON ESTA PERSONA POR TELÉFONO/);
+    expect(guion.replace(/MiAgentIA/g, "")).not.toMatch(/Mia/);
+  });
+
   it("sabe que quien escribe viene a probar la demo y la ofrece de entrada", () => {
     expect(guion).toMatch(/Esta conversación ES la demostración/);
     expect(guion).toMatch(/PRIMER MENSAJE/);
