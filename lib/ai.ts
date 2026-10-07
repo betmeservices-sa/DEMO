@@ -28,7 +28,7 @@ import { sumarUso, USO_CERO, type UsoTokens } from "./tokens-precios";
 import { crearMensajePorOpenAI, modeloOpenAI } from "./ai-cliente-openai";
 import type { MimeImagenIA } from "./wa-media";
 import type { TipoTicket } from "./tickets";
-import { areaYaliPara } from "./tickets-tenant";
+import { areaHospitalPara, areaYaliPara, RESPONSABLE_HOSPITAL } from "./tickets-tenant";
 // Lo que se habló por teléfono con esa persona (solo paneles donde la de voz y
 // la de WhatsApp son la misma agente, ver lib/llamada-contexto.ts).
 import { contextoDeLlamadaPara } from "./llamada-contexto";
@@ -373,15 +373,49 @@ function toolElegirHotel(tenantId?: TenantId): Anthropic.Tool | null {
 // para todos).
 const TOOLS_SIN_AGENDA = TOOLS_BASE.filter((t) => t.name === "reaccionar");
 
+// El hospital, ademas, abre casos: lo que Claudia no cierra con el guion es un
+// ticket para su companera (RESPONSABLE_HOSPITAL), que es quien le da
+// seguimiento al paciente. Los tipos son los del hospital, no los del hotel.
+const TOOL_TICKET_HOSPITAL: Anthropic.Tool = {
+  name: "crear_ticket",
+  description:
+    "Abre un caso para tu compañera del hospital, que le da seguimiento a la persona. Llámala UNA sola vez por asunto, cuando: la persona pide una cita de consulta (o reagendar o cancelar una), pone una queja, pide hablar con una persona, o pregunta algo que no está en tu guion (un precio que no tienes, un resultado, una cobertura de seguro, un médico que no conoces). Si responde ok, dile que ya quedó anotado y que tu compañera se comunicará con ella en horario de 8:00 a.m. a 5:00 p.m. Nunca digas la palabra ticket ni el número del caso.",
+  input_schema: {
+    type: "object",
+    properties: {
+      tipo: {
+        type: "string",
+        description: "De qué se trata el caso",
+        enum: ["cita", "cotizacion", "resultados", "facturacion", "queja", "informacion", "otro"],
+      },
+      titulo: {
+        type: "string",
+        description:
+          "Una línea que diga qué necesita, como la escribiría una persona. Ej: 'Cita de control prenatal, prefiere jueves por la tarde'",
+      },
+      detalle: {
+        type: "string",
+        description:
+          "Todo lo que tu compañera necesita para resolverlo sin volver a preguntar: qué pidió, para cuándo, qué se le dijo ya. En frases, no en lista.",
+      },
+      nombre: { type: "string", description: "Nombre de la persona, si lo dio" },
+    },
+    required: ["tipo", "titulo", "detalle"],
+  },
+};
+const TOOLS_HOSPITAL: Anthropic.Tool[] = [...TOOLS_SIN_AGENDA, TOOL_TICKET_HOSPITAL];
+
 function toolsPara(tenantId?: TenantId): Anthropic.Tool[] {
   const base =
     tenantId === "hotel"
       ? TOOLS_HOTEL
       : tenantId === "yaly"
         ? TOOLS_YALI
-        : tenantId === "comercial" || tenantId === "hospital"
-          ? TOOLS_SIN_AGENDA
-          : TOOLS_BASE;
+        : tenantId === "hospital"
+          ? TOOLS_HOSPITAL
+          : tenantId === "comercial"
+            ? TOOLS_SIN_AGENDA
+            : TOOLS_BASE;
   const elegir = toolElegirHotel(tenantId);
   return elegir ? [...base, elegir] : base;
 }
@@ -582,6 +616,7 @@ export async function ejecutarHerramienta(
       urgente?: boolean;
     };
     const tenant = contexto?.tenantId ?? "yaly";
+    const esHospital = tenant === "hospital";
     try {
       // Se carga aquí y no arriba a propósito: el store de tickets arrastra el
       // cliente de Supabase, y este archivo es el que se importa en cada
@@ -593,18 +628,35 @@ export async function ejecutarHerramienta(
         tipo: t.tipo ?? "otro",
         prioridad: t.urgente ? "urgente" : undefined,
         origen: "chat",
-        creadoPor: "Sofía",
+        creadoPor: TENANTS[tenant as TenantId]?.ai.nombre ?? "Sofía",
         contactoNombre: (t.nombre ?? "").trim() || "Sin nombre",
         contactoTelefono: contexto?.telefono,
-        area: areaYaliPara(t.tipo ?? "otro", contexto?.sucursal?.id ?? null),
+        area: esHospital
+          ? areaHospitalPara(t.tipo ?? "otro")
+          : areaYaliPara(t.tipo ?? "otro", contexto?.sucursal?.id ?? null),
+        // En el hospital todo caso nace con dueña: Marielos. Sin esto el
+        // ticket cae en "Sin tomar" y nadie lo ve hasta que alguien revise
+        // la cola.
+        asignadoA: esHospital ? RESPONSABLE_HOSPITAL : undefined,
       });
+      // El chat tambien queda a su nombre, para que lo encuentre desde la
+      // bandeja. Claudia SIGUE contestando: la IA de ese chat se apaga sola
+      // cuando Marielos escriba desde el panel (send con manual=true).
+      if (esHospital && contexto?.telefono) {
+        const { upsertConversacion } = await import("./conv-store");
+        await upsertConversacion(tenant, {
+          wa_from: contexto.telefono,
+          asignado_a: RESPONSABLE_HOSPITAL,
+          estado: "en_progreso",
+        });
+      }
       // Un socio no se atiende con un ticket y ya: hay que SALIR del chat.
       //
       // Antes solo se abria el caso. Olga recibia el ticket mientras Sofia
       // seguia conversando con el socio, asi que el socio hablaba con la
       // maquina y con Olga a la vez, y con precios distintos.
       let traspaso: Traspaso | null = null;
-      if (t.tipo === "membresia" || t.tipo === "pago" || t.tipo === "queja") {
+      if (!esHospital && (t.tipo === "membresia" || t.tipo === "pago" || t.tipo === "queja")) {
         const motivo = t.tipo === "membresia" ? "socio" : t.tipo === "pago" ? "pago" : "reclamo";
         traspaso = acciones?.onPasarAPersona
           ? await acciones.onPasarAPersona(motivo, ticket.area)

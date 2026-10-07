@@ -98,6 +98,29 @@ const YALI: ConfigTickets = {
 
 const POR_TENANT: Record<string, ConfigTickets> = { hospital: HOSPITAL, yaly: YALI };
 
+/**
+ * Quién recibe TODOS los casos que abre Claudia en el hospital.
+ *
+ * Pedido del usuario (2026-10-07): lo que Claudia no resuelve con el guion es
+ * un ticket para Marielos, que es quien mira ese tablero. Es su ficha en el
+ * seed del tenant (lib/tenants/seeds/hospital.ts) y el staffId de su cuenta.
+ */
+export const RESPONSABLE_HOSPITAL = "s2";
+
+/** A qué área cae un caso del hospital según de qué se trata. */
+export function areaHospitalPara(tipo: TipoTicket): string {
+  switch (tipo) {
+    case "cita":
+      return "recepcion";
+    case "resultados":
+      return "imagenes";
+    case "facturacion":
+      return "caja";
+    default:
+      return "atencion";
+  }
+}
+
 export function configTickets(tenant: string): ConfigTickets {
   return POR_TENANT[tenant] ?? HOSPITAL;
 }

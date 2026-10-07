@@ -104,9 +104,9 @@ describe("herramientas que ve la IA", () => {
     }
   });
 
-  it("el hospital no agenda: atiende pacientes reales y esa agenda no es la suya", async () => {
+  it("el hospital no agenda, pero abre casos: lo que Claudia no resuelve es un ticket para su compañera", async () => {
     const de = await herramientas();
-    expect(de("hospital")).toEqual(["guardar_datos_contacto", "reaccionar"]);
+    expect(de("hospital")).toEqual(["guardar_datos_contacto", "reaccionar", "crear_ticket"]);
   });
 });
 
