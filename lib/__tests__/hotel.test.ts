@@ -97,11 +97,16 @@ describe("herramientas que ve la IA", () => {
 
   it("los demás clientes conservan sus herramientas de citas", async () => {
     const de = await herramientas();
-    for (const t of ["hospital", "grupoq", "excel", "miagentia"] as const) {
+    for (const t of ["grupoq", "excel", "miagentia"] as const) {
       expect(de(t)).toContain("consultar_disponibilidad");
       expect(de(t)).toContain("confirmar_cita");
       expect(de(t)).not.toContain("reservar_habitacion");
     }
+  });
+
+  it("el hospital no agenda: atiende pacientes reales y esa agenda no es la suya", async () => {
+    const de = await herramientas();
+    expect(de("hospital")).toEqual(["guardar_datos_contacto", "reaccionar"]);
   });
 });
 

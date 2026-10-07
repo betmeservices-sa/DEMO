@@ -204,6 +204,9 @@ export interface TenantAi {
   systemPrompt: string;
   /** Cómo se llama el agente ("Sofía"). Se pinta en la bandeja como "Sofía (IA)". */
   nombre?: string;
+  // "luna" = contesta con luna de OpenAI (lib/ai-cliente-openai.ts), el modelo
+  // de los agentes en vivo. Sin esto, Claude (AI_MODEL).
+  modelo?: "luna";
   // Tope DURO de mensajes que el agente manda en una conversación. Al llegar,
   // se envía un cierre y el chat pasa a una persona. Default: LIMITE_MENSAJES_IA_DEFAULT.
   limiteMensajes?: number;
