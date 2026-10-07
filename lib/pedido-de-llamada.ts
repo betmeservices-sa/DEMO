@@ -147,6 +147,23 @@ export const PREGUNTA_VOLVER = "¿Quiere que le llame de vuelta ahora?";
 /** Lo mismo, de tú. También es marca. */
 export const PREGUNTA_VOLVER_TU = "¿Quieres que te llame de vuelta ahora?";
 
+/** "+50325054607" -> "2505-4607". Un número que no es de 8 dígitos locales, como vino. */
+export function lineaLegible(numero: string): string {
+  const d = (numero ?? "").replace(/\D/g, "");
+  const local = d.length === 11 && d.startsWith("503") ? d.slice(3) : d;
+  return local.length === 8 ? `${local.slice(0, 4)}-${local.slice(4)}` : (numero ?? "").trim();
+}
+
+/**
+ * El aviso de que ya se le marca, con el número del que le va a entrar, para
+ * que conteste un número que no conoce. Sin número, el aviso tal cual.
+ */
+export function avisoConLinea(aviso: string, numero: string | null | undefined, tuteo?: boolean): string {
+  const linea = numero ? lineaLegible(numero) : "";
+  if (!linea) return aviso;
+  return `${aviso} La llamada ${tuteo ? "te" : "le"} va a entrar del ${linea}.`;
+}
+
 /**
  * Con qué marca y trato se presenta la llamada que pidieron por escrito. Sin
  * esto, como siempre: "Sofía de CrediQ", de usted.

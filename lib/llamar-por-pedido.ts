@@ -18,7 +18,7 @@ import { getContacto } from "./contacts-store";
 import { getConversaciones } from "./conv-store";
 import { normalizarTelefono } from "./memoria-llamadas";
 import { normalizarDestinoSV } from "./phone";
-import { decidirLlamada, esAfirmativo, intencionDeLlamada, type MensajeDelHilo } from "./pedido-de-llamada";
+import { avisoConLinea, decidirLlamada, esAfirmativo, intencionDeLlamada, type MensajeDelHilo } from "./pedido-de-llamada";
 import { assistantCampanasDeTenant, esDelTenant } from "./tenants/voz";
 import type { TenantId } from "./tenants/types";
 import { TENANTS } from "./tenants";
@@ -109,21 +109,28 @@ export async function atenderPedidoDeLlamada(opts: {
   }
 
   const agentes = await fetchVapiAgentes();
-  const phoneNumberId = (
+  const linea = (
     agentes.find((a) => a.id === assistantId)?.numeros ??
     agentes.filter((a) => esDelTenant(a.id, tenant)).flatMap((a) => a.numeros)
-  )[0]?.id;
+  )[0];
+  const phoneNumberId = linea?.id;
   if (!phoneNumberId) return "no se llamó: no hay ninguna línea para marcar";
+
+  // Donde la de voz y la de WhatsApp son la misma Sofía, el aviso dice además
+  // de qué número le va a entrar ("del 2505-4607"), para que conteste un número
+  // que no tiene guardado. Los demás paneles, con el aviso de siempre.
+  const mismaAgente = TENANTS[tenant].voz?.mismaAgente;
+  const aviso = mismaAgente ? avisoConLinea(decision.aviso, linea?.numero, mismaAgente.tuteo) : decision.aviso;
 
   // 1. El aviso por escrito. Va primero, y si falla no se marca: una llamada
   // que llega sin haber dicho nada es peor que una llamada que no llega.
-  const aviso = await enviarTextoWa(telefono, decision.aviso, { tenant });
-  if (!aviso.ok) return `no se llamó: no se pudo avisar por escrito (${aviso.error ?? "sin detalle"})`;
-  if (aviso.id) {
+  const envioAviso = await enviarTextoWa(telefono, aviso, { tenant });
+  if (!envioAviso.ok) return `no se llamó: no se pudo avisar por escrito (${envioAviso.error ?? "sin detalle"})`;
+  if (envioAviso.id) {
     await addOutbound({
-      waId: aviso.id,
+      waId: envioAviso.id,
       to: telefono,
-      texto: decision.aviso,
+      texto: aviso,
       ts: new Date().toISOString(),
       tenant,
     });

@@ -6,7 +6,9 @@ import {
   AVISO_LLAMANDO,
   AVISO_LLAMANDO_TU,
   PREGUNTA_VOLVER_TU,
+  avisoConLinea,
   decidirLlamada,
+  lineaLegible,
   type EntradaLlamada,
 } from "@/lib/pedido-de-llamada";
 import { TENANTS } from "@/lib/tenants";
@@ -84,5 +86,33 @@ describe("sin presentación, todo igual que antes", () => {
     if (!d.llamar) throw new Error("debía llamar");
     expect(d.primerMensaje).toMatch(/le saluda Sofía de CrediQ/);
     expect(d.aviso).toBe(`Ana, con gusto: ${AVISO_LLAMANDO}.`);
+  });
+});
+
+describe("el aviso dice de qué número entra la llamada", () => {
+  it("la línea de Vapi se escribe como se lee en El Salvador", () => {
+    expect(lineaLegible("+50325054607")).toBe("2505-4607");
+    expect(lineaLegible("25054607")).toBe("2505-4607");
+  });
+
+  it("de tú en el panel comercial", () => {
+    expect(avisoConLinea(`Ana, con gusto: ${AVISO_LLAMANDO_TU}.`, "+50325054607", true)).toBe(
+      `Ana, con gusto: ${AVISO_LLAMANDO_TU}. La llamada te va a entrar del 2505-4607.`,
+    );
+  });
+
+  it("sin línea, el aviso tal cual; y sigue sirviendo de marca para no marcar dos veces", () => {
+    expect(avisoConLinea("Con gusto: x.", null, true)).toBe("Con gusto: x.");
+    const conLinea = avisoConLinea(`Ana, con gusto: ${AVISO_LLAMANDO_TU}.`, "+50325054607", true);
+    const d = decidirLlamada({
+      ...base,
+      presentacion: comercial,
+      hilo: [...base.hilo, { direction: "out", texto: conLinea, ts: "2026-10-07T18:00:03Z" }],
+    });
+    expect(d.llamar).toBe(false);
+  });
+
+  it("el guion de WhatsApp también lo sabe", () => {
+    expect(TENANTS.comercial.ai.systemPrompt).toMatch(/desde el 2505-4607/);
   });
 });
