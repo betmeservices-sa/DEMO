@@ -15,6 +15,7 @@ import { getEstadoSucursal, guardarSucursal } from "@/lib/sucursal-store";
 import { pasarAPersona } from "@/lib/pasar-a-persona";
 import { registrarConsumo } from "@/lib/tokens-store";
 import { USO_CERO } from "@/lib/tokens-precios";
+import { estadosDelWebhook, guardarEstados } from "@/lib/wa-estados";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -105,6 +106,15 @@ export async function POST(req: Request) {
   // (se la baja y se la manda al modelo en lib/ai-reply). Si no, la imagen se
   // guarda y la atiende una persona, como siempre.
   const veImagenes = TENANTS[tenantActivo].ai.imagenes === true;
+
+  // Entregado / leído / fallido de lo que mandamos. Meta acepta un envío aunque
+  // después no lo pueda entregar, así que esto es lo único que confirma que un
+  // mensaje llegó. En su propio try: un fallo acá no puede tumbar los entrantes.
+  try {
+    await guardarEstados(estadosDelWebhook(payload), tenantActivo);
+  } catch (err) {
+    console.error("[whatsapp] no se guardaron los estados:", err);
+  }
 
   // El texto viaja junto al id porque el gatillo de llamada lo necesita, y
   // volver a leerlo de la base sería ir a buscar lo que ya se tiene en mano.
