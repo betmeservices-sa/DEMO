@@ -225,5 +225,10 @@ export const nissanTenant: TenantConfig = {
     // Los agentes de CrediQ (solicitudes y reactivacion) son de credito y no
     // tienen nada que ofrecerle a quien viene a ver un carro.
     assistantIdCampanas: "cdcac0e6-f47b-4979-9113-b315946caaf7",
+    // Cuando alguien pide por WhatsApp que lo llamen, la llamada se presenta
+    // como Sofía de Nissan, de usted, y el aviso dice de qué línea le entra.
+    // Sin esto salía con el saludo por defecto, "Sofía de CrediQ"
+    // (2026-10-07, Mario le pidió la llamada al 6970 6697).
+    mismaAgente: { marca: "Nissan" },
   },
 };

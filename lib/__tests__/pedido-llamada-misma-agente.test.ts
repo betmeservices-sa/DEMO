@@ -116,3 +116,15 @@ describe("el aviso dice de qué número entra la llamada", () => {
     expect(TENANTS.comercial.ai.systemPrompt).toMatch(/desde el 2505-4607/);
   });
 });
+
+describe("Nissan marca con su Sofía", () => {
+  it("la llamada que pidieron por WhatsApp se presenta como Sofía de Nissan, de usted", () => {
+    const pres = TENANTS.nissan.voz?.mismaAgente;
+    expect(pres?.marca).toBe("Nissan");
+    const d = decidirLlamada({ ...base, presentacion: pres });
+    expect(d.llamar).toBe(true);
+    if (!d.llamar) return;
+    expect(d.primerMensaje).toContain("le saluda Sofía de Nissan");
+    expect(d.primerMensaje).not.toContain("CrediQ");
+  });
+});
