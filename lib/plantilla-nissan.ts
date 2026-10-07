@@ -1,4 +1,4 @@
-// El WhatsApp que sale al minuto de colgar con Sofía de Nissan.
+// El WhatsApp que sale al colgar con Sofía de Nissan.
 //
 // POR QUÉ EXISTE. El agente cierra la llamada diciendo que sigue por WhatsApp y
 // no le escribía nadie: el mismo hueco que tenía CrediQ antes de
@@ -6,10 +6,11 @@
 // crédito se le mandan los requisitos; a quien preguntó por un carro se le
 // ofrece lo que sigue (fotos, precio, prueba de manejo).
 //
-// POR QUÉ AL MINUTO Y NO AL COLGAR. Al colgar, la persona todavía está
-// guardando el teléfono. Al minuto ya lo tiene en la mano y el mensaje llega a
-// una pantalla que está mirando. Es el mismo minuto que usa CrediQ, y sale de
-// la misma cola (lib/recordatorios-agenda.ts).
+// AL COLGAR, YA NO AL MINUTO (2026-10-07, pedido del usuario). Antes esperaba
+// un minuto en la cola (lib/recordatorios-agenda.ts) y, como la cola se atiende
+// una vez por minuto, llegaba entre uno y dos minutos después de colgar. Con
+// ESPERA_MIN en 0, el webhook de fin de llamada la manda en el acto; la cola
+// queda solo de respaldo si Meta falla en ese momento.
 //
 // LA DECISIÓN ES PURA para poder probarla sin red ni reloj. Cada envío es un
 // WhatsApp a una persona real y se cobra, así que las razones para NO mandar
@@ -111,8 +112,8 @@ export const DATOS_COTIZACION: Plantilla = {
  */
 export const ACTIVA: Plantilla = DATOS_COTIZACION;
 
-/** Minutos entre colgar y el mensaje. */
-export const ESPERA_MIN = 1;
+/** Minutos entre colgar y el mensaje. 0 = se manda en el acto, al colgar. */
+export const ESPERA_MIN = 0;
 
 /**
  * Qué se pone en {{2}} cuando la llamada no capturó el modelo.

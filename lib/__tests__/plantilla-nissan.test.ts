@@ -25,7 +25,7 @@ describe("a quién se le escribe", () => {
     if (!d.enviar) return;
     expect(d.plantilla).toBe(ACTIVA.nombre);
     expect(d.variables[0]).toBe("Ana");
-    expect(d.minutos).toBe(1);
+    expect(d.minutos).toBe(0);
   });
 
   it("también al que no dijo qué modelo: ahí es donde más falta hace", () => {

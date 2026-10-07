@@ -305,7 +305,23 @@ async function agendarSeguimiento(
   const d = decidir(conNombre, paraWhatsApp);
   if (!d.enviar) return `no se agendó: ${d.motivo}`;
 
-  await agendarRecordatorio(tenant, paraWhatsApp, d.minutos, "plantilla", {
+  // Sin espera: se manda ya, en este mismo webhook de fin de llamada, igual que
+  // la mandaría la cola. Si Meta falla en este momento, cae a la cola para que
+  // el vigía la reintente en el minuto siguiente.
+  if (d.minutos <= 0) {
+    const env = await enviarPlantilla(paraWhatsApp, d.plantilla, d.idioma, d.variables, { tenant });
+    if (env.ok) {
+      if (env.id) {
+        await addOutbound({ waId: env.id, to: paraWhatsApp, texto: d.texto, ts: new Date().toISOString(), tenant });
+      }
+      // Cuando conteste, que le responda Sofía.
+      await encenderIaSiNadieDecidio(tenant, paraWhatsApp);
+      return `enviada al colgar (${d.plantilla})`;
+    }
+    console.error(`[seguimiento] ${tenant} ${paraWhatsApp}: ${env.error ?? "sin detalle"}; queda en la cola`);
+  }
+
+  await agendarRecordatorio(tenant, paraWhatsApp, Math.max(d.minutos, 1), "plantilla", {
     plantilla: d.plantilla,
     idioma: d.idioma,
     variables: d.variables,
