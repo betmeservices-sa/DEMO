@@ -62,6 +62,14 @@ interface WaMessage {
   audio?: WaMedia;
   sticker?: WaMedia;
   video?: WaMedia;
+  // El botón de respuesta rápida que tocaron en una plantilla ("Sí, continuar").
+  button?: { text?: string; payload?: string };
+  // Botón o lista de un mensaje interactivo.
+  interactive?: {
+    type?: string;
+    button_reply?: { id?: string; title?: string };
+    list_reply?: { id?: string; title?: string };
+  };
   // Solo llega cuando el clic vino de un anuncio de click to WhatsApp: trae el
   // id del anuncio, su titular y su cuerpo. Con eso se sabe de qué hotel viene
   // sin preguntárselo (ver lib/origen-sede.ts).
@@ -171,6 +179,13 @@ export async function POST(req: Request) {
           } else if (m.type === "video") {
             texto = m.video?.caption ? `[video] ${m.video.caption}` : "[video]";
             adjunto = { tipo: "video", media: m.video };
+          } else if (m.type === "button" && (m.button?.text || m.button?.payload)) {
+            // Tocaron un botón de una plantilla. Antes caía en "no soportado" y
+            // se descartaba en silencio: ni se guardaba ni contestaba nadie.
+            texto = m.button.text || m.button.payload || "";
+          } else if (m.type === "interactive" && (m.interactive?.button_reply || m.interactive?.list_reply)) {
+            const r = m.interactive.button_reply ?? m.interactive.list_reply;
+            texto = r?.title || r?.id || "";
           } else {
             continue; // tipos no soportados aún (ubicación, contactos, etc.)
           }
@@ -229,7 +244,9 @@ export async function POST(req: Request) {
           // Qué dispara a la IA: el TEXTO siempre, y la IMAGEN cuando el
           // cliente tiene la visión encendida. PDF, audios y stickers los sigue
           // atendiendo un humano (el agente no puede abrirlos ni escucharlos).
-          if (m.type === "text" || (m.type === "image" && veImagenes)) {
+          // Un botón tocado es una respuesta escrita más: también la contesta.
+          const esRespuesta = m.type === "text" || m.type === "button" || m.type === "interactive";
+          if (esRespuesta || (m.type === "image" && veImagenes)) {
             entrantes.push({ from: m.from, wamid: m.id, texto });
           }
         }

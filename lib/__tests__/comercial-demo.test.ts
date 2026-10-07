@@ -27,7 +27,19 @@ describe("Mia en modo demo", () => {
   it("sabe que quien escribe viene a probar la demo y la ofrece de entrada", () => {
     expect(guion).toMatch(/Esta conversación ES la demostración/);
     expect(guion).toMatch(/PRIMER MENSAJE/);
-    expect(guion).toMatch(/¿Qué le gustaría ver\?/);
+    expect(guion).toMatch(/¿Qué te gustaría ver\?/);
+  });
+
+  it("si el chat lo abrió la plantilla, no se vuelve a presentar", () => {
+    expect(guion).toMatch(/SI EL CHAT EMPEZÓ CON NUESTRO MENSAJE/);
+    expect(guion).toMatch(/NO te vuelvas a presentar/);
+    expect(guion).toMatch(/"Atender a mis clientes"/);
+  });
+
+  it("ofrece CRM o solución a la medida, y no dice cuánto dura la reunión", () => {
+    expect(guion).toMatch(/conectarnos a tu CRM/);
+    expect(guion).toMatch(/solución nueva a la medida/);
+    expect(guion).toMatch(/No digas cuánto dura la reunión/);
   });
 
   it("no da precios y marca los datos de ejemplo", () => {
