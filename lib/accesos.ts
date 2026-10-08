@@ -7,7 +7,7 @@
 // bandeja sondea cada pocos segundos), pero se escribe a lo sumo una vez por
 // minuto por usuario para no llenar la base de escrituras iguales.
 
-import { getSupabase, publicoDeProyectoPropio, tenantsConProyectoPropio } from "./supabase";
+import { getSupabase, publicoDeProyectoEscribible, publicoDeProyectoPropio, tenantsConProyectoPropio } from "./supabase";
 
 export interface Acceso {
   ts: string;
@@ -48,7 +48,8 @@ export function ipDe(req: Request): string | null {
 export async function registrarAcceso(a: Omit<Acceso, "ts">): Promise<void> {
   const fila: Acceso = { ...a, ts: new Date().toISOString() };
   try {
-    const sb = getSupabase();
+    // Un cliente con proyecto propio anota sus accesos allá.
+    const sb = publicoDeProyectoEscribible(a.tenant) ?? getSupabase();
     if (!sb) memAccesos.unshift(fila);
     const { error } = !sb
       ? { error: null }
@@ -88,7 +89,7 @@ export async function tocarActividad(
     ultimoHost: a.host ?? null,
   };
   try {
-    const sb = getSupabase();
+    const sb = publicoDeProyectoEscribible(a.tenant) ?? getSupabase();
     if (!sb) {
       memActividad.set(a.usuario, fila);
       return;

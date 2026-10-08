@@ -10,7 +10,7 @@
 // despliegue, que es justamente lo que esta tabla vino a arreglar, así que el
 // aviso importa: es la señal de que la migración no se aplicó.
 
-import { getSupabase } from "./supabase";
+import { getSupabase, tenantsConProyectoEscribible } from "./supabase";
 
 const TABLA = "recordatorios_agendados";
 
@@ -113,18 +113,41 @@ export async function citasVencidas(
   ahora: Date,
   tipo?: TipoCita,
 ): Promise<CitaRecordatorio[]> {
+  // Sin tenant la cola es de todos, y "todos" incluye a los clientes que viven
+  // en su propio proyecto: su cola está allá, no en el compartido.
+  if (!tenant) {
+    const propios = tenantsConProyectoEscribible();
+    const listas = await Promise.all([
+      leerVencidas(undefined, ahora, tipo, propios),
+      ...propios.map((t) => leerVencidas(t, ahora, tipo, [])),
+    ]);
+    return listas
+      .flat()
+      .sort((a, b) => a.enviarA.localeCompare(b.enviarA))
+      .slice(0, 50);
+  }
+  return leerVencidas(tenant, ahora, tipo, []);
+}
+
+async function leerVencidas(
+  tenant: string | undefined,
+  ahora: Date,
+  tipo: TipoCita | undefined,
+  sin: string[],
+): Promise<CitaRecordatorio[]> {
   const sb = getSupabase(tenant);
   if (!sb) {
     aviso("vencidas");
     return [...memoria.values()].filter(
       (c) =>
         (!tenant || c.tenant === tenant) &&
+        !sin.includes(c.tenant) &&
         c.enviarA <= ahora.toISOString() &&
         (!tipo || c.tipo === tipo),
     );
   }
   const sel = sb.from(TABLA).select("id, tenant, telefono, enviar_a, creado, tipo, datos");
-  const base = tenant ? sel.eq("tenant", tenant) : sel;
+  const base = tenant ? sel.eq("tenant", tenant) : sin.length ? sel.not("tenant", "in", `(${sin.join(",")})`) : sel;
   const conTipo = tipo ? base.eq("tipo", tipo) : base;
   const { data, error } = await conTipo
     .is("procesado_ts", null)

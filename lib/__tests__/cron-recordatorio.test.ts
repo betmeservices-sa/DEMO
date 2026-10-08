@@ -15,7 +15,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/supabase", () => ({ getSupabase: () => null }));
+vi.mock("@/lib/supabase", () => ({ getSupabase: () => null, tenantsConProyectoEscribible: () => [] }));
 
 const enviadas: { to: string; name: string; variables: string[] }[] = [];
 const SIN_NUMERO = "Este cliente no tiene un número de WhatsApp conectado.";

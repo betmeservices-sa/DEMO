@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Sin base: el módulo trabaja en memoria, que es lo que se prueba acá.
-vi.mock("../supabase", () => ({ getSupabase: () => null }));
+vi.mock("../supabase", () => ({ getSupabase: () => null, publicoDeProyectoEscribible: () => null, publicoDeProyectoPropio: () => null, tenantsConProyectoPropio: () => [] }));
 import { _vaciarAccesos, actividadDeUsuarios, estaActivo, listarAccesos, registrarAcceso, tocarActividad } from "../accesos";
 
 beforeEach(() => _vaciarAccesos());
