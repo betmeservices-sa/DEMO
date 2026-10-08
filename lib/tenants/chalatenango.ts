@@ -181,7 +181,7 @@ export const chalatenangoTenant: TenantConfig = {
   whatsapp: {},
   // La agente de voz de demostracion: un guion maestro y cuatro caminos de
   // juego de roles (lib/chalatenango-agente.ts, se sube con
-  // scripts/crear-agente-chalatenango.mjs). Sin numero asignado.
+  // scripts/crear-agente-chalatenango.mjs). Contesta en la linea 2505-4608.
   voz: { assistantId: CHALATENANGO_ASSISTANT_ID, nombre: NOMBRE_AGENTE },
   shell: "flotante",
   areas: ["consultas", "cobranza", "tarjetas"],

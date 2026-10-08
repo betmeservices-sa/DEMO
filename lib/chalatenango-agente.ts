@@ -20,7 +20,7 @@
 
 export const NOMBRE_AGENTE = "Elena";
 
-/** El asistente en Vapi (cuenta BetMe). Sin numero asignado. */
+/** El asistente en Vapi (cuenta BetMe). Linea +503 2505-4608 (trunk Tigo, desde 2026-10-08). */
 export const CHALATENANGO_ASSISTANT_ID = "ea7b527e-f0ed-46ce-9ae4-e8b7b4feaca4";
 
 export const PRIMER_MENSAJE =
