@@ -1,0 +1,98 @@
+# Vigilancia de los demos de demo.miagentia.com, cada hora.
+#
+# Entra a cada panel con su usuario y clave (los de DEMO_LOGINS), en un
+# navegador de verdad, recorre cada pantalla del menu y abre un chat de la
+# bandeja (scripts/vigilancia/vigilar.mjs). Si algo falla, abre un issue
+# "Vigilancia: demo caido" mencionando a @bryan-apg con el detalle; mientras
+# siga fallando, comenta en ese mismo issue; cuando vuelve a pasar todo, lo
+# cierra solo.
+name: Vigilancia de demos
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: vigilancia-demos
+  cancel-in-progress: false
+
+jobs:
+  vigilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Playwright va aparte de las dependencias de la app: no hace falta
+      # instalar Next ni el resto para mirar el sitio publicado.
+      - name: Instalar el navegador
+        run: |
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw"
+          npm init -y >/dev/null
+          npm i --no-audit --no-fund playwright@1.63.0 >/dev/null
+          npx playwright install --with-deps chromium
+
+      - name: Revisar cada panel
+        id: vigilar
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw/node_modules/playwright-core
+          VIGILANCIA_REPORTE: ${{ runner.temp }}/vigilancia-reporte.json
+        run: |
+          set +e
+          node scripts/vigilancia/vigilar.mjs 2>&1 | tee "$RUNNER_TEMP/salida.txt"
+          codigo=${PIPESTATUS[0]}
+          echo "codigo=$codigo" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Guardar el reporte
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vigilancia-reporte
+          path: |
+            ${{ runner.temp }}/vigilancia-reporte.json
+            ${{ runner.temp }}/salida.txt
+          retention-days: 7
+
+      - name: Avisar o cerrar el aviso
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CODIGO: ${{ steps.vigilar.outputs.codigo }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITULO="Vigilancia: demo caido"
+          abierto=$(gh issue list --state open --search "\"$TITULO\" in:title" --json number --jq '.[0].number')
+          hora=$(TZ=America/El_Salvador date "+%d/%m %H:%M")
+          if [ "$CODIGO" = "0" ]; then
+            if [ -n "$abierto" ]; then
+              gh issue close "$abierto" --comment "Resuelto: todos los paneles vuelven a servir ($hora hora de El Salvador). $RUN_URL"
+            fi
+            exit 0
+          fi
+          {
+            echo "La vigilancia de las $hora (hora de El Salvador) encontro paneles que NO sirven."
+            echo
+            echo '```'
+            resumen=$(sed -n '/logins, /,$p' "$RUNNER_TEMP/salida.txt" | head -80)
+            [ -n "$resumen" ] || resumen=$(tail -40 "$RUNNER_TEMP/salida.txt")
+            echo "$resumen"
+            echo '```'
+            echo
+            echo "Corrida: $RUN_URL"
+          } > "$RUNNER_TEMP/cuerpo.md"
+          if [ -n "$abierto" ]; then
+            gh issue comment "$abierto" --body-file "$RUNNER_TEMP/cuerpo.md"
+          else
+            { echo "@bryan-apg"; echo; cat "$RUNNER_TEMP/cuerpo.md"; } > "$RUNNER_TEMP/cuerpo2.md"
+            gh issue create --title "$TITULO" --body-file "$RUNNER_TEMP/cuerpo2.md"
+          fi
+          exit 1
