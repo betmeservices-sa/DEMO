@@ -49,7 +49,10 @@ export async function abrirMediaWa(
   // Los archivos son de la cuenta que los recibió: se bajan con su token.
   const c = await credencialesWa(tenant);
   const token = c?.token;
-  if (!token) return { ok: false, error: "Faltan credenciales de WhatsApp", status: 500 };
+  // Un panel sin WhatsApp conectado (o que lo tuvo y ya no) no puede bajar los
+  // archivos de sus chats viejos. No es una falla del servidor: el archivo no
+  // está disponible, y la burbuja lo dice así en vez de mostrar un ícono roto.
+  if (!token) return { ok: false, error: "Archivo no disponible: el panel no tiene WhatsApp conectado", status: 404 };
   if (!id) return { ok: false, error: "Falta el id del archivo", status: 400 };
   if (!MEDIA_ID_VALIDO.test(id)) return { ok: false, error: "Id invalido", status: 400 };
 
@@ -57,6 +60,11 @@ export async function abrirMediaWa(
   const metaRes = await fetch(`https://graph.facebook.com/${VERSION}/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  // Meta guarda los archivos unos 30 días: un media_id viejo contesta 400/404.
+  // Eso es "ya no existe" (410), no una caída de Meta (502).
+  if (metaRes.status === 400 || metaRes.status === 404) {
+    return { ok: false, error: "El archivo ya no está disponible en WhatsApp", status: 410 };
+  }
   if (!metaRes.ok) return { ok: false, error: "No se pudo resolver el archivo", status: 502 };
   const meta = (await metaRes.json().catch(() => ({}))) as { url?: string; mime_type?: string };
   if (!meta.url) return { ok: false, error: "Meta no devolvio URL del archivo", status: 502 };

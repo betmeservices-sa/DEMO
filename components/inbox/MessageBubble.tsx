@@ -18,6 +18,12 @@ function MediaContenido({ media }: { media: MessageMedia }) {
   // Las semillas de demostración traen el archivo servido por nosotros; lo que
   // llega de WhatsApp pasa por el proxy, que es quien tiene el token.
   const src = media.url ?? `/api/whatsapp/media/${media.id}`;
+  // Un archivo viejo que WhatsApp ya borró, o de un panel sin WhatsApp
+  // conectado: se dice en vez de dejar un ícono roto.
+  const [noDisponible, setNoDisponible] = useState(false);
+  if (noDisponible) {
+    return <span className="text-xs italic opacity-70">Archivo no disponible</span>;
+  }
   if (media.tipo === "audio") return <NotaDeVoz src={src} />;
   if (media.tipo === "video") {
     return <video controls preload="none" src={src} className="max-h-64 max-w-full rounded-lg" />;
@@ -26,7 +32,7 @@ function MediaContenido({ media }: { media: MessageMedia }) {
     return (
       <a href={src} target="_blank" rel="noreferrer">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="Adjunto" className="max-h-64 max-w-full rounded-lg" />
+        <img src={src} alt="Adjunto" className="max-h-64 max-w-full rounded-lg" onError={() => setNoDisponible(true)} />
       </a>
     );
   }
