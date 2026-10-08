@@ -85,8 +85,10 @@ describe("tenant promerica", () => {
     expect(TENANTS.promerica.seed.socialStats).toHaveLength(0);
   });
 
+  // El hospital ya no está: desde 2026-10-07 atiende pacientes reales y su seed
+  // no trae redes de muestra (lo que se ve ahí tiene que ser de verdad).
   it("los otros clientes SÍ conservan sus redes", () => {
-    for (const t of ["grupoq", "hospital", "inmobiliaria"] as const) {
+    for (const t of ["grupoq", "inmobiliaria"] as const) {
       expect(TENANTS[t].seed.socialPosts.length).toBeGreaterThan(0);
     }
   });
