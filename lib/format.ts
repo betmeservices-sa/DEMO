@@ -103,8 +103,11 @@ export function inicialesStaff(id?: string): string {
   return staffById.get(id)?.iniciales ?? "?";
 }
 
+// Un chat puede traer un departamento que este panel no tiene (un dato viejo o
+// copiado de otro panel). Antes eso devolvía undefined y la bandeja entera se
+// caía al leerle el color; ahora cae al departamento por defecto del panel.
 export function depto(id: DepartmentId) {
-  return deptById.get(id)!;
+  return deptById.get(id) ?? deptById.get(activeTenant().defaultDepartment) ?? departments[0];
 }
 
 // Metadatos de un miembro del staff para chat interno (nombre, iniciales, color).
