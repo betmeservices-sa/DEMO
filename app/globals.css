@@ -44,15 +44,8 @@
 }
 
 /* Hospital Centro Ginecológico — azul + verde de su sitio. */
-[data-tenant="hospital"] {
-  --brand-blue: #0067f8;
-  --brand-blue-dark: #0a4fb8;
-  --brand-green: #4ac12f;
-  --brand-red: #d64545; /* rojo neutro para estados (el hospital no tiene rojo de marca) */
-  --brand-accent: #0067f8; /* acento del hospital = su azul */
-  --brand-accent-soft: #e8f1ff;
-  --font-app: 'Plus Jakarta Sans', system-ui, sans-serif;
-}
+/* El tema del hospital vive más abajo, DESPUÉS del bloque de marca unificada:
+   es un cliente real y va con sus propios colores. */
 
 /* MiAgentIA: violeta de la landing (miagentia.com) + cian como acento */
 [data-tenant="miagentia"],
@@ -485,6 +478,23 @@
   --color-surface: var(--surface);
   --color-card: var(--card);
   --color-line: var(--border);
+}
+
+/* Hospital Centro Ginecológico: cliente REAL desde 2026-10-07 (Claudia atiende
+   su WhatsApp). Vuelve a su marca, azul y verde, sobre el tema oscuro. Va
+   DESPUÉS del bloque de marca unificada para ganarle con la misma
+   especificidad, como los otros clientes con tema propio.
+   El azul de marca es #0067f8; para texto sobre las tarjetas oscuras (#0d0d18)
+   se usa un tono apenas más claro, #1f78ff, que da 4.5:1 (el original da 3.9:1).
+   Como relleno con texto blanco (menú activo, botones) da 4.2:1. */
+[data-tenant="hospital"] {
+  --brand-blue: #1f78ff;
+  --brand-blue-dark: #0a4fb8;
+  --brand-green: #4ac12f;
+  --brand-red: #d64545; /* rojo neutro para estados (el hospital no tiene rojo de marca) */
+  --brand-accent: #1f78ff; /* acento del hospital = su azul */
+  --brand-accent-soft: #e8f1ff;
+  --font-app: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 * {

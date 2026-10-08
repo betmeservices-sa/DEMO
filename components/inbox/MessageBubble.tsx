@@ -6,7 +6,7 @@ import { NotaDeVoz } from "./NotaDeVoz";
 import { cn } from "@/lib/cn";
 import { porNuestroProxy } from "@/lib/meta-media-proxy";
 import { ImagenAmpliable } from "@/components/ui/Lightbox";
-import { captionDeMedia, horaDe, nombreStaff } from "@/lib/format";
+import { captionDeMedia, horaDe, nombreIA, nombreStaff } from "@/lib/format";
 import { compartidoDeTexto } from "@/lib/meta-texto-mensaje";
 import type { Message, MessageMedia } from "@/lib/data/types";
 
@@ -276,7 +276,7 @@ export function MessageBubble({
             Facebook), y la IA con su nombre. Sin nada: la IA de las
             simulaciones. */}
         {esStaff
-          ? `${message.staffId ? nombreStaff(message.staffId) : (message.staffNombre ?? "Asistente IA")} · `
+          ? `${message.staffId ? nombreStaff(message.staffId) : (message.staffNombre ?? nombreIA())} · `
           : ""}
         {horaDe(message.ts)}
       </span>

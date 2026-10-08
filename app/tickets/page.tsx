@@ -39,7 +39,7 @@ import {
 import type { MetricasTickets } from "@/lib/tickets-metricas";
 import { formatearMinutos, horasPorDiaHabil } from "@/lib/tickets-sla";
 import { configTickets, explicacionReloj, horarioDeArea } from "@/lib/tickets-tenant";
-import { activeTenantId } from "@/lib/tenants/active";
+import { activeTenant, activeTenantId } from "@/lib/tenants/active";
 
 interface Respuesta {
   ok: boolean;
@@ -53,6 +53,9 @@ interface Respuesta {
 // Los tipos y las áreas son del negocio: un hotel no clasifica por
 // especialidad médica. Ver lib/tickets-tenant.
 const TENANT = activeTenantId();
+// Como se llama el agente de este cliente (Claudia en el hospital, Sofía en el
+// resto): el tablero habla de quien de verdad abre los casos.
+const AGENTE = activeTenant().ai.nombre ?? "Sofía";
 const CFG = configTickets(TENANT);
 const AREAS = CFG.areas;
 // La jornada con la que se convierten minutos en "días" al mostrarlos. Sin
@@ -126,7 +129,7 @@ export default function TicketsPage() {
         <div className="mr-auto">
           <h1 className="text-[17px] font-extrabold tracking-tight text-brand">Tickets</h1>
           <p className="text-[12.5px] text-[var(--text-3)]">
-            Lo que Sofía no resolvió sola, con dueño y con reloj
+            Lo que {AGENTE} no resolvió sola, con dueño y con reloj
           </p>
         </div>
         <button
@@ -547,7 +550,7 @@ function FormularioNuevo({ onCerrar, onCreado }: { onCerrar: () => void; onCread
         <h2 className="text-[16px] font-bold text-brand">Nuevo ticket</h2>
         <p className="mt-0.5 text-[12.5px] text-[var(--text-3)]">
           Para quien llegó al mostrador o llamó por otro lado. Queda con el mismo reloj que los que
-          abre Sofía.
+          abre {AGENTE}.
         </p>
 
         <div className="mt-4 space-y-3">
