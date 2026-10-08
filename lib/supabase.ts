@@ -18,9 +18,15 @@ type Cliente = SupabaseClient<any, any, any>; // eslint-disable-line @typescript
 // devuelve CERO FILAS SIN ERROR. Por eso los stores tienen su latch de "estoy
 // cayendo a memoria": es la única señal de que pasó.
 
-/** Qué clientes leen de un esquema propio. El resto sigue en public. */
+/**
+ * Qué clientes leen de un esquema propio. El resto sigue en public.
+ *
+ * Yali figura aunque hoy lea de public: desde el 2026-10-08 su proyecto propio
+ * tiene todo en public (el esquema `yali` quedó de respaldo). Sigue en esta
+ * lista porque es lo que lo marca como cliente con proyecto propio.
+ */
 const ESQUEMA_POR_TENANT: Record<string, string> = {
-  yaly: "yali",
+  yaly: "public",
 };
 
 const cache = new Map<string, Cliente | null>();
