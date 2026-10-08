@@ -276,7 +276,11 @@ export const hospitalTenant: TenantConfig = {
   ],
   seed: hospitalSeed,
   simulacion: hospitalSimulacion,
-  ai: { systemPrompt: SYSTEM_PROMPT, nombre: "Claudia", modelo: "luna" },
+  // limiteMensajes: 15 por pedido del usuario (2026-10-07). Con el tope por
+  // defecto (10) Claudia cortó a una paciente a mitad de la conversación ("le
+  // paso con una persona") y la dejó sin respuesta, porque nadie del hospital
+  // estaba en el panel.
+  ai: { systemPrompt: SYSTEM_PROMPT, nombre: "Claudia", modelo: "luna", limiteMensajes: 15 },
   dashboard: [
     { label: "Conversaciones hoy", icon: "MessageSquare", kind: "metric", metricLabel: "Conversaciones hoy", fallback: 0 },
     { label: "Tiempo de respuesta", icon: "Clock", kind: "metric", metricLabel: "Tiempo de respuesta", fallback: "6 min" },

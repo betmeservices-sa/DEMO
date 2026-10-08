@@ -30,6 +30,13 @@ function entra(texto: string): string {
 
 vi.mock("@/lib/wa-store", () => ({
   getSince: async () => bandeja,
+  // El hilo de UN teléfono, de lo más nuevo hacia atrás: lo que lee ai-reply.
+  mensajesAnteriores: async (from: string, antes: string | null, limite: number, tenant?: string) => {
+    const todos = bandeja
+      .filter((m) => m.from === from && (!tenant || m.tenant === tenant) && (!antes || m.ts < antes))
+      .sort((a, b) => b.seq - a.seq);
+    return { mensajes: todos.slice(0, limite), hayMas: todos.length > limite };
+  },
   addOutbound: async (m: { waId: string; to: string; texto: string; ts: string }) => {
     bandeja.push({
       seq: ++seq,

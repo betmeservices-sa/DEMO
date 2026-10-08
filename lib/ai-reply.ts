@@ -10,7 +10,7 @@
 //   5. ¿qué toca según las barandas? (sucursal obligatoria / tope de mensajes)
 //   6. si toca responder: se baja la imagen (si hay), se llama a Claude y se
 //      registra el consumo en tokens y en dinero.
-import { addOutbound, getSince, type WaInbound } from "./wa-store";
+import { addOutbound, mensajesAnteriores, type WaInbound } from "./wa-store";
 import { getChatAiActiva, setChatOverride } from "./ai-store";
 import { upsertContacto } from "./contacts-store";
 import { generarRespuesta, type ImagenIA, type TurnoIA } from "./ai";
@@ -75,15 +75,26 @@ function restoAleatorio(): number {
 // llego otro (el cliente seguia escribiendo) o ya contesto alguien, este handler
 // se retira y responde el mas nuevo. Cubre tambien que un humano haya tomado el
 // chat: su mensaje saliente seria el ultimo, con direccion "out".
+// El hilo de UN chat, en orden, lo mas reciente incluido.
+//
+// Antes se leia getSince(0, tenant), que devuelve los 100 mensajes MAS VIEJOS
+// de todo el cliente. Mientras un cliente tuvo menos de 100 mensajes funciono;
+// el hospital paso de 100 el 2026-10-07 a las 17:37 y desde ese momento el
+// mensaje recien llegado ya no venia en la lectura: la IA concluia "no soy el
+// ultimo" y se quedaba callada con TODOS los pacientes, sin un solo error en
+// el log. Se lee el chat por telefono, de lo mas nuevo hacia atras.
+const HILO_MAX = 200;
+async function hiloDe(from: string, tenant?: TenantId): Promise<WaInbound[]> {
+  const { mensajes } = await mensajesAnteriores(from, null, HILO_MAX, tenant);
+  return mensajes.sort((a, b) => a.seq - b.seq);
+}
+
 async function sigoSiendoElUltimo(
   from: string,
   triggerWamid: string,
   tenant?: TenantId,
 ): Promise<boolean> {
-  const ultimo = (await getSince(0, tenant))
-    .filter((m) => m.from === from)
-    .sort((a, b) => a.seq - b.seq)
-    .at(-1);
+  const ultimo = (await hiloDe(from, tenant)).at(-1);
   return Boolean(ultimo && ultimo.waId === triggerWamid && ultimo.direccion === "in");
 }
 
@@ -138,9 +149,7 @@ export async function programarRespuestaIA(opts: {
     // Tramo 2: el resto de la espera, ya con el indicador puesto.
     await sleep(restoAleatorio());
 
-    const conv = (await getSince(0, opts.tenant))
-      .filter((m) => m.from === opts.from)
-      .sort((a, b) => a.seq - b.seq);
+    const conv = await hiloDe(opts.from, opts.tenant);
     // Se vuelve a mirar: pudo llegar otro mensaje durante el segundo tramo.
     // Sin turnos: se mira lo último que dijo la persona y si ya se le
     // contestó a eso, no quién habló último.

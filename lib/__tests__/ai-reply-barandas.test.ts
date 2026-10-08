@@ -32,7 +32,22 @@ function entra(texto: string, media?: WaInbound["media"]): string {
 const enviados: string[] = [];
 
 vi.mock("@/lib/wa-store", () => ({
-  getSince: async () => bandeja,
+  // Mismo contrato que el real, INCLUIDO el tope de 100 del más viejo al más
+  // nuevo: es lo que hizo que la regresión de abajo exista.
+  getSince: async (after: number, tenant?: string, limite = 100) =>
+    bandeja
+      .filter((m) => m.seq > after && (!tenant || m.tenant === tenant))
+      .sort((a, b) => a.seq - b.seq)
+      .slice(0, Math.min(limite, 1000)),
+  // Mismo contrato que el real: el hilo de UN teléfono, de lo más nuevo hacia
+  // atrás, con tope. Es lo que lee ai-reply (no getSince, que trae los 100 más
+  // viejos del cliente entero).
+  mensajesAnteriores: async (from: string, antes: string | null, limite: number, tenant?: string) => {
+    const todos = bandeja
+      .filter((m) => m.from === from && (!tenant || m.tenant === tenant) && (!antes || m.ts < antes))
+      .sort((a, b) => b.seq - a.seq);
+    return { mensajes: todos.slice(0, limite), hayMas: todos.length > limite };
+  },
   addOutbound: async (m: { waId: string; to: string; texto: string; ts: string }) => {
     bandeja.push({
       seq: ++seq,
@@ -181,6 +196,28 @@ describe("el primer mensaje siempre es la pregunta de sucursal", () => {
     expect(llamadasIA.every((l) => l.sucursal === null)).toBe(true);
     expect(enviados[3]).toBe(yalySucursales.handoff);
     expect(chatApagado).toHaveBeenCalledWith("50370000001", false);
+  });
+});
+
+// REGRESIÓN (2026-10-07, hospital en vivo): el hilo se leía con getSince(0),
+// que devuelve los 100 mensajes MÁS VIEJOS del cliente entero. En cuanto el
+// hospital pasó de 100 mensajes, el recién llegado ya no venía en la lectura y
+// Claudia se quedó callada con todos los pacientes, sin error en el log.
+describe("el hilo se lee por chat, no por los 100 más viejos del cliente", () => {
+  it("contesta aunque el cliente ya tenga cientos de mensajes de otros chats", async () => {
+    for (let i = 0; i < 250; i++) {
+      bandeja.push({
+        seq: ++seq,
+        waId: `viejo-${i}`,
+        from: `5037999${String(i).padStart(4, "0")}`,
+        texto: "mensaje viejo de otra persona",
+        ts: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
+        direccion: "in",
+        tenant: "yaly",
+      });
+    }
+    await turno("Hola, buenas tardes");
+    expect(enviados).toEqual([yalySucursales.pregunta]);
   });
 });
 
