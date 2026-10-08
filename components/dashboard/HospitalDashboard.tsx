@@ -15,7 +15,7 @@ import {
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { activeTenant } from "@/lib/tenants/active";
 import { RESPONSABLE_HOSPITAL } from "@/lib/tickets-tenant";
-import type { PanelHospital } from "@/lib/hospital-panel";
+import type { PanelHospital, ResumenDia } from "@/lib/hospital-panel";
 import { cn } from "@/lib/cn";
 
 // El tablero del hospital: lo que de verdad está pasando en su WhatsApp. Lee
@@ -79,7 +79,7 @@ export function HospitalDashboard() {
           <div>
             <h1 className="text-[17px] font-extrabold tracking-tight text-brand">Dashboard</h1>
             <p className="text-[12.5px] text-[var(--text-3)]">
-              El WhatsApp del hospital hoy, en hora de El Salvador
+              El WhatsApp del hospital, hoy y ayer, en hora de El Salvador
             </p>
           </div>
           <button
@@ -108,18 +108,10 @@ export function HospitalDashboard() {
 
         {panel && (
           <>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <MetricCard
-                label="Conversaciones hoy"
-                valor={panel.hoy.conversaciones}
-                delta={panel.hoy.deltaPct ?? undefined}
-                Icon={MessageSquare}
-              />
-              <MetricCard label="Mensajes recibidos hoy" valor={panel.hoy.mensajesEntrantes} Icon={Inbox} />
-              <MetricCard label={`Respondidas por ${agente} hoy`} valor={panel.hoy.respondidasPorIA} Icon={Bot} />
-              <MetricCard label="Atendidas por una persona hoy" valor={panel.hoy.atendidasPorPersona} Icon={UserRound} />
-            </div>
+            <Dia titulo="Hoy" dia={panel.hoy} deltaPct={panel.hoy.deltaPct} agente={agente} />
+            <Dia titulo="Ayer" dia={panel.ayer} agente={agente} />
 
+            <p className="px-0.5 text-[11.5px] font-bold uppercase tracking-wide text-[var(--text-3)]">Esta semana</p>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <MetricCard
                 label="Conversaciones esta semana"
@@ -150,6 +142,40 @@ export function HospitalDashboard() {
             <Tickets panel={panel} responsable={responsable} />
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Las cuatro cifras de un día. Ayer va completo debajo de hoy porque es lo
+// primero que se mira al llegar en la mañana: cuánta gente escribió, a cuántos
+// les contestó Claudia y a cuántos una persona.
+function Dia({
+  titulo,
+  dia,
+  deltaPct,
+  agente,
+}: {
+  titulo: string;
+  dia: ResumenDia;
+  deltaPct?: number | null;
+  agente: string;
+}) {
+  const sufijo = titulo.toLowerCase();
+  return (
+    <div className="space-y-2">
+      <p className="px-0.5 text-[11.5px] font-bold uppercase tracking-wide text-[var(--text-3)]">{titulo}</p>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <MetricCard
+          label={`Conversaciones ${sufijo}`}
+          valor={dia.conversaciones}
+          delta={deltaPct ?? undefined}
+          Icon={MessageSquare}
+        />
+        <MetricCard label={`Mensajes recibidos ${sufijo}`} valor={dia.mensajesEntrantes} Icon={Inbox} />
+        <MetricCard label={`Respondidas por ${agente} ${sufijo}`} valor={dia.respondidasPorIA} Icon={Bot} />
+        <MetricCard label={`Atendidas por una persona ${sufijo}`} valor={dia.atendidasPorPersona} Icon={UserRound} />
+        <MetricCard label={`Tickets abiertos ${sufijo}`} valor={dia.ticketsCreados} Icon={TicketCheck} />
       </div>
     </div>
   );

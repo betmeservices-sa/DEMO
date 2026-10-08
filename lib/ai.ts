@@ -379,7 +379,7 @@ const TOOLS_SIN_AGENDA = TOOLS_BASE.filter((t) => t.name === "reaccionar");
 const TOOL_TICKET_HOSPITAL: Anthropic.Tool = {
   name: "crear_ticket",
   description:
-    "Abre un caso para tu compañera del hospital, que le da seguimiento a la persona. Llámala UNA sola vez por asunto, cuando: la persona pide una cita de consulta (o reagendar o cancelar una), pone una queja, pide hablar con una persona, o pregunta algo que no está en tu guion (un precio que no tienes, un resultado, una cobertura de seguro, un médico que no conoces). Si responde ok, dile que ya quedó anotado y que tu compañera se comunicará con ella en horario de 8:00 a.m. a 5:00 p.m. Nunca digas la palabra ticket ni el número del caso.",
+    "Abre un caso para tu compañera del hospital, que le da seguimiento a la persona. Llámala UNA sola vez por asunto, cuando: la persona pide una cita de consulta (o reagendar o cancelar una), pone una queja, pide hablar con una persona, o pregunta algo que no está en tu guion (un precio que no tienes, un resultado, una cobertura de seguro, un médico que no conoces). Si ya la llamaste en esta conversación y la persona solo agrega un detalle (su nombre, el día, un dato más), NO la vuelvas a llamar: dile que ya quedó anotado. Si responde ok, dile que ya quedó anotado y que tu compañera se comunicará con ella en horario de 8:00 a.m. a 5:00 p.m. Nunca digas la palabra ticket ni el número del caso.",
   input_schema: {
     type: "object",
     properties: {
@@ -621,14 +621,32 @@ export async function ejecutarHerramienta(
       // Se carga aquí y no arriba a propósito: el store de tickets arrastra el
       // cliente de Supabase, y este archivo es el que se importa en cada
       // mensaje que entra. Solo lo paga la conversación que abre un caso.
-      const { crearTicket } = await import("./tickets-store");
+      const { crearTicket, ticketAbiertoDe, agregarNota } = await import("./tickets-store");
+      const creadoPor = TENANTS[tenant as TenantId]?.ai.nombre ?? "Sofía";
+      // Un asunto, un caso. El modelo vuelve a llamar esta herramienta cada
+      // vez que la persona agrega un detalle ("para el lunes 12", su nombre),
+      // y a una paciente le quedaron cuatro tickets iguales en once minutos.
+      // Si ese teléfono ya tiene un caso abierto del mismo tipo, lo nuevo va
+      // como nota en ese caso y no se abre otro.
+      const previo = contexto?.telefono ? await ticketAbiertoDe(tenant, contexto.telefono, t.tipo ?? "otro") : null;
+      if (previo) {
+        const detalle = (t.detalle ?? "").trim();
+        if (detalle) await agregarNota(tenant, previo.id, creadoPor, detalle);
+        return JSON.stringify({
+          ok: true,
+          numero: previo.numero,
+          area: previo.area,
+          ya_existia: true,
+          nota: "Esta persona ya tenía ese caso abierto; lo nuevo quedó anotado ahí. No le digas que abriste otro: solo que ya quedó anotado.",
+        });
+      }
       const ticket = await crearTicket(tenant, {
         titulo: (t.titulo ?? "").trim() || "Caso sin título",
         detalle: (t.detalle ?? "").trim(),
         tipo: t.tipo ?? "otro",
         prioridad: t.urgente ? "urgente" : undefined,
         origen: "chat",
-        creadoPor: TENANTS[tenant as TenantId]?.ai.nombre ?? "Sofía",
+        creadoPor,
         contactoNombre: (t.nombre ?? "").trim() || "Sin nombre",
         contactoTelefono: contexto?.telefono,
         area: esHospital

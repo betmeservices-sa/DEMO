@@ -47,16 +47,27 @@ export interface TicketPanel {
   resuelto?: string | null;
 }
 
+/** Lo que pasó en UN día (hoy o ayer), en hora de El Salvador. */
+export interface ResumenDia {
+  /** Teléfonos distintos que escribieron ese día. */
+  conversaciones: number;
+  mensajesEntrantes: number;
+  /** Conversaciones del día con al menos una respuesta de Claudia. */
+  respondidasPorIA: number;
+  /** Conversaciones del día en las que escribió una persona desde el panel. */
+  atendidasPorPersona: number;
+  /** Tickets que se abrieron ese día. */
+  ticketsCreados: number;
+}
+
 export interface PanelHospital {
   generadoEn: string;
-  hoy: {
-    conversaciones: number;
+  hoy: ResumenDia & {
     /** Contra ayer. null si ayer no hubo nada con qué comparar. */
     deltaPct: number | null;
-    mensajesEntrantes: number;
-    respondidasPorIA: number;
-    atendidasPorPersona: number;
   };
+  /** El día completo anterior: lo primero que se mira al llegar en la mañana. */
+  ayer: ResumenDia;
   semana: {
     conversaciones: number;
     /** Contra los 7 días anteriores. */
@@ -148,17 +159,27 @@ export function armarPanelHospital(
         .map((m) => m.from),
     );
 
-  const convsHoy = convsDeDia(hoyClave);
-  const convsAyer = convsDeDia(ayerClave);
-  const entrantesHoy = ordenados.filter((m) => m.direccion === "in" && claveDiaSV(m.ts) === hoyClave);
-
-  let respondidasPorIA = 0;
-  let atendidasPorPersona = 0;
-  for (const from of convsHoy) {
-    const deHoy = (porChat.get(from) ?? []).filter((m) => claveDiaSV(m.ts) === hoyClave);
-    if (deHoy.some((m) => m.direccion === "out" && !m.manual)) respondidasPorIA++;
-    if (deHoy.some((m) => m.direccion === "out" && m.manual)) atendidasPorPersona++;
-  }
+  // El resumen de un día: quién escribió, cuántos mensajes, a cuántos les
+  // contestó Claudia y a cuántos una persona, y cuántos tickets se abrieron.
+  const resumenDia = (clave: string): ResumenDia => {
+    const convs = convsDeDia(clave);
+    let respondidasPorIA = 0;
+    let atendidasPorPersona = 0;
+    for (const from of convs) {
+      const delDia = (porChat.get(from) ?? []).filter((m) => claveDiaSV(m.ts) === clave);
+      if (delDia.some((m) => m.direccion === "out" && !m.manual)) respondidasPorIA++;
+      if (delDia.some((m) => m.direccion === "out" && m.manual)) atendidasPorPersona++;
+    }
+    return {
+      conversaciones: convs.size,
+      mensajesEntrantes: ordenados.filter((m) => m.direccion === "in" && claveDiaSV(m.ts) === clave).length,
+      respondidasPorIA,
+      atendidasPorPersona,
+      ticketsCreados: tickets.filter((t) => claveDiaSV(t.creado) === clave).length,
+    };
+  };
+  const hoy = resumenDia(hoyClave);
+  const ayer = resumenDia(ayerClave);
 
   // Semana: esta contra la anterior, y qué tanto de la semana lo cubrió Claudia.
   const convsSemana = convsEntre(hace7, ahora.getTime() + 1);
@@ -222,13 +243,8 @@ export function armarPanelHospital(
 
   return {
     generadoEn: ahora.toISOString(),
-    hoy: {
-      conversaciones: convsHoy.size,
-      deltaPct: deltaPct(convsHoy.size, convsAyer.size),
-      mensajesEntrantes: entrantesHoy.length,
-      respondidasPorIA,
-      atendidasPorPersona,
-    },
+    hoy: { ...hoy, deltaPct: deltaPct(hoy.conversaciones, ayer.conversaciones) },
+    ayer,
     semana: {
       conversaciones: convsSemana.size,
       deltaPct: deltaPct(convsSemana.size, convsSemanaAnterior.size),

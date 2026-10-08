@@ -136,7 +136,10 @@ export function Sidebar({
   const tieneTickets = veTickets(tenant);
   // El banco es un centro de COBRANZA: no publica en redes. Recibe mensajes de
   // Instagram y Facebook (eso sigue en la bandeja), pero no programa contenido.
-  const veRedes = tenant !== "promerica" && tenant !== "betme";
+  // El hospital tampoco: atiende pacientes por su WhatsApp y no tiene ninguna
+  // red conectada al panel. Una pestana de Redes vacia en un panel en
+  // produccion se ve como algo roto.
+  const veRedes = tenant !== "promerica" && tenant !== "betme" && tenant !== "hospital";
   // Los comentarios de Facebook e Instagram son la otra mitad de la bandeja,
   // pero Grupo Q no los trabaja desde aca: su mercadeo lleva las redes por su
   // cuenta y la pestana solo metia ruido en un panel de credito.

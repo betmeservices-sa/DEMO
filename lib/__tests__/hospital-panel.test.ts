@@ -52,6 +52,36 @@ describe("conversaciones y mensajes de hoy", () => {
   });
 });
 
+describe("ayer, el día completo", () => {
+  it("trae lo mismo que hoy pero del día anterior, con sus tickets", () => {
+    const p = armarPanelHospital(
+      [
+        msg("1", "in", h("09:00", "2026-10-06")),
+        msg("1", "out", h("09:01", "2026-10-06")),
+        msg("2", "in", h("10:00", "2026-10-06")),
+        msg("2", "out", h("10:05", "2026-10-06"), { manual: true }),
+        msg("3", "in", h("23:50", "2026-10-06")), // las 11:50 de la noche siguen siendo ayer
+        msg("4", "in", h("09:00")), // hoy: no cuenta
+      ],
+      [],
+      [
+        { estado: "asignado", tipo: "cita", asignadoA: RESPONSABLE_HOSPITAL, creado: h("09:02", "2026-10-06") },
+        { estado: "resuelto", tipo: "queja", asignadoA: RESPONSABLE_HOSPITAL, creado: h("10:06", "2026-10-06"), resuelto: h("12:00") },
+        { estado: "abierto", tipo: "cita", asignadoA: null, creado: h("09:30") },
+      ],
+      AHORA,
+    );
+    expect(p.ayer).toEqual({
+      conversaciones: 3,
+      mensajesEntrantes: 3,
+      respondidasPorIA: 1,
+      atendidasPorPersona: 1,
+      ticketsCreados: 2,
+    });
+    expect(p.hoy).toMatchObject({ conversaciones: 1, ticketsCreados: 1, deltaPct: -67 });
+  });
+});
+
 describe("quién espera respuesta", () => {
   it("lista los chats cuyo último mensaje es de la persona, del que más lleva esperando al que menos", () => {
     const p = armarPanelHospital(

@@ -9,7 +9,7 @@
 
 import { getSupabase } from "./supabase";
 import { columnaFaltante, latchDeTabla, tablaFaltante } from "./tabla-faltante";
-import type { EstadoTicket, NotaTicket, Ticket, TicketNuevo } from "./tickets";
+import type { EstadoTicket, NotaTicket, Ticket, TicketNuevo, TipoTicket } from "./tickets";
 import { normalizarNuevo } from "./tickets";
 import { ticketsSemilla } from "./tickets-seed";
 
@@ -133,6 +133,38 @@ export async function listarTickets(tenant: string): Promise<Ticket[]> {
 export async function obtenerTicket(tenant: string, id: string): Promise<Ticket | null> {
   const todos = await listarTickets(tenant);
   return todos.find((t) => t.id === id) ?? null;
+}
+
+/**
+ * El caso que ESTE teléfono ya tiene abierto, del mismo tipo, en las últimas
+ * `horas`. null si no hay.
+ *
+ * Existe porque el agente abre un caso cada vez que la persona agrega un
+ * detalle: a una paciente que preguntó por un estudio y después dijo el día le
+ * quedaron cuatro tickets iguales en once minutos. Lo que sigue a un caso
+ * abierto es una nota en ese caso, no otro caso.
+ */
+export async function ticketAbiertoDe(
+  tenant: string,
+  telefono: string,
+  tipo: TipoTicket,
+  horas = 24,
+): Promise<Ticket | null> {
+  const tel = telefono.trim();
+  if (!tel) return null;
+  const desde = Date.now() - horas * 3600 * 1000;
+  const todos = await listarTickets(tenant);
+  return (
+    todos
+      .filter(
+        (t) =>
+          t.contactoTelefono === tel &&
+          t.tipo === tipo &&
+          t.estado !== "resuelto" &&
+          new Date(t.creado).getTime() >= desde,
+      )
+      .sort((a, b) => b.creado.localeCompare(a.creado))[0] ?? null
+  );
 }
 
 // ── Escritura ────────────────────────────────────────────────────────────────
