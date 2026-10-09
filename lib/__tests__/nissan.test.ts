@@ -16,10 +16,10 @@ describe("tenant nissan", () => {
   });
 
   it("no le roba la contraseña a ninguno de los otros", () => {
-    expect(resolveTenantByLogin("demoagentia", "demoh")).toBe("hospital");
+    expect(resolveTenantByLogin("demoagentia", "demop")).toBe("pizzahut");
     expect(resolveTenantByLogin("demoagentia", "demoi")).toBe("grupoq");
     expect(resolveTenantByLogin("demoagentia", "demol")).toBe("consultorio");
-    expect(resolveTenantByLogin("demoagentia", "miagentiayaly")).toBe("yaly");
+    expect(resolveTenantByLogin("demoagentia", "miagentiabienes")).toBe("inmobiliaria");
     expect(resolveTenantByLogin("demoagentia", "miagentiacobros")).toBe("promerica");
   });
 

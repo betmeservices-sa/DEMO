@@ -36,6 +36,17 @@ export type TenantId =
   | "comercial"
   | "chalatenango";
 
+// Clientes EN VIVO: su panel está en hub.miagentia.com, con sus datos reales.
+// El demo los conoce (comparten código y tipos) pero NO los abre: ni con clave
+// de demo, ni con cuenta de persona, ni desde "¿A qué panel entras?". Quedaron
+// acá de cuando sí eran demos.
+export const EN_HUB: readonly TenantId[] = ["hospital", "yaly"];
+
+/** true = el demo puede abrir este panel. */
+export function esDelDemo(id: TenantId): boolean {
+  return !EN_HUB.includes(id);
+}
+
 // Datos semilla (mock) de un tenant. Misma forma que el antiguo lib/data/seed.
 export interface TenantSeed {
   ME: string;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookieDeSesion, crearSesion, leerSesion, sesionDeCookieHeader } from "@/lib/session";
-import { isTenantId } from "@/lib/tenants";
+import { esDelDemo, isTenantId } from "@/lib/tenants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +23,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
   }
   if (!isTenantId(tenant)) return NextResponse.json({ ok: false, error: "Cliente inválido." }, { status: 400 });
+  if (!esDelDemo(tenant)) {
+    return NextResponse.json({ ok: false, error: "Ese panel está en hub.miagentia.com." }, { status: 400 });
+  }
 
   const nueva = await crearSesion(tenant, sesion.rol, sesion.fijo, sesion.usuario ?? "", true);
   if (!nueva) return NextResponse.json({ ok: false, error: "El servidor no está configurado." }, { status: 503 });

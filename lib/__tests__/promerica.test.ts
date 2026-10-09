@@ -22,7 +22,7 @@ describe("tenant promerica", () => {
   });
 
   it("no le roba la contraseña a ninguno de los otros seis", () => {
-    expect(resolveTenantByLogin("demoagentia", "demoh")).toBe("hospital");
+    expect(resolveTenantByLogin("demoagentia", "demop")).toBe("pizzahut");
     expect(resolveTenantByLogin("demoagentia", "demoi")).toBe("grupoq");
     expect(resolveTenantByLogin("demoagentia", "demoj")).toBe("excel");
     expect(resolveTenantByLogin("demoagentia", "demok")).toBe("miagentia");

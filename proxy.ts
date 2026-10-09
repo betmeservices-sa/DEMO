@@ -16,8 +16,9 @@
 // de Meta en su propio handler.
 
 import { NextResponse, type NextRequest } from "next/server";
-import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
+import { cookieBorrada, leerSesion, sesionDeCookieHeader } from "@/lib/session";
 import { MODULO_RUTA, agenciaVeRuta, destinoAgencia, primerModulo, puedeVerRuta, VE } from "@/lib/modulos";
+import { esDelDemo } from "@/lib/tenants/types";
 
 const PUBLICAS = [
   "/api/auth/login",
@@ -49,6 +50,18 @@ function esPublica(pathname: string): boolean {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const sesion = await leerSesion(sesionDeCookieHeader(req.headers.get("cookie")));
+
+  // Un panel en vivo (hospital, Yalí) no se abre desde el demo: una sesión
+  // que todavía apunte ahí se borra y se vuelve al login. Lo mismo para la
+  // API, que es por donde salen los datos.
+  if (sesion && !esDelDemo(sesion.tenant) && !esPublica(pathname)) {
+    const res = pathname.startsWith("/api/")
+      ? NextResponse.json({ error: "Ese panel está en hub.miagentia.com." }, { status: 401 })
+      : NextResponse.redirect(new URL("/", req.url));
+    res.headers.append("Set-Cookie", cookieBorrada(req.headers.get("host")));
+    res.headers.append("Set-Cookie", cookieBorrada());
+    return res;
+  }
 
   if (pathname.startsWith("/api/")) {
     if (esPublica(pathname)) return NextResponse.next();

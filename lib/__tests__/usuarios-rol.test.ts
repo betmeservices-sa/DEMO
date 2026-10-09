@@ -23,9 +23,9 @@ afterEach(() => {
 });
 
 const VERONICA =
-  "veronica.viches@yalihospitality.com|Yali2026|yaly|atencion|Verónica Viches";
-const OLGA = "membresias@yalihospitality.com|Yali2026|yaly|atencion|Olga Zelaya";
-const JAIME = "jaime@yalihospitality.com|YaliAdmin2026|yaly|admin|Jaime Quintanilla";
+  "veronica.viches@yalihospitality.com|Yali2026|nissan|atencion|Verónica Viches";
+const OLGA = "membresias@yalihospitality.com|Yali2026|nissan|atencion|Olga Zelaya";
+const JAIME = "jaime@yalihospitality.com|YaliAdmin2026|nissan|admin|Jaime Quintanilla";
 const EQUIPO = [VERONICA, OLGA, JAIME].join(",");
 
 async function auth() {
@@ -39,7 +39,7 @@ describe("cuentas de persona", () => {
 
     const a = await validarCredenciales("veronica.viches@yalihospitality.com", "Yali2026");
     expect(a).toEqual({
-      tenant: "yaly",
+      tenant: "nissan",
       rol: "atencion",
       nombre: "Verónica Viches",
       fijo: true,
@@ -68,9 +68,9 @@ describe("cuentas de persona", () => {
   it("una cuenta mal escrita se ignora entera, no entra a medias", async () => {
     // Sin rol, con un tenant que no existe, y con un rol inventado.
     process.env.USUARIOS = [
-      "a@x.com|clave|yaly",
+      "a@x.com|clave|nissan",
       "b@x.com|clave|noexiste|atencion",
-      "c@x.com|clave|yaly|jefe_supremo",
+      "c@x.com|clave|nissan|jefe_supremo",
     ].join(",");
     const { validarCredenciales } = await auth();
     expect(await validarCredenciales("a@x.com", "clave")).toBeNull();
@@ -89,8 +89,8 @@ describe("cuentas de persona", () => {
     delete process.env.USUARIOS;
     delete process.env.LOGIN_PASSWORDS;
     const { validarCredenciales } = await auth();
-    const a = await validarCredenciales("demoagentia", "miagentiayaly");
-    expect(a?.tenant).toBe("yaly");
+    const a = await validarCredenciales("demoagentia", "demon");
+    expect(a?.tenant).toBe("nissan");
     expect(a?.fijo).toBe(false);
   });
 });
@@ -111,7 +111,7 @@ describe("el equipo de Yali", () => {
 
     // Los tres del mismo cliente, y ninguno con el rol suelto.
     for (const a of [vero, olga, jaime]) {
-      expect(a?.tenant).toBe("yaly");
+      expect(a?.tenant).toBe("nissan");
       expect(a?.fijo).toBe(true);
     }
   });

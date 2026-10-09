@@ -24,7 +24,7 @@ describe("cuenta de la agencia", () => {
   });
 
   it("una cuenta normal no es de todos", () => {
-    process.env.USUARIOS = "vero@yali.com|clave-larga|yaly|atencion|Verónica|s2";
+    process.env.USUARIOS = "vero@yali.com|clave-larga|nissan|atencion|Verónica|s2";
     expect(cuentaDeUsuario("vero@yali.com")!.todos).toBe(false);
   });
 
@@ -42,7 +42,7 @@ describe("cuenta de la agencia", () => {
   });
 
   it("una cuenta de persona sigue siendo fija y no de todos", async () => {
-    const s = await crearSesion("yaly", "atencion", true, "vero@yali.com");
+    const s = await crearSesion("nissan", "atencion", true, "vero@yali.com");
     expect(await leerSesion(s!.valor)).toMatchObject({ fijo: true, todos: false });
   });
 });

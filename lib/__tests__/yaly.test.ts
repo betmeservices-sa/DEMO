@@ -22,12 +22,12 @@ describe("registro del cliente", () => {
     expect(TENANTS.yaly.tags.length).toBeGreaterThan(0);
   });
 
-  it("entra con su propia contraseña, con el usuario de siempre", () => {
-    expect(resolveTenantByLogin("demoagentia", "miagentiayaly")).toBe("yaly");
+  it("ya no entra por el demo: es un cliente en vivo y vive en hub", () => {
+    expect(resolveTenantByLogin("demoagentia", "miagentiayaly")).toBeNull();
   });
 
   it("no le roba la contraseña a ningún otro cliente", () => {
-    expect(resolveTenantByLogin("demoagentia", "demoh")).toBe("hospital");
+    expect(resolveTenantByLogin("demoagentia", "demop")).toBe("pizzahut");
     expect(resolveTenantByLogin("demoagentia", "demoi")).toBe("grupoq");
     expect(resolveTenantByLogin("demoagentia", "demoj")).toBe("excel");
     expect(resolveTenantByLogin("demoagentia", "demok")).toBe("miagentia");

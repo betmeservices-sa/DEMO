@@ -19,7 +19,7 @@
 //
 // Si la variable existe, manda ella y esta lista deja de funcionar por completo.
 
-import { isTenantId } from "./tenants";
+import { esDelDemo, isTenantId } from "./tenants";
 import type { TenantId } from "./tenants/types";
 import type { RoleId } from "./data/types";
 
@@ -76,6 +76,8 @@ function desdeEnv(): CuentaUsuario[] | null {
     const todos = tenant === "*";
     const tenantReal = todos ? "miagentia" : tenant;
     if (!isTenantId(tenantReal) || !esRol(rol)) continue;
+    // Las cuentas de un cliente en vivo (hospital, Yalí) entran por hub, no por acá.
+    if (!esDelDemo(tenantReal)) continue;
     cuentas.push({
       usuario: usuario.toLowerCase(),
       password,

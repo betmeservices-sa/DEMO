@@ -11,7 +11,7 @@
 // Si NO existe, se cae a DEMO_LOGINS para no dejar el demo inservible de golpe.
 // En producción eso se avisa por consola: hay que configurarla.
 
-import { DEMO_LOGINS, isTenantId } from "./tenants";
+import { DEMO_LOGINS, esDelDemo, isTenantId } from "./tenants";
 import type { TenantId } from "./tenants/types";
 import type { RoleId } from "./data/types";
 import { buscarCuenta, cuentaDeUsuario } from "./usuarios";
@@ -28,7 +28,7 @@ function desdeEnv(): Map<string, TenantId> | null {
     if (i <= 0) continue;
     const tenant = par.slice(0, i).trim();
     const clave = par.slice(i + 1).trim();
-    if (isTenantId(tenant) && clave) mapa.set(clave, tenant);
+    if (isTenantId(tenant) && esDelDemo(tenant) && clave) mapa.set(clave, tenant);
   }
   return mapa.size > 0 ? mapa : null;
 }
@@ -102,5 +102,7 @@ export async function validarCredenciales(usuario: string, password: string): Pr
   );
   // Los logins de demo siguen entrando con acceso total y con el selector de
   // "ver como" disponible: son para enseñar el producto, no para trabajar.
-  return match ? { tenant: match.tenant, rol: "gerente_marketing", fijo: false } : null;
+  return match && esDelDemo(match.tenant)
+    ? { tenant: match.tenant, rol: "gerente_marketing", fijo: false }
+    : null;
 }

@@ -1,7 +1,7 @@
 // Registro central de tenants + credenciales demo.
 // Sumar un cliente = agregar su TenantConfig aquí y una credencial en DEMO_LOGINS.
 
-import type { TenantConfig, TenantId } from "./types";
+import { esDelDemo, type TenantConfig, type TenantId } from "./types";
 import { hospitalTenant } from "./hospital";
 import { grupoqTenant } from "./grupoq";
 import { excelTenant } from "./excel";
@@ -18,6 +18,7 @@ import { comercialTenant } from "./comercial";
 import { chalatenangoTenant } from "./chalatenango";
 
 export type { TenantConfig, TenantId } from "./types";
+export { EN_HUB, esDelDemo } from "./types";
 
 export const TENANTS: Record<TenantId, TenantConfig> = {
   hospital: hospitalTenant,
@@ -63,6 +64,11 @@ export function getTenant(id: TenantId): TenantConfig {
   return TENANTS[id];
 }
 
+/** Los paneles que el demo sí abre, en el orden del registro (sin los que viven en hub). */
+export function tenantsDelDemo(): TenantId[] {
+  return (Object.keys(TENANTS) as TenantId[]).filter(esDelDemo);
+}
+
 // --- Login demo (sin backend): cada credencial mapea a un tenant ---
 // `usuario` puede ser un nombre de usuario o un correo (se compara en minúsculas).
 export interface DemoLogin {
@@ -76,14 +82,14 @@ export interface DemoLogin {
 // aquí una línea con la misma cuenta y una contraseña nueva:
 //   { usuario: "demoagentia", password: "demoX", tenant: "nuevoTenant" }
 export const DEMO_LOGINS: DemoLogin[] = [
-  { usuario: "demoagentia", password: "demoh", tenant: "hospital" },
+  // El hospital (demoh) y Yalí (miagentiayaly) ya no entran por acá: son
+  // clientes en vivo y se abren en hub.miagentia.com con esas mismas claves.
   { usuario: "demoagentia", password: "demoi", tenant: "grupoq" },
   { usuario: "demoagentia", password: "demoj", tenant: "excel" },
   { usuario: "demoagentia", password: "demok", tenant: "miagentia" },
   { usuario: "demoagentia", password: "miagentiahotel", tenant: "hotel" },
   { usuario: "demoagentia", password: "miagentiabienes", tenant: "inmobiliaria" },
   { usuario: "demoagentia", password: "miagentiacobros", tenant: "promerica" },
-  { usuario: "demoagentia", password: "miagentiayaly", tenant: "yaly" },
   // El consultorio: la clinica con laboratorio, con sus dos modulos propios.
   { usuario: "demoagentia", password: "demol", tenant: "consultorio" },
   // La sala de ventas de Nissan: el tablero de venta de vehiculos.
@@ -104,7 +110,6 @@ export const DEMO_LOGINS: DemoLogin[] = [
   { usuario: "dashboard", password: "Dashboard123*", tenant: "miagentia" },
 
   // Aliases previos (siguen funcionando).
-  { usuario: "hospital@demo.com", password: "demo1234", tenant: "hospital" },
   { usuario: "grupoq@demo.com", password: "demo1234", tenant: "grupoq" },
   { usuario: "excel@demo.com", password: "demo1234", tenant: "excel" },
   { usuario: "miagentia@demo.com", password: "demo1234", tenant: "miagentia" },
@@ -115,7 +120,7 @@ export const DEMO_LOGINS: DemoLogin[] = [
 export function resolveTenantByLogin(usuario: string, password: string): TenantId | null {
   const u = usuario.trim().toLowerCase();
   const match = DEMO_LOGINS.find((l) => l.usuario.toLowerCase() === u && l.password === password);
-  return match ? match.tenant : null;
+  return match && esDelDemo(match.tenant) ? match.tenant : null;
 }
 
 // --- Ruteo de WhatsApp real (seam) ---
