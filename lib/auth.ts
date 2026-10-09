@@ -77,6 +77,7 @@ export function useAuth() {
     token?: string,
   ): Promise<LoginResult> {
     let tenant: string | undefined;
+    let todos = false;
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -86,6 +87,7 @@ export function useAuth() {
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         tenant?: string;
+        todos?: boolean;
         need2fa?: boolean;
         error?: string;
         enrolar?: { qr: string; secret: string };
@@ -100,6 +102,7 @@ export function useAuth() {
       }
       if (!res.ok || !data.ok || !data.tenant) return { tipo: "error" };
       tenant = data.tenant;
+      todos = data.todos === true;
     } catch {
       return { tipo: "error" };
     }
@@ -112,21 +115,24 @@ export function useAuth() {
     setActiveTenant(tenant);
     // Recarga para que el tenant activo aplique en toda la app. El panel
     // comercial abre en sus leads, que es para lo que entran las asesoras.
-    window.location.assign(tenant === "comercial" ? "/leads" : "/");
+    // Una cuenta de la agencia no es de ningún cliente: antes del panel se le
+    // pregunta a cuál entra (/paneles).
+    window.location.assign(todos ? "/paneles" : tenant === "comercial" ? "/leads" : "/");
     return { tipo: "ok" };
   }
 
-  async function logout() {
-    window.localStorage.removeItem(SESION_KEY);
-    window.localStorage.removeItem(ROL_KEY);
-    clearActiveTenant();
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // Aunque falle el borrado en el servidor, limpiamos el cliente y salimos.
-    }
-    window.location.assign("/");
-  }
+  return { sesion, login, logout: cerrarSesion };
+}
 
-  return { sesion, login, logout };
+/** Salir: limpia lo del navegador, borra la sesión en el servidor y vuelve al login. */
+export async function cerrarSesion(): Promise<void> {
+  window.localStorage.removeItem(SESION_KEY);
+  window.localStorage.removeItem(ROL_KEY);
+  clearActiveTenant();
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch {
+    // Aunque falle el borrado en el servidor, limpiamos el cliente y salimos.
+  }
+  window.location.assign("/");
 }

@@ -8,7 +8,8 @@
 // con el otro cliente, como si hubiera entrado con su contraseña.
 
 import { useEffect, useState } from "react";
-import { Building2 } from "lucide-react";
+import Link from "next/link";
+import { Building2, LayoutGrid } from "lucide-react";
 import { setActiveTenant } from "@/lib/tenants/active";
 import { isTenantId } from "@/lib/tenants";
 import { Desplegable } from "@/components/ui/Desplegable";
@@ -74,6 +75,15 @@ export function ClienteSwitcher() {
         arriba
         opciones={estado.clientes.map((c) => ({ valor: c.id, etiqueta: c.nombre }))}
       />
+      {/* La misma pantalla que vieron al entrar, con buscador: con muchos
+          clientes es más rápida que el desplegable. */}
+      <Link
+        href="/paneles"
+        className="mt-2 flex items-center gap-1.5 px-0.5 text-[12px] font-semibold text-[var(--text-2)] transition hover:text-[var(--text)]"
+      >
+        <LayoutGrid size={13} />
+        Ver todos los paneles
+      </Link>
     </div>
   );
 }

@@ -25,6 +25,10 @@ const PUBLIC_ROUTES = ["/privacy", "/portal"];
 // pantalla de login ni ver la barra lateral de la clínica.
 const PUBLIC_PREFIXES = ["/r/", "/s/"];
 
+// "¿A qué panel entras?", de las cuentas de la agencia: pide sesión, pero se
+// pinta sin barra ni store porque todavía no hay cliente elegido.
+const RUTA_PANELES = "/paneles";
+
 function esPublica(pathname: string): boolean {
   return PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 }
@@ -61,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     // persona y se ven enteras. Sin esta salida, el efecto corría igual (los
     // hooks van antes del return de las públicas) y la vista del paciente se
     // abría y se devolvía sola al consultorio.
-    if (esPublica(pathname)) return;
+    if (esPublica(pathname) || pathname === RUTA_PANELES) return;
     if (!sesion || activeTenantId() !== "consultorio") return;
     if (!modulo || !MODULOS_CLINICA.includes(modulo)) router.replace("/consultorio");
   }, [sesion, modulo, pathname, router]);
@@ -85,6 +89,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
   if (!sesion) {
     return <LoginPage onLogin={login} />;
+  }
+  if (pathname === RUTA_PANELES) {
+    return <>{children}</>;
   }
 
   // Clientes con la cara "flotante" (riel de iconos, areas como pestanas,
