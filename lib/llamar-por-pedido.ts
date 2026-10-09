@@ -18,7 +18,14 @@ import { getContacto } from "./contacts-store";
 import { getConversaciones } from "./conv-store";
 import { normalizarTelefono } from "./memoria-llamadas";
 import { normalizarDestinoSV } from "./phone";
-import { avisoConLinea, decidirLlamada, esAfirmativo, intencionDeLlamada, type MensajeDelHilo } from "./pedido-de-llamada";
+import {
+  avisoConLinea,
+  decidirLlamada,
+  esAfirmativo,
+  intencionDeLlamada,
+  nombreDeFicha,
+  type MensajeDelHilo,
+} from "./pedido-de-llamada";
 import { assistantCampanasDeTenant, esDelTenant } from "./tenants/voz";
 import type { TenantId } from "./tenants/types";
 import { TENANTS } from "./tenants";
@@ -72,10 +79,13 @@ export async function atenderPedidoDeLlamada(opts: {
     ts: m.ts,
   }));
 
+  // El nombre, solo de la ficha de ESTE panel: la de otro panel no es nuestra.
+  const nombre = nombreDeFicha(ficha, tenant);
+
   const decision = decidirLlamada({
     texto,
     telefono,
-    nombre: [ficha?.nombre, ficha?.apellido].filter(Boolean).join(" ").trim() || null,
+    nombre,
     hilo,
     sinDueno: !convs.find((c) => c.wa_from === telefono)?.asignado_a,
     ahora: new Date(),
@@ -145,7 +155,7 @@ export async function atenderPedidoDeLlamada(opts: {
       phoneNumberId,
       numero: destino,
       variables: {
-        nombre: [ficha?.nombre, ficha?.apellido].filter(Boolean).join(" ").trim() || "no disponible",
+        nombre: nombre || "no disponible",
         contexto: decision.contexto || "no disponible",
         pidio_llamada: "si",
       },

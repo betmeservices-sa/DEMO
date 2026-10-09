@@ -33,6 +33,11 @@ export const HASTA_HORA = 20;
 export const AVISO_LLAMANDO = "le estamos marcando ahora mismo";
 /** Lo mismo, de tú (el panel comercial, donde Sofía tutea). También es marca. */
 export const AVISO_LLAMANDO_TU = "te estoy marcando ahora mismo";
+/**
+ * De usted y en primera persona: la agente que escribe es la misma que marca
+ * (Elena, de la Caja de Chalatenango). También es marca.
+ */
+export const AVISO_LLAMANDO_YO = "le estoy marcando ahora mismo";
 
 /** Sin tildes, en minúsculas y con los espacios parejos. */
 function plano(texto: string): string {
@@ -171,6 +176,26 @@ export function avisoConLinea(aviso: string, numero: string | null | undefined, 
 export interface PresentacionLlamada {
   marca: string;
   tuteo?: boolean;
+  /** "la" para "de la Caja de Crédito de Chalatenango". */
+  articulo?: string;
+  /** Cómo se llama la agente. De usted y con esto: "le habla Elena" y "le estoy marcando". */
+  agente?: string;
+}
+
+/**
+ * El nombre de la ficha, SOLO si la ficha es de este panel.
+ *
+ * La ficha (wa_contacts) se busca por teléfono, y el mismo teléfono puede
+ * tener ficha en otro panel: al 7539-1721 la Elena de la Caja lo saludó
+ * "Bryan" con la ficha de Nissan. Cada panel es independiente: sin ficha
+ * propia, la llamada sale sin nombre.
+ */
+export function nombreDeFicha(
+  ficha: { nombre?: string | null; apellido?: string | null; tenant?: string | null } | null | undefined,
+  tenant: string,
+): string | null {
+  if (!ficha || ficha.tenant !== tenant) return null;
+  return [ficha.nombre, ficha.apellido].filter(Boolean).join(" ").trim() || null;
 }
 
 /**
@@ -283,6 +308,7 @@ export function decidirLlamada(e: EntradaLlamada): Decision {
     (m) =>
       m.texto.includes(AVISO_LLAMANDO) ||
       m.texto.includes(AVISO_LLAMANDO_TU) ||
+      m.texto.includes(AVISO_LLAMANDO_YO) ||
       m.texto.includes(PREGUNTA_VOLVER) ||
       m.texto.includes(PREGUNTA_VOLVER_TU),
   );
@@ -311,13 +337,23 @@ export function decidirLlamada(e: EntradaLlamada): Decision {
   const contexto = contextoDelChat(e.hilo);
 
   if (pres) {
-    const marca = pres.marca;
+    const marca = pres.articulo ? `${pres.articulo} ${pres.marca}` : pres.marca;
+    const agente = pres.agente ?? "Sofía";
+    if (!pres.tuteo && pres.agente) {
+      // La misma agente del chat, de usted y en primera persona.
+      return {
+        llamar: true,
+        contexto,
+        primerMensaje: `Hola${nombre ? ` ${nombre}` : ""}, le habla ${agente}, de ${marca}. Le llamo como me pidió por WhatsApp. ¿Puede hablar ahora?`,
+        aviso: `${nombre ? `${nombre}, con` : "Con"} gusto: ${AVISO_LLAMANDO_YO}.`,
+      };
+    }
     return {
       llamar: true,
       contexto,
       primerMensaje: pres.tuteo
-        ? `Hola${nombre ? ` ${nombre}` : ""}, soy Sofía de ${marca}. Te llamo como me pediste por WhatsApp. ¿Puedes hablar ahora?`
-        : `Hola${nombre ? ` ${nombre}` : ""}, le saluda Sofía de ${marca}. Le marco como me pidió por WhatsApp. ¿Puede hablar ahora?`,
+        ? `Hola${nombre ? ` ${nombre}` : ""}, soy ${agente} de ${marca}. Te llamo como me pediste por WhatsApp. ¿Puedes hablar ahora?`
+        : `Hola${nombre ? ` ${nombre}` : ""}, le saluda ${agente} de ${marca}. Le marco como me pidió por WhatsApp. ¿Puede hablar ahora?`,
       aviso: pres.tuteo
         ? `${nombre ? `${nombre}, con` : "Con"} gusto: ${AVISO_LLAMANDO_TU}.`
         : `${nombre ? `${nombre}, con` : "Con"} gusto: ${AVISO_LLAMANDO}.`,

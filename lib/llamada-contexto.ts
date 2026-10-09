@@ -1,8 +1,9 @@
 // Lo que se habló por teléfono, para que el agente de WhatsApp lo sepa.
 //
-// En el panel comercial la agente de voz y la de WhatsApp son LA MISMA Sofía:
-// si en la llamada la persona contó que tiene una clínica y que pierde
-// mensajes de noche, la Sofía de WhatsApp no puede volver a preguntárselo.
+// En el panel comercial la agente de voz y la de WhatsApp son LA MISMA Sofía
+// (y en el de la Caja de Chalatenango, la misma Elena): si en la llamada la
+// persona contó que tiene una clínica y que pierde mensajes de noche, la Sofía
+// de WhatsApp no puede volver a preguntárselo.
 //
 // Se guarda la última llamada de cada teléfono EN CADA PANEL (tenant,
 // telefono), en dos momentos: cuando Sofía usa "seguir_por_whatsapp" (con el
@@ -13,6 +14,7 @@
 // está probado; la base, abajo.
 
 import { getSupabase } from "./supabase";
+import { NOMBRE_AGENTE as ELENA } from "./chalatenango-agente";
 
 export interface ContextoLlamada {
   tenant: string;
@@ -39,12 +41,13 @@ interface MensajeArtefacto {
 /**
  * La conversación de la llamada como texto ("Sofía: ... / Persona: ...").
  * Vapi la manda como `artifact.transcript` (texto) al colgar y como
- * `artifact.messages` mientras la llamada sigue. Se aceptan las dos.
+ * `artifact.messages` mientras la llamada sigue. Se aceptan las dos. La
+ * agente se nombra como se llama en ese panel.
  */
-export function transcriptDe(artifact: unknown): string | null {
+export function transcriptDe(artifact: unknown, agente = "Sofía"): string | null {
   const a = (artifact ?? {}) as { transcript?: unknown; messages?: unknown };
   if (typeof a.transcript === "string" && a.transcript.trim()) {
-    return a.transcript.replace(/^AI:/gm, "Sofía:").replace(/^User:/gm, "Persona:").trim();
+    return a.transcript.replace(/^AI:/gm, `${agente}:`).replace(/^User:/gm, "Persona:").trim();
   }
   if (Array.isArray(a.messages)) {
     const lineas = (a.messages as MensajeArtefacto[])
@@ -52,7 +55,7 @@ export function transcriptDe(artifact: unknown): string | null {
         const texto = (m.message ?? m.content ?? "").trim();
         if (!texto) return null;
         if (m.role === "user") return `Persona: ${texto}`;
-        if (m.role === "bot" || m.role === "assistant") return `Sofía: ${texto}`;
+        if (m.role === "bot" || m.role === "assistant") return `${agente}: ${texto}`;
         return null; // system, tool_calls, tool_call_result: no son la conversación
       })
       .filter((l): l is string => Boolean(l));
@@ -68,7 +71,7 @@ const VIGENCIA_MS = 14 * 24 * 60 * 60 * 1000;
  * El bloque que se le pega al guion del agente de WhatsApp. Vacío si no hay
  * llamada o si fue hace más de dos semanas (ya no es "lo que hablamos").
  */
-export function bloqueContextoLlamada(c: ContextoLlamada | null, ahora = Date.now()): string {
+export function bloqueContextoLlamada(c: ContextoLlamada | null, ahora = Date.now(), agente = "Sofía"): string {
   if (!c || (!c.resumen && !c.transcript)) return "";
   if (ahora - new Date(c.actualizado).getTime() > VIGENCIA_MS) return "";
   let transcript = c.transcript ?? "";
@@ -77,7 +80,7 @@ export function bloqueContextoLlamada(c: ContextoLlamada | null, ahora = Date.no
     "",
     "",
     "LO QUE HABLASTE CON ESTA PERSONA POR TELÉFONO",
-    "Tú misma hablaste con esta persona en una llamada (eres la misma Sofía). Úsalo para no volver a preguntar lo que ya te dijo y para retomar donde quedaron. No lo recites: menciona como mucho una cosa, como quien se acuerda.",
+    `Tú misma hablaste con esta persona en una llamada (eres la misma ${agente}). Úsalo para no volver a preguntar lo que ya te dijo y para retomar donde quedaron. No lo recites: menciona como mucho una cosa, como quien se acuerda.`,
   ];
   if (c.resumen) partes.push(`Resumen: ${c.resumen}`);
   if (transcript) partes.push(`Conversación de la llamada:\n${transcript}`);
@@ -159,14 +162,21 @@ export async function leerContextoLlamada(tenant: string, telefono: string): Pro
   };
 }
 
-/** Los paneles cuyo agente de WhatsApp lee lo que se habló por teléfono. */
-const PANELES_CON_CONTEXTO = new Set(["comercial"]);
+/**
+ * Los paneles cuyo agente de WhatsApp lee lo que se habló por teléfono, con el
+ * nombre de su agente (la misma en los dos canales).
+ */
+export const PANELES_CON_CONTEXTO: ReadonlyMap<string, string> = new Map([
+  ["comercial", "Sofía"],
+  ["chalatenango", ELENA],
+]);
 
 /** El bloque para el guion, o "" si el panel no lo usa o no hubo llamada. */
 export async function contextoDeLlamadaPara(tenant: string | undefined, telefono: string | undefined): Promise<string> {
-  if (!tenant || !telefono || !PANELES_CON_CONTEXTO.has(tenant)) return "";
+  const agente = tenant ? PANELES_CON_CONTEXTO.get(tenant) : undefined;
+  if (!tenant || !telefono || !agente) return "";
   try {
-    return bloqueContextoLlamada(await leerContextoLlamada(tenant, telefono));
+    return bloqueContextoLlamada(await leerContextoLlamada(tenant, telefono), Date.now(), agente);
   } catch (err) {
     console.error("[llamada-contexto]", err);
     return "";

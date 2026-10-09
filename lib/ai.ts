@@ -367,7 +367,9 @@ function toolElegirHotel(tenantId?: TenantId): Anthropic.Tool | null {
 }
 
 // Sin herramientas de agenda. El panel comercial es la DEMO de Mia: lo que
-// agende ahi es de mentira. El hospital atiende pacientes REALES en su numero, y
+// agende ahi es de mentira. La Caja de Chalatenango, igual: Elena hace una demo
+// con datos de ejemplo y una "cita" del juego de roles no puede caer en una
+// agenda de verdad. El hospital atiende pacientes REALES en su numero, y
 // esa agenda no es la del hospital: Claudia toma la solicitud y el personal
 // confirma. Se quedan con reaccionar (guardar_datos_contacto se agrega aparte,
 // para todos).
@@ -413,7 +415,7 @@ function toolsPara(tenantId?: TenantId): Anthropic.Tool[] {
         ? TOOLS_YALI
         : tenantId === "hospital"
           ? TOOLS_HOSPITAL
-          : tenantId === "comercial"
+          : tenantId === "comercial" || tenantId === "chalatenango"
             ? TOOLS_SIN_AGENDA
             : TOOLS_BASE;
   const elegir = toolElegirHotel(tenantId);
@@ -806,32 +808,44 @@ export interface RespuestaIA {
   imagenes: number;
 }
 
+export interface ContextoRespuesta {
+  telefono?: string;
+  tenantId?: TenantId;
+  sucursal?: SucursalTenant | null;
+  /** true = no sabemos la sede y el modelo tiene que resolverla este turno. */
+  pedirSede?: boolean;
+  /** La conversación, para los apartados: "facebook:pagina:persona" o "wa:telefono". */
+  clave?: string;
+  /** Texto de la plantilla de CrediQ con la que abrimos este chat, si la hubo. */
+  plantillaCrediQ?: string | null;
+}
+
+/**
+ * El system prompt de un turno, tal cual lo recibe el modelo: el guion del
+ * cliente y todo lo que se le pega (sede, promociones, plantilla de CrediQ, lo
+ * que se habló por teléfono, la fecha). Se exporta para probar un guion con el
+ * prompt real sin gastar API.
+ */
+export async function systemDeTurno(contexto?: ContextoRespuesta): Promise<string> {
+  return `${systemPromptFor(contexto?.tenantId)}${contextoSucursal(
+    contexto?.sucursal ?? null,
+  )}${contexto?.pedirSede ? contextoPedirSede(contexto?.tenantId) : ""}${await contextoPromociones(contexto?.tenantId)}${contexto?.plantillaCrediQ ? contextoCrediQ(contexto.plantillaCrediQ) : ""}${await contextoDeLlamadaPara(contexto?.tenantId, contexto?.telefono)}\n\n${contextoTemporal(contexto?.tenantId)}`;
+}
+
 // Genera la respuesta de la IA. Usa tool use para guardar datos del contacto y
 // para reaccionar; ejecuta esas acciones vía los callbacks de `acciones`.
 // Devuelve también el consumo, porque es el único punto donde se conoce.
 export async function generarRespuesta(
   historial: TurnoIA[],
   acciones?: AccionesIA,
-  contexto?: {
-    telefono?: string;
-    tenantId?: TenantId;
-    sucursal?: SucursalTenant | null;
-    /** true = no sabemos la sede y el modelo tiene que resolverla este turno. */
-    pedirSede?: boolean;
-    /** La conversación, para los apartados: "facebook:pagina:persona" o "wa:telefono". */
-    clave?: string;
-    /** Texto de la plantilla de CrediQ con la que abrimos este chat, si la hubo. */
-    plantillaCrediQ?: string | null;
-  },
+  contexto?: ContextoRespuesta,
 ): Promise<RespuestaIA> {
   const messages: Anthropic.MessageParam[] = historial.map((t) => ({
     role: t.autor === "cliente" ? "user" : "assistant",
     content: contenidoDeTurno(t),
   }));
 
-  const system = `${systemPromptFor(contexto?.tenantId)}${contextoSucursal(
-    contexto?.sucursal ?? null,
-  )}${contexto?.pedirSede ? contextoPedirSede(contexto?.tenantId) : ""}${await contextoPromociones(contexto?.tenantId)}${contexto?.plantillaCrediQ ? contextoCrediQ(contexto.plantillaCrediQ) : ""}${await contextoDeLlamadaPara(contexto?.tenantId, contexto?.telefono)}\n\n${contextoTemporal(contexto?.tenantId)}`;
+  const system = await systemDeTurno(contexto);
   const tools: Anthropic.Tool[] = [
     toolGuardarContacto(contexto?.tenantId),
     ...toolsPara(contexto?.tenantId),

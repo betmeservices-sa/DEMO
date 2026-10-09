@@ -170,7 +170,17 @@ export interface TenantVoz {
    * agente de WhatsApp no le contesta aparte ese pedido, porque ya le avisó
    * por escrito y le está marcando ella misma. Sin esto, como siempre.
    */
-  mismaAgente?: { marca: string; tuteo?: boolean };
+  mismaAgente?: {
+    marca: string;
+    tuteo?: boolean;
+    /** "la" para "de la Caja de Crédito de Chalatenango". Sin esto, "de Nissan". */
+    articulo?: string;
+    /**
+     * Cómo se llama la agente. Con esto, de usted, se presenta "le habla
+     * Elena" y avisa en primera persona ("le estoy marcando"). Sin esto, Sofía.
+     */
+    agente?: string;
+  };
   /**
    * Como se llama la agente de voz, para los textos que la nombran (la casilla
    * de "llamar a los importados" en Contactos). Sin esto, "Sofía", que es la

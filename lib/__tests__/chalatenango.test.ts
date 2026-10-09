@@ -10,13 +10,21 @@ import { MODULOS_CAJA } from "@/lib/modulos";
 import { enArea } from "@/lib/area-shell";
 import {
   CAMINOS,
+  CAMINOS_CHAT,
   CHALATENANGO_ASSISTANT_ID,
+  CLIENTE_EJEMPLO,
   CONFIG_VAPI_CHALATENANGO,
   GUION_MAESTRO,
   NOMBRE_AGENTE,
+  PLANTILLA_ELENA,
   PRIMER_MENSAJE,
+  PRIMER_MENSAJE_CHAT,
+  TOOL_SEGUIR_POR_WHATSAPP,
+  URL_WEBHOOK_ELENA,
   armarGuion,
+  armarGuionChat,
 } from "@/lib/chalatenango-agente";
+import { herramientasDeTenant } from "@/lib/ai";
 
 const caja = TENANTS.chalatenango;
 
@@ -114,27 +122,75 @@ describe("tenant chalatenango: la bandeja en tres areas", () => {
   });
 });
 
-describe("tenant chalatenango: agente de WhatsApp", () => {
+describe("tenant chalatenango: agente de WhatsApp (Elena, la misma demo que la voz)", () => {
   const p = caja.ai.systemPrompt;
 
-  it("es Elena, con luna", () => {
+  it("es Elena, con luna, y su guion es el de la demo escrito para chat", () => {
     expect(caja.ai.modelo).toBe("luna");
     expect(caja.ai.nombre).toBe(NOMBRE_AGENTE);
-    expect(p).toContain("Eres Elena");
+    expect(p).toBe(armarGuionChat());
+    expect(p).toContain("Eres Elena, una agente virtual de DEMOSTRACIÓN");
   });
 
-  it("dice lo publicado y manda lo demás a un asesor", () => {
-    for (const dato of ["2362-2500", "2221-3333", "Chatbot Fede", "Fede Punto Vecino", "Plaza Suiza", "El Coyolito"]) {
+  it("los mismos cuatro caminos y los mismos datos de ejemplo que la voz", () => {
+    expect(CAMINOS_CHAT.map((c) => [c.id, c.nombre])).toEqual(CAMINOS.map((c) => [c.id, c.nombre]));
+    for (const c of CAMINOS_CHAT) expect(p).toContain(c.guion);
+    expect(p).toContain(CLIENTE_EJEMPLO);
+    expect(p).toContain("crédito de consumo");
+    expect(p).toContain("$85.50, vencida hace 5 días");
+    for (const c of CAMINOS_CHAT) expect(PRIMER_MENSAJE_CHAT.toLowerCase()).toContain(c.nombre);
+  });
+
+  it("dice lo publicado, en cifras, y manda lo demás a un asesor", () => {
+    for (const dato of ["2362-2500", "2221-3333", "Chatbot Fede", "Fede Punto Vecino", "Plaza Suiza", "El Coyolito", "7:00 a. m.", "4:45 p. m.", "$1,000.00", "Fede Red 365"]) {
       expect(p, dato).toContain(dato);
     }
     expect(p).toMatch(/NUNCA inventes tasas/);
-    expect(p).toMatch(/los confirma un asesor/);
+    expect(p).toMatch(/eso se lo confirma un asesor con su caso/);
   });
 
-  it("verifica antes de hablar de una cuenta y nunca pide claves", () => {
-    expect(p).toMatch(/últimos cuatro dígitos del DUI/);
-    expect(p).toMatch(/NUNCA pidas número completo de tarjeta, CVV, PIN/);
+  it("nada de la voz: ni palabras en vez de cifras, ni marcas de actuación, ni reglas de pronunciación", () => {
+    for (const voz of ["veintitrés", "ochenta y cinco dólares", "tres sesenta y cinco", "[sighs]", "[chuckles]", "[curious]", "CÓMO SE DICEN LAS MARCAS", "MARCAS DE ACTUACIÓN", "Dui", "be larga"]) {
+      expect(p, voz).not.toContain(voz);
+    }
+  });
+
+  it("las reglas duras de la demo: verifica, no amenaza y no usa datos reales", () => {
+    expect(p).toMatch(/últimos cuatro dígitos de su DUI/);
     expect(p).toMatch(/NUNCA amenaces/);
+    expect(p).toMatch(/En la demo NO se usan datos reales/);
+    expect(p).toMatch(/la Caja nunca le pide la clave ni el PIN por chat/);
+    expect(p).toMatch(/NUNCA los guardes con guardar_datos_contacto/);
+  });
+
+  it("sabe abrir tras la plantilla, sin botones, y lo que habló por teléfono", () => {
+    expect(p).toContain(PLANTILLA_ELENA.cuerpo.replace("{{1}}", "[nombre]"));
+    expect(p).toMatch(/SI EL CHAT EMPEZÓ CON NUESTRO MENSAJE/);
+    expect(p).toMatch(/contesta con texto libre/);
+    expect(p).toContain('algo vago ("sí", "dale"');
+    expect(p).not.toMatch(/botones/i);
+    expect(p).toMatch(/SI YA HABLASTE CON ESTA PERSONA POR TELÉFONO/);
+  });
+
+  it("si le piden que llame, sabe que marca ella desde el 2505-4608", () => {
+    expect(p).toMatch(/SI TE PIDE QUE LA LLAMES/);
+    expect(p).toMatch(/desde el 2505-4608/);
+    expect(p).toContain('"le estoy marcando ahora mismo"');
+    expect(p).toMatch(/Nunca digas que no puedes hacer llamadas/);
+  });
+
+  it("tono neutro: sin modismos fuera de la regla que los prohíbe", () => {
+    const sinRegla = p.replace(/nada de "va", "vaya", "fíjese", "rapidito" ni "pues" de relleno/, "");
+    for (const w of ["va", "vaya", "fíjese", "rapidito", "pues", "simón", "cipote", "chivo", "cabal", "pisto"]) {
+      expect(sinRegla, w).not.toMatch(new RegExp(`(^|[^\\p{L}])${w}([^\\p{L}]|$)`, "iu"));
+    }
+  });
+
+  it("es una demo: sin herramientas de agenda y con tope para cuatro caminos", () => {
+    const tools = herramientasDeTenant("chalatenango");
+    expect(tools).not.toContain("consultar_disponibilidad");
+    expect(tools).not.toContain("confirmar_cita");
+    expect(caja.ai.limiteMensajes).toBe(40);
   });
 
   it("sin guiones largos", () => {
@@ -163,6 +219,15 @@ describe("agente de voz de la Caja (Elena, demo)", () => {
       expect(PRIMER_MENSAJE).toContain(papel);
     }
     expect(PRIMER_MENSAJE).toMatch(/¿Quiere que hagamos una demo\?/);
+  });
+
+  it("la llamada pedida por WhatsApp trae el chat, y en la llamada puede seguir por WhatsApp", () => {
+    expect(GUION_MAESTRO).toContain('{% if pidio_llamada == "si" %}');
+    expect(GUION_MAESTRO).toContain("{{contexto}}");
+    expect(GUION_MAESTRO).toContain("{% endif %}");
+    expect(GUION_MAESTRO).toMatch(/SEGUIR POR WHATSAPP/);
+    expect(GUION_MAESTRO).toMatch(/Llama a "seguir_por_whatsapp"/);
+    expect(GUION_MAESTRO).toMatch(/nunca el del cliente de ejemplo/);
   });
 
   it("un guion maestro y cuatro caminos, cada uno con su guion", () => {
@@ -225,6 +290,22 @@ describe("agente de voz de la Caja (Elena, demo)", () => {
     expect(c.maxDurationSeconds).toBe(900);
     expect(c.messagePlan.idleMessages.length).toBeGreaterThan(0);
     expect(c.voicemailMessage).toMatch(/Caja de Crédito de Chalatenango/);
-    expect("server" in c).toBe(false);
+  });
+
+  it("al colgar avisa a su ruta, y el secreto no vive en el repo", () => {
+    const c = CONFIG_VAPI_CHALATENANGO;
+    expect(c.serverMessages).toEqual(["end-of-call-report"]);
+    expect(c.server).toEqual({ url: URL_WEBHOOK_ELENA });
+    expect(URL_WEBHOOK_ELENA).toBe("https://demo.miagentia.com/api/webhooks/vapi/chalatenango");
+    expect(JSON.stringify(c)).not.toMatch(/x-vapi-secret/);
+  });
+
+  it("la herramienta seguir_por_whatsapp: resumen obligatorio y a su ruta", () => {
+    const t = TOOL_SEGUIR_POR_WHATSAPP;
+    expect(t.function.name).toBe("seguir_por_whatsapp");
+    expect(Object.keys(t.function.parameters.properties).sort()).toEqual(["nombre", "resumen", "telefono"]);
+    expect(t.function.parameters.required).toEqual(["resumen"]);
+    expect(t.server.url).toBe(URL_WEBHOOK_ELENA);
+    expect(JSON.stringify(t)).not.toMatch(/x-vapi-secret/);
   });
 });
