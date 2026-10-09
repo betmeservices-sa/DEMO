@@ -496,8 +496,8 @@ export const KEYTERMS = [
  */
 export const URL_WEBHOOK_ELENA = "https://demo.miagentia.com/api/webhooks/vapi/chalatenango";
 
-/** La herramienta en Vapi (cuenta BetMe). La crea o actualiza el script; su id queda aca. */
-export const ELENA_TOOL_WHATSAPP_ID = "";
+/** La herramienta en Vapi (cuenta BetMe), creada el 2026-10-09. El script la actualiza por este id. */
+export const ELENA_TOOL_WHATSAPP_ID = "1e62d489-370d-4d72-9669-00e68007d09d";
 
 export const NOMBRE_TOOL_SEGUIR = "seguir_por_whatsapp";
 
