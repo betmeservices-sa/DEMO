@@ -27,3 +27,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Lo mismo para las acciones: checkout, setup-node y upload-artifact
+    # saltaron de 4 a 7 el primer día; se suben a mano cuando haga falta.
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
