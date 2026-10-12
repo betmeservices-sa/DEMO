@@ -1,0 +1,26 @@
+# Dependabot: avisa de versiones nuevas y abre el PR con el parche de seguridad
+# cuando sale uno. Nada se despliega solo: el PR se mezcla a mano con la suite
+# en verde y la prueba de humo.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/El_Salvador
+    open-pull-requests-limit: 5
+    groups:
+      menores:
+        update-types: [minor, patch]
+    ignore:
+      # Next se sube a mano: cada salto se prueba con la suite y en producción.
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint-config-next
+        update-types: [version-update:semver-major]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

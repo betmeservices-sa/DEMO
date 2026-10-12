@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { sucursalActual } from "@/lib/consultorio/actual";
 import {
   crearTurno,
@@ -77,6 +78,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ codigo: 
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ codigo: string }> }) {
+  const permiso = await exigirModulo(req, "laboratorio");
+  if (!permiso.ok) return permiso.respuesta;
   if (tenantFromRequest(req) !== "consultorio") {
     return NextResponse.json({ ok: false, error: "No existe." }, { status: 404 });
   }

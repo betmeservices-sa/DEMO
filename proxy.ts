@@ -41,6 +41,9 @@ const PUBLICAS = [
   // que no tiene cuenta. Se defiende solo (tope, validacion, freno por IP) y
   // no devuelve datos de nadie.
   "/api/talento/postulacion",
+  // Los avisos de la Content-Security-Policy: los manda el navegador solo,
+  // también desde el login. Se defiende con tope por IP y no devuelve nada.
+  "/api/csp-reporte",
 ];
 
 function esPublica(pathname: string): boolean {

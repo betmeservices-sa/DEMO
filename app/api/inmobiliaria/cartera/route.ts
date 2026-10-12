@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { propiedadDesdeAlta, siguienteCodigo, validarAlta, type AltaPropiedad } from "@/lib/inmobiliaria-alta";
 import { resolverPropiedad } from "@/lib/inmobiliaria-cartera";
 import { hoyEnSv } from "@/lib/inmobiliaria-pipeline";
@@ -47,6 +48,8 @@ interface FotoEntrante {
 // navegador ya las redujo) y se guardan en el almacén del demo, que vive en
 // memoria igual que las reservas simuladas del hotel.
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "cartera");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "inmobiliaria") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });

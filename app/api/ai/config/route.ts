@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAiEnabled, setAiEnabled } from "@/lib/ai-store";
-import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
-import { VE } from "@/lib/modulos";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { fijarIaDeLosNumerosDe, iaDeLosNumerosDe } from "@/lib/wa-conexiones-store";
 
@@ -27,13 +26,8 @@ export async function GET(req: Request) {
 // impide que alguien lo apague con una petición a mano. Y no es un detalle:
 // apagarlo deja al agente mudo para TODAS las conversaciones del cliente.
 export async function POST(req: Request) {
-  const sesion = await leerSesion(sesionDeCookieHeader(req.headers.get("cookie")));
-  if (sesion?.fijo && !(VE[sesion.rol] ?? []).includes("settings")) {
-    return NextResponse.json(
-      { ok: false, error: "Tu perfil no puede cambiar el Modo IA." },
-      { status: 403 },
-    );
-  }
+  const permiso = await exigirModulo(req, "settings", "Tu perfil no puede cambiar el Modo IA.");
+  if (!permiso.ok) return permiso.respuesta;
 
   let body: { enabled?: boolean };
   try {

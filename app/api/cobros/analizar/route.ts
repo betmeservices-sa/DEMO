@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { hoyEnSv, resolverDeudor } from "@/lib/cobros-cartera";
 import { analizarLlamada, aplicarAnalisis } from "@/lib/cobros-ia";
@@ -28,6 +29,8 @@ interface Cuerpo {
  * demostrar el flujo completo sin telefonía.
  */
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "cobros");
+  if (!permiso.ok) return permiso.respuesta;
   if (tenantFromRequest(req) !== "promerica") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });
   }

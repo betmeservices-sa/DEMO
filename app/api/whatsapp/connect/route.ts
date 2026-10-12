@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import {
   borrarConexionWa,
@@ -61,6 +62,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "settings");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const appId = process.env.META_APP_ID;
   const secret = process.env.META_APP_SECRET;
@@ -140,6 +143,8 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const permiso = await exigirModulo(req, "settings");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const body = (await req.json().catch(() => ({}))) as { phoneNumberId?: string };
   if (!body.phoneNumberId) return NextResponse.json({ ok: false }, { status: 400 });

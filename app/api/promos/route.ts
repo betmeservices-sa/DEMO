@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import {
   actualizarPromo,
@@ -36,6 +37,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "promociones");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const body = (await req.json().catch(() => ({}))) as Partial<PromocionNueva>;
   const nombre = (body.nombre ?? "").trim();
@@ -60,6 +63,8 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  const permiso = await exigirModulo(req, "promociones");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const body = (await req.json().catch(() => ({}))) as { id?: string } & Partial<PromocionNueva>;
   if (!body.id) {
@@ -79,6 +84,8 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const permiso = await exigirModulo(req, "promociones");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ ok: false, error: "Falta el id." }, { status: 400 });

@@ -32,25 +32,8 @@ export function patronExacto(correo: string): string {
   return correo.replace(/[\\%_]/g, (m) => `\\${m}`);
 }
 
-/**
- * Freno por clave (la IP) para la búsqueda.
- *
- * Sin él se podrían probar correos en bucle hasta dar con uno que tenga algo.
- * Vive en memoria del proceso: no es infalible entre instancias de Vercel, pero
- * corta el caso real de alguien apretando en bucle.
- */
-export function demasiados(
-  golpes: Map<string, number[]>,
-  clave: string,
-  ahora: number,
-  max = 12,
-  ventanaMs = 10 * 60_000,
-): boolean {
-  const previos = (golpes.get(clave) ?? []).filter((t) => ahora - t < ventanaMs);
-  previos.push(ahora);
-  golpes.set(clave, previos);
-  return previos.length > max;
-}
+// El freno contra probar correos en bucle ya no vive acá: es el compartido de
+// lib/freno.ts, que cuenta igual en todas las instancias.
 
 export type Seccion = "receta" | TipoOrden;
 

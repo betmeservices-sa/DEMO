@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { eliminarContacto, listContactos, upsertContacto, type Contacto } from "@/lib/contacts-store";
 import { tenantFromRequest } from "@/lib/tenants/server";
 
@@ -29,6 +30,8 @@ export async function GET(req: Request) {
 // Crea o actualiza un contacto manualmente desde la pestaña Contactos. Aquí los
 // tags SÍ reemplazan (es edición explícita del staff).
 export async function DELETE(req: Request) {
+  const permiso = await exigirModulo(req, "contactos");
+  if (!permiso.ok) return permiso.respuesta;
   tenantFromRequest(req);
   const from = (new URL(req.url).searchParams.get("telefono") ?? "").trim();
   if (!from) return NextResponse.json({ ok: false, error: "Falta el contacto." }, { status: 400 });
@@ -37,6 +40,8 @@ export async function DELETE(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "contactos");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   let body: {
     telefono?: string;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { doctorActual } from "@/lib/consultorio/actual";
 import {
   documentoPorId,
@@ -21,6 +22,8 @@ export const dynamic = "force-dynamic";
 // envió es la clase de mentira que se descubre cuando el paciente llega a la
 // farmacia sin la receta.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const permiso = await exigirModulo(req, "consultorio");
+  if (!permiso.ok) return permiso.respuesta;
   if (tenantFromRequest(req) !== "consultorio") {
     return NextResponse.json({ ok: false, error: "No existe." }, { status: 404 });
   }

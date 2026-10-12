@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import {
   filtrarCartera,
@@ -90,6 +91,8 @@ interface Parche {
 // Lo que hace un gestor a mano sobre una ficha: dejar una nota, mover el
 // estado, tomar una promesa por teléfono o sacar la cuenta de las llamadas.
 export async function PATCH(req: Request) {
+  const permiso = await exigirModulo(req, "cobros");
+  if (!permiso.ok) return permiso.respuesta;
   if (tenantFromRequest(req) !== "promerica") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });
   }

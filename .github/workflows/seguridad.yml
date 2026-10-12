@@ -1,0 +1,43 @@
+# Seguridad de las dependencias y suite, en cada push y cada lunes.
+#
+# Falla si una dependencia de PRODUCCIÓN trae un aviso alto o crítico. El
+# reporte completo, con los avisos de desarrollo, queda en el log.
+name: Seguridad
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "41 15 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar
+        run: npm ci --no-audit --no-fund
+
+      - name: Avisos en dependencias de producción
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Reporte completo (informativo)
+        run: npm audit || true
+
+      - name: Tipos
+        run: npx tsc --noEmit
+
+      - name: Suite
+        run: npx vitest run

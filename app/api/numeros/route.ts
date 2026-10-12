@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { asignarNumeroVapi, fetchVapiNumeros, hayLlaveVapi } from "@/lib/vapi";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { esAgencia, soloDelTenant, veModuloVoz } from "@/lib/tenants/voz";
@@ -33,6 +34,8 @@ export async function GET(req: Request) {
  * Body: { phoneNumberId, assistantId }  ·  assistantId null = liberar.
  */
 export async function PATCH(req: Request) {
+  const permiso = await exigirModulo(req, "settings");
+  if (!permiso.ok) return permiso.respuesta;
   // Mover una linea de un agente a otro afecta a toda la cuenta: solo la agencia.
   if (!esAgencia(tenantFromRequest(req))) {
     return NextResponse.json({ ok: false, error: "No autorizado." }, { status: 403 });

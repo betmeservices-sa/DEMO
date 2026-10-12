@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { assistantIdDeTenant } from "@/lib/tenants/voz";
 import { hoyEnSv } from "@/lib/cobros-cartera";
@@ -33,6 +34,8 @@ interface Cuerpo {
  * cuenta puntual sin armar un lote.
  */
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "cobros");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "promerica") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });

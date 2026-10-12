@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { CAMPOS_WEBHOOK } from "@/lib/meta-oauth";
 import { conexionesDe, guardarConexiones, setIaActivaPagina, tenantDePagina } from "@/lib/meta-store";
@@ -179,6 +180,8 @@ async function conectarTodas(tenant: string, userToken: string) {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "settings");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
@@ -255,6 +258,8 @@ export async function POST(req: Request) {
 // mira las conversaciones que entraron, confirma que son las que esperaba, y
 // recién ahí la enciende.
 export async function PATCH(req: Request) {
+  const permiso = await exigirModulo(req, "settings");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const body = (await req.json().catch(() => ({}))) as { pageId?: string; iaActiva?: boolean };
   const pageId = String(body.pageId ?? "").trim();

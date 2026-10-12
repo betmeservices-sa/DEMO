@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { guardarCambios, leerReal } from "@/lib/talento/servidor";
 import type { Candidato, Postulacion } from "@/lib/talento/tipos";
@@ -28,6 +29,8 @@ export async function GET(req: Request) {
 const MAX_ITEMS = 200;
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "talento");
+  if (!permiso.ok) return permiso.respuesta;
   if (!soloBetme(req)) return NextResponse.json({ ok: false, error: "No autorizado." }, { status: 403 });
   let body: { candidatos?: unknown; postulaciones?: unknown; borrar?: unknown };
   try {

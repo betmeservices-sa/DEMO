@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { configGhl, marcarEnGhl, type AccionGhl } from "@/lib/talento/ghl";
 import { guardarGhl, leerCandidato } from "@/lib/talento/servidor";
@@ -15,6 +16,8 @@ export const dynamic = "force-dynamic";
 const ACCIONES: AccionGhl[] = ["aprobado", "rechazado", "deshacer"];
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "talento");
+  if (!permiso.ok) return permiso.respuesta;
   if (tenantFromRequest(req) !== "betme") return NextResponse.json({ ok: false, error: "No autorizado." }, { status: 403 });
   let body: { candidatoId?: unknown; accion?: unknown; previo?: unknown };
   try {

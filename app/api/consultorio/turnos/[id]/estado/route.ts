@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { abrirTurno, cerrarTurno, sucursalPorId, turnoPorId } from "@/lib/consultorio/almacen";
 import { tenantFromRequest } from "@/lib/tenants/server";
 
@@ -11,6 +12,8 @@ export const dynamic = "force-dynamic";
 // continuar (queda pendiente lo que falta) y finalizar (se cierra la visita).
 // Las dos últimas paran el cronómetro.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const permiso = await exigirModulo(req, "laboratorio");
+  if (!permiso.ok) return permiso.respuesta;
   if (tenantFromRequest(req) !== "consultorio") {
     return NextResponse.json({ ok: false, error: "No existe." }, { status: 404 });
   }

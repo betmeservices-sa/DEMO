@@ -37,6 +37,15 @@ function secreto(): string | null {
   return "dev-secret-solo-local-nunca-produccion";
 }
 
+/**
+ * El mismo secreto, para quien necesita verificar la firma SIN esperar (los
+ * route handlers leen el tenant de forma síncrona, ver lib/tenants/server.ts).
+ * null = fail-closed: no hay secreto y ninguna cookie vale.
+ */
+export function secretoDeSesion(): string | null {
+  return secreto();
+}
+
 function b64url(bytes: ArrayBuffer | Uint8Array): string {
   const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   let bin = "";

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { doctorPorCodigo, registrarPaciente } from "@/lib/consultorio/almacen";
 import type { Sexo } from "@/lib/consultorio/tipos";
+import { claveIp, golpe, respuestaBloqueado } from "@/lib/freno";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,12 @@ export const dynamic = "force-dynamic";
 // tener. Lo que decide de quién es el paciente NO es un campo del formulario
 // sino el código del QR, que se resuelve acá contra el doctor: así nadie puede
 // meterle pacientes a otro doctor mandando un id en el cuerpo.
+// Freno por IP, compartido entre instancias. Generoso: en una sala de espera
+// todos salen por la misma IP. Corta a quien mete registros en bucle.
+const FRENO = { max: 60, ventanaSeg: 10 * 60 };
+
 export async function POST(req: Request) {
+  if (await golpe(claveIp(req, "consultorio-publico"), FRENO)) return respuestaBloqueado(60);
   const b = (await req.json().catch(() => ({}))) as Record<string, string>;
   const doctor = doctorPorCodigo(b.codigo ?? "");
   if (!doctor) {

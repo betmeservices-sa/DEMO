@@ -6,6 +6,7 @@ import {
   tipoDeOrdenDe,
 } from "@/lib/consultorio/almacen";
 import { esDe } from "@/lib/consultorio/catalogos";
+import { claveIp, golpe, respuestaBloqueado } from "@/lib/freno";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,12 @@ export const dynamic = "force-dynamic";
 // PÚBLICO a propósito: quien llega no tiene cuenta. En qué sucursal cae lo
 // decide el CÓDIGO del QR, nunca un campo del formulario: si viniera en el
 // cuerpo, cualquiera podría meter turnos en otra sucursal.
+// Freno por IP, compartido entre instancias. Generoso: en la entrada todos
+// salen por la misma IP. Corta a quien pide turnos en bucle.
+const FRENO = { max: 60, ventanaSeg: 10 * 60 };
+
 export async function POST(req: Request) {
+  if (await golpe(claveIp(req, "consultorio-publico"), FRENO)) return respuestaBloqueado(60);
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const sucursal = sucursalPorCodigo(String(b.codigo ?? ""));
   if (!sucursal) {

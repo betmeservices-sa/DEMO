@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
 import { cambiarClave, yaCambioClave } from "@/lib/usuarios-clave";
+import { claveCorreo, claveIp, fallo, respuestaBloqueado, segundosBloqueada } from "@/lib/freno";
 import { cuentaDeUsuario } from "@/lib/usuarios";
 
 export const runtime = "nodejs";
@@ -34,10 +35,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Faltan datos." }, { status: 400 });
   }
 
+  // Mismo freno que el login: acá también se prueba una clave (la actual), y
+  // quien tiene una sesión abierta en una máquina ajena podría probar en bucle.
+  const frenos = [claveIp(req, "login-ip"), claveCorreo(sesion.usuario)];
+  const espera = await segundosBloqueada(frenos);
+  if (espera > 0) return respuestaBloqueado(espera);
+
   // La clave inicial solo sirve la primera vez, cuando todavía no hay una
   // propia contra la cual comparar la actual.
   const cuenta = cuentaDeUsuario(sesion.usuario);
   const r = await cambiarClave(sesion.usuario, actual, nueva, cuenta?.password ?? null);
+  if (!r.ok) await fallo(frenos);
 
   return NextResponse.json(r, { status: r.ok ? 200 : 400 });
 }

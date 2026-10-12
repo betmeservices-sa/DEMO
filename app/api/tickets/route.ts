@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import {
   agregarNota,
@@ -46,6 +47,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "tickets");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const body = (await req.json().catch(() => ({}))) as Partial<TicketNuevo>;
   const titulo = (body.titulo ?? "").trim();
@@ -77,6 +80,8 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  const permiso = await exigirModulo(req, "tickets");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const body = (await req.json().catch(() => ({}))) as {
     id?: string;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { interpretarDictado } from "@/lib/inmobiliaria-ia";
 import { tenantFromRequest } from "@/lib/tenants/server";
 
@@ -9,6 +10,8 @@ export const dynamic = "force-dynamic";
 // reglas siempre; el modelo solo rellena huecos cuando hay llave con saldo y
 // está encendido (INMO_DICTADO_MODELO=1). Ver lib/inmobiliaria-ia.ts.
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "cartera");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "inmobiliaria") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });

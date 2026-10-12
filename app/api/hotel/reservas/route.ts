@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { reservarHabitacionSimulada } from "@/lib/hotel-agente";
 import { borrarReservasSimuladas } from "@/lib/hotel-reservas";
 import { tenantFromRequest } from "@/lib/tenants/server";
@@ -10,6 +11,8 @@ export const dynamic = "force-dynamic";
 // agente de IA cuando el huésped cierra por WhatsApp: se valida contra la
 // disponibilidad REAL del PMS y se guarda en el demo, sin escribir en el PMS.
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "habitaciones");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "hotel") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });
@@ -35,6 +38,8 @@ export async function POST(req: Request) {
 
 // Limpia las reservas simuladas para volver a mostrar el demo desde cero.
 export async function DELETE(req: Request) {
+  const permiso = await exigirModulo(req, "habitaciones");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "hotel") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });

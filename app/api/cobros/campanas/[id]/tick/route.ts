@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import {
   campanaAgotada,
@@ -160,6 +161,8 @@ async function cerrarConAnalisis(
  * justo lo que hace falta para una base de 10,000 que corre toda la tarde.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const permiso = await exigirModulo(req, "campanas");
+  if (!permiso.ok) return permiso.respuesta;
   if (tenantFromRequest(req) !== "promerica") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });
   }

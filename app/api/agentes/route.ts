@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import {
   actualizarScriptVapi,
   fetchVapiAgentes,
@@ -44,6 +45,8 @@ export async function GET(req: Request) {
 // Guarda el script (system prompt) de un agente en Vapi.
 // Body: { assistantId, script }
 export async function PATCH(req: Request) {
+  const permiso = await exigirModulo(req, "agentes");
+  if (!permiso.ok) return permiso.respuesta;
   // Editar el prompt es trabajo de la agencia. Un cliente ni siquiera lo recibe.
   if (!esAgencia(tenantFromRequest(req))) {
     return NextResponse.json({ ok: false, error: "No autorizado." }, { status: 403 });
@@ -93,6 +96,8 @@ export async function PATCH(req: Request) {
 // Dispara una llamada saliente real.
 // Body: { assistantId, phoneNumberId, numero }
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "agentes");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (!veModuloVoz(tenant)) {
     return NextResponse.json({ ok: false, error: "Este módulo no está habilitado." }, { status: 403 });

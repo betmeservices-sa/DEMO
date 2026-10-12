@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { conexionesDe } from "@/lib/meta-store";
 import {
@@ -36,6 +37,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "comentarios");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const body = (await req.json().catch(() => ({}))) as {
     id?: string;

@@ -11,6 +11,7 @@
 // deja se distinguen de los de huéspedes reales.
 
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { TENANTS } from "@/lib/tenants";
 import { generarRespuesta, type TurnoIA } from "@/lib/ai";
@@ -50,6 +51,8 @@ function claveDe(sesionId: string): string {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "sofia");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "yaly") return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });
   const cfg = TENANTS[tenant];
@@ -172,6 +175,8 @@ export async function POST(req: Request) {
 
 /** Reset: cierra el apartado vivo de esta sesión de prueba. El historial lo borra el navegador. */
 export async function DELETE(req: Request) {
+  const permiso = await exigirModulo(req, "sofia");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "yaly") return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });
   const b = (await req.json().catch(() => ({}))) as { sesionId?: string };

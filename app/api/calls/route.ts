@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { fetchVapiCalls, hayLlaveVapi } from "@/lib/vapi";
 import { guardarLlamadas, haySupabase, leerLlamadas } from "@/lib/calls-store";
 import { resumirLlamadas } from "@/lib/calls-metrics";
@@ -87,5 +88,7 @@ export async function GET(req: Request) {
 // Mismo trabajo que GET. Existe para que el boton "Sincronizar" exprese
 // intencion de escritura y no quede cacheado por ningun intermediario.
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "llamadas");
+  if (!permiso.ok) return permiso.respuesta;
   return responder(req);
 }

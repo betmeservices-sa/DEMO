@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { claveIp, golpe } from "@/lib/freno";
 import { columnaFaltante, latchDeTabla, tablaFaltante } from "@/lib/tabla-faltante";
 import { esCliente, LIMITE_BYTES, limpiar, type EnvioOnboarding } from "@/lib/onboarding";
 
@@ -34,26 +35,16 @@ export async function OPTIONS(req: Request) {
   return new Response(null, { status: 204, headers: cors(req.headers.get("origin")) });
 }
 
-// Freno por IP en memoria. No es infalible entre instancias serverless, pero
-// corta el caso real: alguien apretando enviar en bucle.
-const golpes = new Map<string, number[]>();
-const VENTANA_MS = 10 * 60_000;
-const MAX_POR_VENTANA = 8;
-
-function demasiados(ip: string): boolean {
-  const ahora = Date.now();
-  const previos = (golpes.get(ip) ?? []).filter((t) => ahora - t < VENTANA_MS);
-  previos.push(ahora);
-  golpes.set(ip, previos);
-  return previos.length > MAX_POR_VENTANA;
-}
+// Freno por IP, compartido entre instancias (lib/freno.ts): corta el caso
+// real, alguien apretando enviar en bucle, también cuando cada pedido cae en
+// una instancia distinta.
+const FRENO = { max: 8, ventanaSeg: 10 * 60 };
 
 const faltaTabla = latchDeTabla();
 
 export async function POST(req: Request) {
   const cabeceras = cors(req.headers.get("origin"));
-  const ip = (req.headers.get("x-forwarded-for") ?? "sin-ip").split(",")[0].trim();
-  if (demasiados(ip)) {
+  if (await golpe(claveIp(req, "onboarding"), FRENO)) {
     return NextResponse.json({ ok: false, error: "Demasiados envíos seguidos." }, { status: 429, headers: cabeceras });
   }
 

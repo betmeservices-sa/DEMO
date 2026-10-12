@@ -25,7 +25,7 @@ import {
   turnosDe,
 } from "@/lib/consultorio/almacen";
 import { resumenDeHoy, valorDe } from "@/lib/consultorio/estadisticas";
-import { armarPortal, demasiados, normalizarCorreo, patronExacto } from "@/lib/consultorio/portal";
+import { armarPortal, normalizarCorreo, patronExacto } from "@/lib/consultorio/portal";
 import { armarCorreo } from "@/lib/consultorio/correo";
 import type { Documento } from "@/lib/consultorio/tipos";
 
@@ -446,15 +446,6 @@ describe("el portal del paciente", () => {
     const portal = armarPortal([nuevo], [], listarDoctores(), listarSucursales());
     expect(portal.nombre).toBe("Nuevo");
     expect(portal.secciones).toEqual([]);
-  });
-
-  it("frena a quien prueba correos en bucle", () => {
-    const golpes = new Map<string, number[]>();
-    for (let i = 0; i < 12; i++) expect(demasiados(golpes, "1.2.3.4", 1000 + i)).toBe(false);
-    expect(demasiados(golpes, "1.2.3.4", 1100)).toBe(true);
-    // Otra IP no paga por la primera, y pasada la ventana se vuelve a poder.
-    expect(demasiados(golpes, "5.6.7.8", 1100)).toBe(false);
-    expect(demasiados(golpes, "1.2.3.4", 1100 + 10 * 60_000 + 1)).toBe(false);
   });
 
   it("es público: ningún rol lo cierra", () => {

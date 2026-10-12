@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { doctorActual } from "@/lib/consultorio/actual";
 import {
   documentosDe,
@@ -54,6 +55,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "consultorio");
+  if (!permiso.ok) return permiso.respuesta;
   if (ajeno(req)) return NextResponse.json({ ok: false, error: "No existe." }, { status: 404 });
   const doctorId = (await doctorActual()).id;
 

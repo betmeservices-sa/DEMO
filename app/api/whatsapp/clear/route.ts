@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { clearHistory } from "@/lib/wa-store";
 import { borrarEstadosSucursalDeTenant } from "@/lib/sucursal-store";
 import { tenantFromRequest } from "@/lib/tenants/server";
@@ -13,6 +14,8 @@ export const dynamic = "force-dynamic";
 // creería que ya preguntó dos veces por el hotel y pasaría el chat a una persona
 // al primer mensaje.
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "settings");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   await clearHistory(tenant);
   await borrarEstadosSucursalDeTenant(tenant);

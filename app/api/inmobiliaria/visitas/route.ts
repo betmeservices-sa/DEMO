@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { agendarVisita, buscarPropiedad, cancelarVisita, cargarAgenda } from "@/lib/inmobiliaria-store";
 import { tenantFromRequest } from "@/lib/tenants/server";
 
@@ -18,6 +19,8 @@ export async function GET(req: Request) {
 // Agendar desde la ficha del lead: elige propiedad, día y hora. El lead se mueve
 // a la etapa de visita y aparece en el calendario y en el pipeline a la vez.
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "visitas");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "inmobiliaria") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });

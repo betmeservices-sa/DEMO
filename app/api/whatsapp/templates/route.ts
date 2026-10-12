@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import {
   listarTemplates,
   crearTemplate,
@@ -22,6 +23,8 @@ export async function GET(req: Request) {
 
 // POST: crea una plantilla en Meta. Body = NuevoTemplate.
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "settings");
+  if (!permiso.ok) return permiso.respuesta;
   let body: NuevoTemplate;
   try {
     body = (await req.json()) as NuevoTemplate;
@@ -43,6 +46,8 @@ export async function POST(req: Request) {
 
 // DELETE: borra una plantilla por nombre. ?name=...
 export async function DELETE(req: Request) {
+  const permiso = await exigirModulo(req, "settings");
+  if (!permiso.ok) return permiso.respuesta;
   const name = new URL(req.url).searchParams.get("name")?.trim();
   if (!name) {
     return NextResponse.json({ ok: false, error: "Falta 'name'." }, { status: 400 });

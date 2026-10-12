@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ipDe, registrarAcceso } from "@/lib/accesos";
 import QRCode from "qrcode";
 import { validarCredenciales } from "@/lib/auth-server";
+import { claveCorreo, claveIp, fallo, limpiar, respuestaBloqueado, segundosBloqueada } from "@/lib/freno";
 import {
   cookieDeSesion,
   crearSesion,
@@ -40,8 +41,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Cuerpo invalido" }, { status: 400 });
   }
 
+  // Freno compartido entre instancias, por IP y por correo: cada fallo cuenta
+  // y el bloqueo crece (lib/freno.ts). Sin esto, probar claves era cuestión de
+  // paciencia. El bloqueo se mira ANTES de validar, para no gastar bcrypt en
+  // quien ya está afuera.
+  const frenos = [claveIp(req, "login-ip"), claveCorreo(usuario)];
+  const espera = await segundosBloqueada(frenos);
+  if (espera > 0) return respuestaBloqueado(espera);
+
   const acceso = await validarCredenciales(usuario, password);
   if (!acceso) {
+    await fallo(frenos);
     // Mensaje generico a proposito: no revelamos si el usuario existe.
     return NextResponse.json({ ok: false, error: "Credenciales invalidas" }, { status: 401 });
   }
@@ -76,6 +86,8 @@ export async function POST(req: Request) {
 
       const codigoValido = await verificarTotp(reg.secret, token);
       if (!codigoValido) {
+        // Un código mal también cuenta: seis dígitos se adivinan en bucle.
+        await fallo(frenos);
         const cuerpo: Record<string, unknown> = {
           ok: false,
           need2fa: true,
@@ -109,6 +121,10 @@ export async function POST(req: Request) {
       { status: 503 },
     );
   }
+  // Entró: el correo arranca limpio. La IP no, para que un acierto no le
+  // borre el historial a quien está probando claves de otros desde el mismo
+  // lugar; su cuenta se vence sola con la ventana.
+  await limpiar([claveCorreo(usuario)]);
   // Quién entró, de qué cliente y desde dónde (lo mira el tablero de la agencia).
   if (acceso.usuario) {
     await registrarAcceso({

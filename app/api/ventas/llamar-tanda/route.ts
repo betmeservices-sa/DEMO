@@ -1,4 +1,5 @@
 import { after, NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import {
   ETIQUETA_ORIGEN,
@@ -64,6 +65,8 @@ interface Destino {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "ventas");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (!veModuloVoz(tenant)) {
     return NextResponse.json({ ok: false, error: "Este módulo no está habilitado." }, { status: 403 });

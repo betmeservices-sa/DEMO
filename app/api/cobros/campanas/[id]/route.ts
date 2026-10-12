@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import {
   CONCURRENCIA_MAX,
@@ -77,6 +78,8 @@ interface Parche {
 
 /** Pausar, reanudar, cancelar, o cambiar el "de N en N" con la campaña viva. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const permiso = await exigirModulo(req, "campanas");
+  if (!permiso.ok) return permiso.respuesta;
   if (tenantFromRequest(req) !== "promerica") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });
   }

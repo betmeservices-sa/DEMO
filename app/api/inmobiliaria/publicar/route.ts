@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { GRAPH } from "@/lib/meta-oauth";
 import { conexionesDe } from "@/lib/meta-store";
 import { buscarPropiedad, marcarPublicada, registrarPublicacion } from "@/lib/inmobiliaria-store";
@@ -22,6 +23,8 @@ const MAX_BYTES = 4_000_000;
 // puede alcanzarlas. Publicar en IG es subir el arte a un hosting primero, y eso
 // es otra pieza, no un parche aquí.
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "publicacion");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "inmobiliaria") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });

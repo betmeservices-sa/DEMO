@@ -139,7 +139,7 @@ export function Portal({ clinica = CLINICA }: { clinica?: string }) {
       {cabecera}
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="font-serif text-[21px] text-[var(--texto)]">
-          Hola, {datos.nombre.split(/\s+/)[0]}
+          {datos.nombre ? `Hola, ${datos.nombre.split(/\s+/)[0]}` : "Hola"}
         </p>
         <button
           type="button"
@@ -152,9 +152,12 @@ export function Portal({ clinica = CLINICA }: { clinica?: string }) {
 
       {datos.secciones.length === 0 ? (
         <div className="tarjeta px-6 py-9 text-center">
-          <p className="font-serif text-[19px] text-[var(--texto)]">Todavía no hay nada tuyo</p>
+          {/* Lo mismo para un correo registrado sin documentos que para uno que
+              no está: el servidor no distingue, para que nadie pueda probar
+              correos y saber cuáles son pacientes. */}
+          <p className="font-serif text-[19px] text-[var(--texto)]">Todavía no hay nada con ese correo</p>
           <p className="mx-auto mt-1.5 max-w-[34ch] text-[14.5px] leading-relaxed text-[var(--texto-2)]">
-            Cuando el doctor te deje una receta o una orden, aparece acá.
+            Cuando el doctor te deje una receta o una orden, aparece acá. Si te registraste con otro correo, probá con ese.
           </p>
         </div>
       ) : (

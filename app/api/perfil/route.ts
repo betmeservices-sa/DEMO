@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { campoPerfil, numeroDeGestion, perfilDeTenant } from "@/lib/perfil-agente";
 import { crearSolicitud, listarSolicitudes } from "@/lib/perfil-store";
@@ -24,6 +25,8 @@ export async function GET(req: Request) {
 // Deja registrada una solicitud de cambio y devuelve su número de gestión. NO
 // reescribe el guion: ver la cabecera de lib/perfil-store.ts.
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "perfil");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const body = (await req.json().catch(() => ({}))) as { campo?: string; texto?: string };
   const campo = campoPerfil(tenant, body.campo ?? "");

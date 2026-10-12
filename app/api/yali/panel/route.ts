@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { cargarPanelYaliVivo } from "@/lib/yali-cloudbeds-panel";
 import { borrarReservasYali } from "@/lib/yali-reservas";
 import { tenantFromRequest } from "@/lib/tenants/server";
@@ -29,6 +30,8 @@ export async function GET(req: Request) {
 // Vacía las reservas que cerró el agente en el demo. El libro de ocupación no
 // se toca: es determinista y se vuelve a generar igual.
 export async function DELETE(req: Request) {
+  const permiso = await exigirModulo(req, "settings");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "yaly") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });

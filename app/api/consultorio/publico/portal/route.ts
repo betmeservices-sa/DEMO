@@ -5,7 +5,8 @@ import {
   listarSucursales,
   pacientesPorCorreo,
 } from "@/lib/consultorio/almacen";
-import { armarPortal, demasiados, normalizarCorreo } from "@/lib/consultorio/portal";
+import { armarPortal, normalizarCorreo } from "@/lib/consultorio/portal";
+import { claveIp, golpe, respuestaBloqueado } from "@/lib/freno";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,19 +14,19 @@ export const dynamic = "force-dynamic";
 // El portal del paciente: entra con su correo y le salen sus recetas y órdenes.
 //
 // PÚBLICO a propósito, igual que el registro: quien pregunta no tiene cuenta.
-// Va por POST para que el correo no quede en la URL ni en los logs de acceso, y
-// con freno por IP para que no se puedan probar correos en bucle. Lo que
-// devuelve lo recorta portal.ts: ni teléfonos ni diagnóstico.
-const golpes = new Map<string, number[]>();
+// Va por POST para que el correo no quede en la URL ni en los logs de acceso.
+// Lo que devuelve lo recorta portal.ts: ni teléfonos ni diagnóstico.
+//
+// Dos defensas contra probar correos en bucle hasta dar con uno:
+//   - freno por IP compartido entre instancias (lib/freno.ts), porque el de
+//     memoria se reiniciaba con cada instancia de Vercel;
+//   - respuesta UNIFORME: un correo que no está contesta lo mismo que uno
+//     registrado sin documentos (200 y portal vacío). Antes el 404 decía con
+//     todas sus letras "ese correo no es paciente de acá", que es un dato.
+const FRENO = { max: 12, ventanaSeg: 10 * 60 };
 
 export async function POST(req: Request) {
-  const ip = (req.headers.get("x-forwarded-for") ?? "sin-ip").split(",")[0].trim();
-  if (demasiados(golpes, ip, Date.now())) {
-    return NextResponse.json(
-      { ok: false, error: "Demasiados intentos seguidos. Probá de nuevo en unos minutos." },
-      { status: 429 },
-    );
-  }
+  if (await golpe(claveIp(req, "portal"), FRENO)) return respuestaBloqueado(FRENO.ventanaSeg);
 
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const correo = normalizarCorreo(String(b.correo ?? ""));
@@ -34,17 +35,7 @@ export async function POST(req: Request) {
   }
 
   const pacientes = await pacientesPorCorreo(correo);
-  if (pacientes.length === 0) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "No encontramos ese correo. Tiene que ser el mismo que dejaste al registrarte con el doctor.",
-      },
-      { status: 404 },
-    );
-  }
-
-  const documentos = await documentosDePacientes(pacientes.map((p) => p.id));
+  const documentos = pacientes.length > 0 ? await documentosDePacientes(pacientes.map((p) => p.id)) : [];
   return NextResponse.json({
     ok: true,
     portal: armarPortal(pacientes, documentos, listarDoctores(), listarSucursales()),

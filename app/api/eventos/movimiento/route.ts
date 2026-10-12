@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { validarMovimiento } from "@/lib/eventos/estado";
 import { agregarMovimiento, TENANT_EVENTOS } from "@/lib/eventos/store";
@@ -13,6 +14,8 @@ export const dynamic = "force-dynamic";
 const ACTORES = new Set(["me", "s2", "s3", "s4", "s5", "s6"]);
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "eventos");
+  if (!permiso.ok) return permiso.respuesta;
   if (tenantFromRequest(req) !== TENANT_EVENTOS) {
     return NextResponse.json({ ok: false, error: "Este módulo no está habilitado." }, { status: 403 });
   }

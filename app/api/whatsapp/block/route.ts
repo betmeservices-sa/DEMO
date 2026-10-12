@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DIRECCION, exigirRoles } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { bloquearNumeroWa } from "@/lib/wa-send";
 import { borrarConversacionCompleta } from "@/lib/wa-store";
@@ -7,9 +8,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // "Borrar y bloquear" una conversación de WhatsApp: bloquea el número (deja de
-// escribir) y borra todo su historial de la base. Solo lo llama la UI para
-// gerentes/jefes/dirección; el gating de rol vive en el cliente.
+// escribir) y borra todo su historial de la base. Solo gerentes, jefes y
+// dirección: el menú lo esconde a los demás, y acá se exige de verdad.
 export async function POST(req: Request) {
+  const permiso = await exigirRoles(req, DIRECCION);
+  if (!permiso.ok) return permiso.respuesta;
   let body: { from?: string };
   try {
     body = await req.json();

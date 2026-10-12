@@ -8,6 +8,7 @@
 // cliente, cualquiera moveria los prospectos de otro concesionario.
 
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
 import { staffDeUsuario } from "@/lib/usuarios";
@@ -103,6 +104,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "ventas");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   const actor = await actorDe(req);
   let body: {

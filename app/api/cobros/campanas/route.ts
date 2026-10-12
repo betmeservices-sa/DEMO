@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exigirModulo } from "@/lib/permisos";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { assistantIdDeTenant } from "@/lib/tenants/voz";
 import {
@@ -106,6 +107,8 @@ function ventanaValida(v: VentanaLlamado | undefined): VentanaLlamado {
  * crearla; quien marca es el tick.
  */
 export async function POST(req: Request) {
+  const permiso = await exigirModulo(req, "campanas");
+  if (!permiso.ok) return permiso.respuesta;
   const tenant = tenantFromRequest(req);
   if (tenant !== "promerica") {
     return NextResponse.json({ ok: false, error: "No disponible" }, { status: 403 });
