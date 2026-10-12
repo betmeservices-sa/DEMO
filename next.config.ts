@@ -12,6 +12,10 @@ const enDesarrollo = process.env.NODE_ENV === "development";
 //   - script-src 'unsafe-inline': Next mete scripts en línea para hidratar.
 //     En desarrollo además 'unsafe-eval', por el HMR.
 //   - style-src 'unsafe-inline': Tailwind y los estilos en línea de React.
+//   - fonts.googleapis.com (hoja de estilo) y fonts.gstatic.com (woff2): la
+//     tipografía de cada tema entra por <link>. Primer día en modo reporte
+//     (2026-10-12): era lo ÚNICO que se salía de la lista, unos 30 reportes
+//     por pantalla.
 //   - img-src https: data: blob:: fotos de perfil y adjuntos vienen de los CDN
 //     de Meta, los QR salen como data: y las vistas previas como blob:.
 //   - media-src https: blob:: las notas de voz de WhatsApp y las grabaciones
@@ -22,9 +26,9 @@ const enDesarrollo = process.env.NODE_ENV === "development";
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${enDesarrollo ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' https: data: blob:",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://fonts.gstatic.com",
   "media-src 'self' https: blob: data:",
   `connect-src 'self'${enDesarrollo ? " ws: wss:" : ""}`,
   "worker-src 'self' blob:",
