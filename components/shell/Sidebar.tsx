@@ -18,7 +18,6 @@ import { useYo, useYoNombre } from "@/lib/yo";
 import { ClienteSwitcher } from "./ClienteSwitcher";
 import { Brand } from "./Brand";
 import { RoleSwitcher } from "./RoleSwitcher";
-import { CambiarClave } from "./CambiarClave";
 import { Reloj } from "./Reloj";
 
 interface NavItem {
@@ -317,7 +316,6 @@ export function Sidebar({
       </nav>
 
       <div className="space-y-3 border-t border-line p-3">
-        <CambiarClave />
         <ClienteSwitcher />
         {!veClinica && <RoleSwitcher />}
         <div className="flex items-center gap-2.5 rounded-xl px-2 py-1.5">

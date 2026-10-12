@@ -7,11 +7,10 @@ import { useYo, useYoNombre } from "@/lib/yo";
 import { staff, ME } from "@/lib/data/seed";
 import { Avatar, inicialesDe } from "@/components/ui/Avatar";
 import { RoleSwitcher } from "../RoleSwitcher";
-import { CambiarClave } from "../CambiarClave";
 import { ClienteSwitcher } from "../ClienteSwitcher";
 import { usePopover } from "./usePopover";
 
-/** El usuario, arriba a la derecha: su perfil, "ver como", su clave y salir. */
+/** El usuario, arriba a la derecha: su perfil, "ver como", el cliente y salir. */
 export function MenuUsuario({ onLogout }: { onLogout?: () => void }) {
   const { def } = useRole();
   const yoId = useYo();
@@ -54,7 +53,6 @@ export function MenuUsuario({ onLogout }: { onLogout?: () => void }) {
               </div>
             </div>
             <RoleSwitcher arriba={false} />
-            <CambiarClave />
             <ClienteSwitcher />
             {onLogout && (
               <button
