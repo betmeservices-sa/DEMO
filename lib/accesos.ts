@@ -7,7 +7,7 @@
 // bandeja sondea cada pocos segundos), pero se escribe a lo sumo una vez por
 // minuto por usuario para no llenar la base de escrituras iguales.
 
-import { getSupabase, publicoDeProyectoEscribible, publicoDeProyectoPropio, tenantsConProyectoPropio } from "./supabase";
+import { getSupabase, publicoDeProyectoEscribible, registroDeAccesos, tenantsConProyectoPropio } from "./supabase";
 
 export interface Acceso {
   ts: string;
@@ -118,8 +118,9 @@ export async function listarAccesos(opciones: { tenant?: string; dias?: number; 
   if (!sb) {
     return memAccesos.filter((a) => a.ts >= desde && (!opciones.tenant || a.tenant === opciones.tenant)).slice(0, opciones.tope ?? 200);
   }
-  // Un cliente con proyecto propio anota sus accesos allá; las filas que quedaron
-  // en el compartido son la copia de antes de la mudanza y se ignoran.
+  // Un cliente con proyecto propio anota sus accesos allá (los de hub, en el
+  // proyecto de Yali: ver registroDeAccesos); las filas que quedaron en el
+  // compartido son la copia de antes de la mudanza y se ignoran.
   const propios = tenantsConProyectoPropio().filter((t) => !opciones.tenant || t === opciones.tenant);
   const leer = async (cliente: NonNullable<typeof sb>, soloTenant?: string, sin: string[] = []) => {
     let q = cliente.from("accesos_log").select("ts, tenant, usuario, nombre, rol, todos, host, ip, agente").gte("ts", desde).order("ts", { ascending: false }).limit(opciones.tope ?? 200);
@@ -135,7 +136,7 @@ export async function listarAccesos(opciones: { tenant?: string; dias?: number; 
   const listas = await Promise.all([
     opciones.tenant && propios.includes(opciones.tenant) ? Promise.resolve([]) : leer(sb, opciones.tenant, propios),
     ...propios.map((t) => {
-      const c = publicoDeProyectoPropio(t);
+      const c = registroDeAccesos(t);
       return c ? leer(c, t) : Promise.resolve([]);
     }),
   ]);
@@ -164,7 +165,7 @@ export async function actividadDeUsuarios(): Promise<Actividad[]> {
     await Promise.all([
       leer(sb),
       ...propios.map((t) => {
-        const c = publicoDeProyectoPropio(t);
+        const c = registroDeAccesos(t);
         return c ? leer(c, t) : Promise.resolve([]);
       }),
     ])

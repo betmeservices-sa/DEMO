@@ -115,6 +115,42 @@ describe("Yali, de solo lectura", () => {
   });
 });
 
+// Hub anota los accesos y la actividad de TODOS sus clientes en el proyecto de
+// Yali (getSupabaseAgencia en el repo yali), con la columna tenant. El hospital
+// tiene su propia base, pero sus logins no están ahí.
+describe("el registro de accesos de los clientes de hub", () => {
+  beforeEach(() => {
+    process.env.SUPABASE_URL__HOSPITAL = "https://cegisa.test";
+    process.env.SUPABASE_SECRET_KEY__HOSPITAL = "sb_secret_x";
+    process.env.YALI_SUPABASE_URL = "https://yali.test";
+    process.env.YALI_SUPABASE_PUBLISHABLE_KEY = "pub_yali";
+    process.env.YALI_SUPABASE_LECTOR_JWT = "jwt_lector";
+  });
+
+  it("el del hospital se lee del proyecto de Yali, no de su base", () => {
+    expect((sb.registroDeAccesos("hospital") as unknown as Creado).url).toBe("https://yali.test");
+    expect((sb.registroDeAccesos("yaly") as unknown as Creado).url).toBe("https://yali.test");
+  });
+
+  it("un cliente sin proyecto propio no tiene registro aparte", () => {
+    expect(sb.registroDeAccesos("grupoq")).toBeNull();
+  });
+});
+
+describe("el directorio de hub", () => {
+  it("es el esquema hub del compartido, con la llave secreta", () => {
+    process.env.SUPABASE_SECRET_KEY = "sb_secret_compartido";
+    const c = sb.directorioDeHub() as unknown as Creado;
+    expect(c.url).toBe("https://compartido.test");
+    expect(c.key).toBe("sb_secret_compartido");
+    expect((c.opciones.db as { schema: string }).schema).toBe("hub");
+  });
+
+  it("sin la secreta no hay directorio: con la publishable no se ve nada", () => {
+    expect(sb.directorioDeHub()).toBeNull();
+  });
+});
+
 describe("sin variables", () => {
   it("nadie tiene proyecto propio y todo va al compartido", () => {
     expect(sb.tenantsConProyectoPropio()).toEqual([]);

@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { EN_HUB, type TenantId } from "./tenants/types";
 
 // El tipo de SupabaseClient lleva el esquema como parametro, y por defecto es
 // "public". Como aca el esquema se decide en tiempo de ejecucion, se afloja ese
@@ -109,6 +110,34 @@ export function tenantsConProyectoEscribible(): string[] {
 /** El `public` del proyecto propio de un cliente (accesos, actividad). */
 export function publicoDeProyectoPropio(tenant: string): Cliente | null {
   return clienteDeProyectoPropio(tenant, "public");
+}
+
+/**
+ * Donde LEER los accesos y la actividad de un cliente con proyecto propio.
+ *
+ * Hub anota los de TODOS sus clientes en el proyecto de Yali (getSupabaseAgencia
+ * en el repo yali), con la columna tenant: los logins del hospital no están en
+ * su base, aunque la tenga. Un cliente con proyecto propio que no esté en hub
+ * los tendría en el suyo.
+ */
+export function registroDeAccesos(tenant: string): Cliente | null {
+  if (!proyectoPropio(tenant)) return null;
+  return EN_HUB.includes(tenant as TenantId) ? publicoDeProyectoPropio("yaly") : publicoDeProyectoPropio(tenant);
+}
+
+/**
+ * El directorio de hub: el esquema `hub` del proyecto compartido, con las
+ * cuentas de cada cliente que entra por hub.miagentia.com. Tiene RLS sin
+ * políticas, así que solo se ve con la llave secreta; sin ella, null.
+ */
+export function directorioDeHub(): Cliente | null {
+  const guardado = cache.get("directorio@hub");
+  if (guardado !== undefined) return guardado;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY;
+  const cliente = url && key ? createClient(url, key, { auth: { persistSession: false }, db: { schema: "hub" } }) : null;
+  cache.set("directorio@hub", cliente);
+  return cliente;
 }
 
 /**

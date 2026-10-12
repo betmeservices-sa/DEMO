@@ -102,7 +102,8 @@ interface Cliente {
   id: string;
   nombre: string;
   tickets: TicketsDelPeriodo;
-  reservas: ReservasDelPeriodo;
+  /** null = no vende por el chat (el hospital): sin reservas ni "Quién cerró". */
+  reservas: ReservasDelPeriodo | null;
   usuarios: Usuario[];
   activosAhora: number;
 }
@@ -251,8 +252,15 @@ export function AgenciaDashboard() {
     return () => clearInterval(t);
   }, [cargarReporte]);
 
+  const clientes = resumen?.clientes ?? [];
+  const seleccionado = clientes.find((c) => c.id === cliente) ?? null;
+  // "Quién cerró" lee el chat de cada reserva: solo para quien vende.
+  const vende = Boolean(seleccionado?.reservas);
+
   useEffect(() => {
-    if (rangoInvalido) return;
+    // Sin `vende` no se pide nada y lo que haya quedado de otro cliente no se
+    // pinta (ver el render).
+    if (rangoInvalido || !vende) return;
     let vivo = true;
     fetch(`/api/agencia/cierres?cliente=${encodeURIComponent(cliente)}&${filtro}`, { cache: "no-store" })
       .then((r) => r.json())
@@ -265,13 +273,11 @@ export function AgenciaDashboard() {
     return () => {
       vivo = false;
     };
-  }, [cliente, filtro, rangoInvalido]);
+  }, [cliente, filtro, rangoInvalido, vende]);
 
   const cerrarCalendario = useCallback(() => setCalendario(false), []);
   const cerrarChat = useCallback(() => setChat(null), []);
 
-  const clientes = resumen?.clientes ?? [];
-  const seleccionado = clientes.find((c) => c.id === cliente) ?? null;
   const paraCliente = vista === "cliente";
 
   return (
@@ -334,10 +340,11 @@ export function AgenciaDashboard() {
 
       <div className="flex-1 space-y-5 overflow-y-auto p-5">
         {/* El plan va PRIMERO y fuera del filtro: lo marca el ciclo de
-            facturación. La raya de abajo separa lo que el filtro sí mueve. */}
+            facturación. La raya de abajo separa lo que el filtro sí mueve; un
+            cliente sin plan (el hospital) no tiene nada que separar. */}
         <PlanDelCiclo cliente={cliente} />
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-line pt-5">
+        <div className="flex flex-wrap items-center gap-2 border-line not-first:border-t not-first:pt-5">
           <div className="relative flex flex-wrap gap-1 rounded-xl border border-line bg-surface p-1">
             {FILTROS.map((p) => (
               <button
@@ -393,8 +400,10 @@ export function AgenciaDashboard() {
           <Consumo r={reporte} metrica={metrica} setMetrica={setMetrica} paraCliente={paraCliente} />
         )}
 
-        {seleccionado && <Reservas c={seleccionado} sofiaSola={cierres?.resumen.sofia.n} cierres={cierres?.cierres} />}
-        {cierres && cierres.resumen.total > 0 && (
+        {seleccionado?.reservas && (
+          <Reservas r={seleccionado.reservas} sofiaSola={cierres?.resumen.sofia.n} cierres={cierres?.cierres} />
+        )}
+        {vende && cierres && cierres.resumen.total > 0 && (
           <ComoSeCerraron d={cierres} abierto={verCierres} setAbierto={setVerCierres} onChat={setChat} />
         )}
 
@@ -661,15 +670,14 @@ function repartoDeLaPlata(cierres: ReservaCerrada[]) {
 }
 
 function Reservas({
-  c,
+  r,
   sofiaSola,
   cierres,
 }: {
-  c: Cliente;
+  r: ReservasDelPeriodo;
   sofiaSola?: number;
   cierres?: ReservaCerrada[];
 }) {
-  const r = c.reservas;
   const o = r.confirmadas.porOrigen;
   // "Las apartó" es que Sofía usó su herramienta y mandó la cuenta; cuántas
   // cerró SOLA (sin que el equipo escribiera antes del pago) sale de "Quién
@@ -932,7 +940,7 @@ function TicketsYGente({ c }: { c: Cliente }) {
             {c.tickets.abiertos} <span className="text-[13px] font-semibold text-[var(--text-3)]">abiertos</span>
           </p>
           <p className="text-[12px] text-[var(--text-2)]">
-            {c.tickets.periodo} nuevos · {c.tickets.resueltos} resueltos · {c.tickets.porSofia} abiertos por la IA
+            {c.tickets.periodo} nuevos · {c.tickets.resueltos} resueltos · {c.tickets.porAgente} abiertos por la IA
           </p>
           {c.tickets.medianaMinutos !== null && (
             <p className="text-[12px] text-[var(--text-3)]">

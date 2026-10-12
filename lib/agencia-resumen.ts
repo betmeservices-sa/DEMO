@@ -226,7 +226,8 @@ export interface TicketsDelPeriodo {
   periodo: number;
   abiertos: number;
   resueltos: number;
-  porSofia: number;
+  /** Los que abrió el agente de IA del cliente. */
+  porAgente: number;
   medianaMinutos: number | null;
   porTipo: { tipo: string; n: number }[];
 }
@@ -239,13 +240,26 @@ interface TicketParaContar {
   tipo: string;
 }
 
-/** Los tickets que se abrieron en el periodo y en qué quedaron. */
+/** "Sofía " y "sofia" son la misma firma. */
+function firma(nombre: string): string {
+  return nombre.normalize("NFD").replace(/\p{Diacritic}/gu, "").trim().toLowerCase();
+}
+
+/**
+ * Los tickets que se abrieron en el periodo y en qué quedaron.
+ *
+ * `agentes`: cómo firma el agente de IA de ESE cliente (ver
+ * lib/agencia-clientes). Cada cliente tiene el suyo y un agente puede haber
+ * cambiado de nombre: los casos viejos quedan con la firma de antes.
+ */
 export function ticketsDelPeriodo(
   tickets: readonly TicketParaContar[],
   desde: string,
   hasta: string,
+  agentes: readonly string[],
 ): TicketsDelPeriodo {
   const delPeriodo = tickets.filter((k) => enRango(k.creado, desde, hasta));
+  const delAgente = new Set(agentes.map(firma));
   const minutos = delPeriodo
     .filter((k) => k.resuelto)
     .map((k) => (Date.parse(k.resuelto!) - Date.parse(k.creado)) / 60000)
@@ -258,8 +272,8 @@ export function ticketsDelPeriodo(
     periodo: delPeriodo.length,
     abiertos: delPeriodo.filter((k) => k.estado !== "resuelto").length,
     resueltos: delPeriodo.filter((k) => k.estado === "resuelto").length,
-    // El agente se guarda con su NOMBRE ("Sofía"), no con el id "ia".
-    porSofia: delPeriodo.filter((k) => /^sof[ií]a$/i.test(k.creadoPor.trim())).length,
+    // El agente se guarda con su NOMBRE ("Sofía", "Valeria"), no con el id "ia".
+    porAgente: delPeriodo.filter((k) => delAgente.has(firma(k.creadoPor))).length,
     medianaMinutos: minutos.length ? Math.round(minutos[Math.floor((minutos.length - 1) / 2)]) : null,
     porTipo: [...porTipo.entries()].map(([tipo, n]) => ({ tipo, n })).sort((a, b) => b.n - a.n),
   };

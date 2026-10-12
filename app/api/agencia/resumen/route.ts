@@ -1,8 +1,9 @@
 // El tablero de la agencia: la plata, los tickets y la gente de cada cliente.
 //
-// Solo para la cuenta de la agencia (sesión con `todos`). Por cliente, en el
-// periodo elegido: las reservas, los tickets, y la gente del cliente con su
-// último login y si está adentro ahora. El registro de accesos completo va en
+// Solo para la cuenta de la agencia (sesión con `todos`). Por cliente (ver
+// lib/agencia-clientes), en el periodo elegido: las reservas (solo de quien
+// vende por el chat), los tickets, y la gente del cliente con su último login
+// y si está adentro ahora. El registro de accesos completo va en
 // su propia página (/api/agencia/accesos) y el consumo de la IA en
 // /api/agencia/consumo.
 //
@@ -14,21 +15,18 @@
 import { NextResponse } from "next/server";
 import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
 import { TENANTS } from "@/lib/tenants";
-import type { TenantId } from "@/lib/tenants/types";
 import { cuentas } from "@/lib/usuarios";
 import { listarTickets } from "@/lib/tickets-store";
 import { listarPreReservas } from "@/lib/yali-prereservas";
 import { actividadDeUsuarios, estaActivo, listarAccesos } from "@/lib/accesos";
 import { DIA, esPeriodo, rangoDePeriodo } from "@/lib/periodos";
 import { enRango, reservasDelPeriodo, ticketsDelPeriodo } from "@/lib/agencia-resumen";
+import { CLIENTES_AGENCIA, personasDelCliente } from "@/lib/agencia-clientes";
+import { cuentasDeHub } from "@/lib/hub-directorio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-// Los clientes de verdad. Los demás tenants son demos para prospectos y no
-// tienen nada que reportar acá.
-const CLIENTES: TenantId[] = ["yaly"];
 
 /** Apartados que se leen para cortar el periodo (la lista del panel de Yali sigue con 40). */
 const TOPE_RESERVAS = 1000;
@@ -60,30 +58,31 @@ export async function GET(req: Request) {
   for (const a of accesosVentana) if (!ultimoLoginPor.has(a.usuario)) ultimoLoginPor.set(a.usuario, a.ts);
 
   const clientes = await Promise.all(
-    CLIENTES.map(async (id) => {
-      const [tickets, prereservas] = await Promise.all([
+    CLIENTES_AGENCIA.map(async ({ id, vende, agentes }) => {
+      const [tickets, prereservas, deHub] = await Promise.all([
         listarTickets(id).catch(() => []),
-        listarPreReservas(id, undefined, TOPE_RESERVAS).catch(() => []),
+        vende ? listarPreReservas(id, undefined, TOPE_RESERVAS).catch(() => []) : Promise.resolve([]),
+        cuentasDeHub(id),
       ]);
-      const usuarios = todasLasCuentas
+      const delPanel = todasLasCuentas
         .filter((c) => c.tenant === id && !c.todos)
-        .map((c) => {
-          const act = actividadPor.get(c.usuario);
-          return {
-            usuario: c.usuario,
-            nombre: c.nombre,
-            rol: c.rol,
-            ultimoLogin: ultimoLoginPor.get(c.usuario) ?? null,
-            ultimoVisto: act?.ultimoVisto ?? null,
-            activo: estaActivo(act?.ultimoVisto, ahora),
-            logins: accesos.filter((a) => a.usuario === c.usuario).length,
-          };
-        });
+        .map((c) => ({ usuario: c.usuario, nombre: c.nombre, rol: c.rol }));
+      const usuarios = personasDelCliente(delPanel, deHub).map((c) => {
+        const act = actividadPor.get(c.usuario);
+        return {
+          ...c,
+          ultimoLogin: ultimoLoginPor.get(c.usuario) ?? null,
+          ultimoVisto: act?.ultimoVisto ?? null,
+          activo: estaActivo(act?.ultimoVisto, ahora),
+          logins: accesos.filter((a) => a.usuario === c.usuario).length,
+        };
+      });
       return {
         id,
         nombre: TENANTS[id].brand.nombreCorto || TENANTS[id].brand.nombre,
-        tickets: ticketsDelPeriodo(tickets, desde, hasta),
-        reservas: reservasDelPeriodo(prereservas, desde, hasta),
+        tickets: ticketsDelPeriodo(tickets, desde, hasta, agentes),
+        // null = no vende por el chat: el tablero no pinta reservas ni "Quién cerró".
+        reservas: vende ? reservasDelPeriodo(prereservas, desde, hasta) : null,
         usuarios,
         activosAhora: usuarios.filter((u) => u.activo).length,
       };

@@ -203,19 +203,32 @@ describe("los tickets del periodo", () => {
   ];
 
   it("un ticket de otro día no entra en ninguna cuenta", () => {
-    const t = ticketsDelPeriodo(tickets, DESDE, HASTA);
+    const t = ticketsDelPeriodo(tickets, DESDE, HASTA, ["Sofía"]);
     expect(t.periodo).toBe(3);
     expect(t.abiertos).toBe(1);
     expect(t.resueltos).toBe(2);
-    expect(t.porSofia).toBe(2);
+    expect(t.porAgente).toBe(2);
+  });
+
+  // El agente firma con su nombre, y cada cliente tiene el suyo. En el hospital
+  // es Valeria desde el 2026-10-09; sus casos de antes dicen Claudia.
+  it("los abiertos por la IA se cuentan con los nombres del agente de ESE cliente", () => {
+    const hospital = [
+      ticket("2026-09-14T10:00:00+00:00", "asignado", { creadoPor: "Valeria" }),
+      ticket("2026-09-14T11:00:00+00:00", "asignado", { creadoPor: "claudia" }),
+      ticket("2026-09-14T12:00:00+00:00", "asignado", { creadoPor: "Marielos" }),
+    ];
+    expect(ticketsDelPeriodo(hospital, DESDE, HASTA, ["Valeria", "Claudia"]).porAgente).toBe(2);
+    // El nombre del agente de otro cliente no cuenta.
+    expect(ticketsDelPeriodo(hospital, DESDE, HASTA, ["Sofía"]).porAgente).toBe(0);
   });
 
   it("la mediana sale de los resueltos del periodo", () => {
-    expect(ticketsDelPeriodo(tickets, DESDE, HASTA).medianaMinutos).toBe(30);
+    expect(ticketsDelPeriodo(tickets, DESDE, HASTA, ["Sofía"]).medianaMinutos).toBe(30);
   });
 
   it("los tipos van del más repetido al menos", () => {
-    expect(ticketsDelPeriodo(tickets, DESDE, HASTA).porTipo).toEqual([
+    expect(ticketsDelPeriodo(tickets, DESDE, HASTA, ["Sofía"]).porTipo).toEqual([
       { tipo: "pago", n: 2 },
       { tipo: "queja", n: 1 },
     ]);
