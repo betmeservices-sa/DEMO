@@ -16,6 +16,7 @@ import { pasarAPersona } from "@/lib/pasar-a-persona";
 import { registrarConsumo } from "@/lib/tokens-store";
 import { USO_CERO } from "@/lib/tokens-precios";
 import { estadosDelWebhook, guardarEstados } from "@/lib/wa-estados";
+import { enProduccion } from "@/lib/entorno";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -84,8 +85,9 @@ export async function POST(req: Request) {
   // la demo (WHATSAPP_APP_SECRET, el número de siempre) y la app MiAgentIA
   // (META_APP_SECRET), que es por donde entran los números que cada cliente
   // conecta desde su panel. Con una sola, los mensajes de la otra volvían 401
-  // sin que nadie se enterara. Sin ningún secreto configurado (prueba local)
-  // se acepta todo.
+  // sin que nadie se enterara. Sin ningún secreto configurado se acepta todo
+  // SOLO fuera de producción (prueba local); en vivo se rechaza, porque un
+  // webhook abierto deja inventar mensajes de clientes y hacer hablar a la IA.
   const secretos = [process.env.WHATSAPP_APP_SECRET, process.env.META_APP_SECRET].filter(
     (x): x is string => Boolean(x),
   );
@@ -94,6 +96,9 @@ export async function POST(req: Request) {
     if (!secretos.some((sec) => firmaValida(raw, firma, sec))) {
       return new Response("Invalid signature", { status: 401 });
     }
+  } else if (enProduccion()) {
+    console.error("[whatsapp] sin WHATSAPP_APP_SECRET ni META_APP_SECRET: se rechaza el webhook");
+    return new Response("Webhook sin secreto", { status: 401 });
   }
 
   let payload: unknown;

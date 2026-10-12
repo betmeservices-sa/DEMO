@@ -17,6 +17,7 @@ import { enviarYGuardarMeta, IA_STAFF_ID } from "@/lib/meta-enviar";
 import type { MetaConnection } from "@/lib/meta-store";
 import { TENANTS } from "@/lib/tenants";
 import type { TenantId } from "@/lib/tenants/types";
+import { enProduccion } from "@/lib/entorno";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -104,7 +105,8 @@ export async function POST(req: Request) {
   const raw = await req.text();
 
   // Valida la firma con el App Secret. Sin secret (seam FAKE / prueba local)
-  // se acepta con un aviso en el log.
+  // se acepta con un aviso en el log; en producción se rechaza, porque un
+  // webhook abierto deja inventar mensajes de clientes y hacer hablar a la IA.
   // Dos secretos posibles: los avisos de una cuenta con login de Instagram
   // vienen firmados con el secret de Instagram, no con el de la app.
   const secretos = [process.env.META_APP_SECRET, process.env.IG_APP_SECRET].filter(
@@ -115,6 +117,9 @@ export async function POST(req: Request) {
     if (!secretos.some((s) => firmaValida(raw, firma, s))) {
       return new Response("Invalid signature", { status: 401 });
     }
+  } else if (enProduccion()) {
+    console.error("[meta-webhook] sin META_APP_SECRET ni IG_APP_SECRET: se rechaza el webhook");
+    return new Response("Webhook sin secreto", { status: 401 });
   } else {
     console.warn("[meta-webhook] META_APP_SECRET vacío: se acepta sin validar firma");
   }
