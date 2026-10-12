@@ -1,6 +1,12 @@
 # Dependabot: avisa de versiones nuevas y abre el PR con el parche de seguridad
 # cuando sale uno. Nada se despliega solo: el PR se mezcla a mano con la suite
 # en verde y la prueba de humo.
+#
+# Solo menores y parches, agrupados en un PR por semana. Los saltos mayores
+# (Next, TypeScript, vitest, eslint, framer-motion, @types/node...) se toman a
+# mano cuando toque: el primer lunes (2026-10-12) abrió cinco PRs de golpe y
+# cuatro eran mayores que no compilaban o ni instalaban, y cada preview fallida
+# manda un correo.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -10,15 +16,12 @@ updates:
       day: monday
       time: "09:00"
       timezone: America/El_Salvador
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
       menores:
         update-types: [minor, patch]
     ignore:
-      # Next se sube a mano: cada salto se prueba con la suite y en producción.
-      - dependency-name: next
-        update-types: [version-update:semver-major]
-      - dependency-name: eslint-config-next
+      - dependency-name: "*"
         update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /

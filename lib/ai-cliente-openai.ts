@@ -215,9 +215,11 @@ export async function crearMensajePorOpenAI(
   if (system) input.push({ role: "system", content: system });
   input.push(...entradaDesdeMensajes(args.messages));
 
+  // Desde el SDK 0.132, ToolUnion incluye toolsets sin nombre (navegador);
+  // por acá solo pasan herramientas propias, que siempre lo traen.
   const tools = (args.tools ?? []).map((t) => ({
     type: "function" as const,
-    name: t.name,
+    name: "name" in t ? t.name : "",
     description: "description" in t ? t.description : "",
     parameters: "input_schema" in t ? t.input_schema : {},
   }));
