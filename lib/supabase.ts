@@ -5,8 +5,10 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // parametro: si no, TypeScript rechaza al cliente de yali por no ser "public".
 type Cliente = SupabaseClient<any, any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-// Cliente de Supabase (server-side). Usa la publishable key. Si no hay env de
-// Supabase, devuelve null y el resto del código cae al store en memoria.
+// Cliente de Supabase (server-side). Usa la llave secreta (SUPABASE_SECRET_KEY):
+// desde el 2026-10-11 el proyecto compartido tiene RLS sin políticas para anon,
+// así que con la publishable no se ve nada. Si no hay env de Supabase, devuelve
+// null y el resto del código cae al store en memoria.
 //
 // ── POR QUÉ RECIBE EL TENANT ──
 // Cada cliente puede vivir en tres lugares: el esquema `public` del proyecto
@@ -125,7 +127,9 @@ export function getSupabase(tenant?: string): Cliente | null {
   if (guardado !== undefined) return guardado;
 
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  // La secreta manda (salta RLS, como en el hospital y en hub). La publishable
+  // queda de respaldo para una prueba local vieja; en producción ya no ve filas.
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
   const cliente =
     url && key
       ? createClient(url, key, {

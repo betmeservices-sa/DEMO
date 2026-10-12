@@ -31,6 +31,7 @@ const ENV = [
   "YALI_SUPABASE_LECTOR_JWT",
   "SUPABASE_URL",
   "SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_SECRET_KEY",
 ];
 const guardado: Record<string, string | undefined> = {};
 
@@ -118,5 +119,21 @@ describe("sin variables", () => {
   it("nadie tiene proyecto propio y todo va al compartido", () => {
     expect(sb.tenantsConProyectoPropio()).toEqual([]);
     expect(cliente("hospital").url).toBe("https://compartido.test");
+  });
+});
+
+// El compartido quedó con RLS sin políticas para anon (2026-10-11): el
+// servidor entra con la secreta. La publishable sigue sirviendo solo como
+// respaldo cuando no hay secreta (prueba local vieja).
+describe("el compartido entra con la llave secreta", () => {
+  it("prefiere SUPABASE_SECRET_KEY sobre la publishable", () => {
+    process.env.SUPABASE_SECRET_KEY = "sb_secret_compartido";
+    const c = cliente("grupoq");
+    expect(c.url).toBe("https://compartido.test");
+    expect(c.key).toBe("sb_secret_compartido");
+  });
+
+  it("sin secreta cae a la publishable", () => {
+    expect(cliente("grupoq").key).toBe("pub");
   });
 });

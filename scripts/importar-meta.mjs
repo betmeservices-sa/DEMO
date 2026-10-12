@@ -31,11 +31,11 @@ const SECO = args.includes("--seco");
 const DIAS = Number(args[args.indexOf("--dias") + 1]) || 180;
 
 const SB_URL = process.env.SUPABASE_URL;
-const SB_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+const SB_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 const ESQUEMA = process.env.ESQUEMA || "public";
 
 if (!SB_URL || !SB_KEY) {
-  console.error("Faltan SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY.");
+  console.error("Faltan SUPABASE_URL y SUPABASE_SECRET_KEY.");
   process.exit(1);
 }
 

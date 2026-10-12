@@ -121,7 +121,7 @@ export async function guardarMemoria(m: MemoriaLlamada): Promise<ResultadoGuarda
  */
 export async function diagnostico(): Promise<Record<string, unknown>> {
   const sb = getSupabase();
-  if (!sb) return { supabase: false, motivo: "faltan SUPABASE_URL o SUPABASE_PUBLISHABLE_KEY" };
+  if (!sb) return { supabase: false, motivo: "faltan SUPABASE_URL o SUPABASE_SECRET_KEY" };
   const { error, count } = await sb
     .from("memoria_llamadas")
     .select("telefono", { count: "exact", head: true });

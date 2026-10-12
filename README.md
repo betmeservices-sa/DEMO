@@ -49,7 +49,7 @@ valor real se commitea). Sin las de un módulo, ese módulo cae a datos demo.
 | `ANTHROPIC_API_KEY` | Respuestas de la IA. |
 | `WHATSAPP_*` | WhatsApp Cloud API (recibir, responder, plantillas). |
 | `META_*` | Conectar Facebook e Instagram por OAuth. |
-| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | Persistencia de mensajes de WhatsApp. |
+| `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | Persistencia de mensajes de WhatsApp. Llave secreta: el proyecto tiene RLS sin políticas para anon. |
 | `VAPI_PRIVATE_KEY` | Módulo de llamadas. |
 | `CLOUDBEDS_API_KEY` | Sistema de reservas del hotel (Cloudbeds), **solo lectura**. |
 | `CLOUDBEDS_PROPERTY_ID` | Id de la propiedad del hotel en ese sistema. |
