@@ -54,6 +54,7 @@ const NAV: NavItem[] = [
   { id: "imagenologia", href: "/imagenologia", label: "Imagenología", Icon: Scan },
   { id: "jefatura", href: "/laboratorio/jefatura", label: "Jefatura", Icon: BarChart3 },
   { id: "mensajes", href: "/mensajes", label: "Bandeja", Icon: MessageCircle },
+  { id: "valeria", href: "/consultorio/valeria", label: "Probar a Valeria", Icon: Bot },
   { id: "interno", href: "/interno", label: "Chat interno", Icon: MessagesSquare },
   { id: "redes", href: "/redes", label: "Redes sociales", Icon: Megaphone },
   { id: "comentarios", href: "/comentarios", label: "Comentarios", Icon: MsgSq },

@@ -9,7 +9,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, FlaskConical, QrCode, Scan, Stethoscope, Users } from "lucide-react";
+import { Bot, FileText, FlaskConical, QrCode, Scan, Stethoscope, Users } from "lucide-react";
 
 const SECCIONES = [
   { href: "/consultorio", nombre: "Pacientes", Icono: Users },
@@ -18,6 +18,9 @@ const SECCIONES = [
   { href: "/consultorio/imagenes", nombre: "Imagenología", Icono: Scan },
   { href: "/consultorio/procesos", nombre: "Procesos", Icono: Stethoscope },
   { href: "/consultorio/codigo", nombre: "Mi código", Icono: QrCode },
+  // Probar a Valeria también está en el menú de la izquierda; va acá porque
+  // desde el escritorio del doctor es donde más se le pregunta.
+  { href: "/consultorio/valeria", nombre: "Probar a Valeria", Icono: Bot },
 ];
 
 export function Secciones() {
