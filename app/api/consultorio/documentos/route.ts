@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     lados?: Record<string, string>;
     diagnostico?: string;
     indicaciones?: string;
+    texto?: string;
   };
 
   const paciente = await pacientePorId(b.pacienteId ?? "");
@@ -76,7 +77,9 @@ export async function POST(req: Request) {
   }
 
   const comun = {
-    id: idNuevo(b.tipo === "receta" ? "rec" : b.tipo === "imagen" ? "img" : b.tipo === "proceso" ? "prc" : "ord"),
+    id: idNuevo(
+      b.tipo === "receta" ? "rec" : b.tipo === "nota" ? "nota" : b.tipo === "imagen" ? "img" : b.tipo === "proceso" ? "prc" : "ord",
+    ),
     pacienteId: paciente.id,
     doctorId,
     fecha: new Date().toISOString(),
@@ -90,7 +93,15 @@ export async function POST(req: Request) {
   const tipo = TIPOS.includes(b.tipo as TipoOrden) ? (b.tipo as TipoOrden) : null;
 
   let doc: Documento;
-  if (b.tipo === "receta") {
+  if (b.tipo === "nota") {
+    // La nota de la consulta: texto libre, interno. Sin texto no hay nota.
+    const texto = (b.texto ?? "").trim();
+    if (!texto) {
+      return NextResponse.json({ ok: false, error: "La nota va vacía." }, { status: 400 });
+    }
+    const { indicaciones: _fuera, ...base } = comun;
+    doc = { ...base, tipo: "nota", texto, enviado: null };
+  } else if (b.tipo === "receta") {
     // Un medicamento sin nombre no es un medicamento; el resto de los campos
     // pueden ir vacíos porque no siempre aplican (una crema no lleva duración).
     const medicamentos = (b.medicamentos ?? [])

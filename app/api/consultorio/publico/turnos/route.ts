@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   crearTurno,
   cuantosDelante,
+  documentoPorCodigo,
   sucursalPorCodigo,
   tipoDeOrdenDe,
 } from "@/lib/consultorio/almacen";
@@ -49,12 +50,19 @@ export async function POST(req: Request) {
     );
   }
 
+  // Si vino con el código de la orden del doctor, el turno queda amarrado a
+  // ese expediente: es lo que hace que, al pagar, le aparezca al doctor como
+  // la persona que sigue. Un código que no existe no estorba: se ignora.
+  const orden = String(b.orden ?? "").trim();
+  const doc = orden ? await documentoPorCodigo(orden) : null;
+
   const turno = await crearTurno({
     sucursalId: sucursal.id,
     nombre,
     telefono,
     correo: String(b.correo ?? "").trim(),
     examenes,
+    pacienteId: doc?.pacienteId ?? null,
   });
 
   return NextResponse.json({

@@ -362,7 +362,7 @@ export function Mostrador({
                         <span
                           className={`chip shrink-0 ${
                             t.estado === "atendido"
-                              ? "chip-verde"
+                              ? "chip-exito"
                               : t.estado === "pendiente"
                                 ? "chip-ambar"
                                 : "chip-gris"
@@ -479,7 +479,7 @@ export function Mostrador({
                       key={t.id}
                       className="tarjeta flex items-center gap-4 px-4 py-3"
                     >
-                      <Receipt size={17} className="shrink-0 text-[var(--texto-3)]" />
+                      <Receipt size={17} className="shrink-0 text-[var(--exito)]" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-serif text-[16px] text-[var(--texto)]">
                           {t.nombre}

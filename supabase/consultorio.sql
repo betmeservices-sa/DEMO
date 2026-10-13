@@ -109,3 +109,18 @@ alter table public.consultorio_turnos
 
 create index if not exists consultorio_turnos_factura_idx
   on public.consultorio_turnos (sucursal_id, factura);
+
+-- La cola del doctor y la nota de la consulta (2026-10-13).
+--
+-- El turno guarda de qué expediente es cuando vino con la orden del doctor:
+-- con eso, al finalizar y facturar, la persona le aparece al doctor como la
+-- que sigue (lib/consultorio/cola.ts). Y el doctor deja una nota de la
+-- consulta, interna, que comparte tabla con la receta y la orden.
+alter table public.consultorio_turnos
+  add column if not exists paciente_id text;
+
+alter table public.consultorio_documentos
+  drop constraint if exists consultorio_documentos_tipo_check;
+alter table public.consultorio_documentos
+  add constraint consultorio_documentos_tipo_check
+  check (tipo in ('receta', 'orden', 'imagen', 'proceso', 'nota'));

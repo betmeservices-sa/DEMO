@@ -16,7 +16,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Receipt, TriangleAlert } from "lucide-react";
 import { Encabezado } from "@/components/consultorio/Encabezado";
 import {
   LADOS,
@@ -37,8 +37,9 @@ import {
 } from "@/lib/consultorio/tipos";
 import { Logo } from "@/components/consultorio/Logo";
 import { CLINICA } from "@/lib/consultorio/marca";
+import type { EnCola } from "@/lib/consultorio/cola";
 
-type Pestana = TipoOrden | "receta";
+type Pestana = TipoOrden | "receta" | "nota";
 
 // Cómo se llama cada pestaña y qué se le dice al doctor cuando guarda.
 const PESTANAS: { id: Pestana; texto: string }[] = [
@@ -46,7 +47,11 @@ const PESTANAS: { id: Pestana; texto: string }[] = [
   { id: "imagen", texto: "Imagenología" },
   { id: "proceso", texto: "Procesos" },
   { id: "receta", texto: "Receta" },
+  { id: "nota", texto: "Nota" },
 ];
+
+const horaCorta = (iso: string) =>
+  new Date(iso).toLocaleTimeString("es-SV", { hour: "numeric", minute: "2-digit" });
 
 const MED_VACIO: Medicamento = { nombre: "", dosis: "", frecuencia: "", duracion: "" };
 
@@ -57,12 +62,17 @@ export function Expediente({
   doctor,
   paciente,
   documentos: iniciales,
+  enCola = null,
 }: {
   doctor: Doctor;
   paciente: Paciente;
   documentos: Documento[];
+  /** Si hoy ya pagó sus exámenes: viene con resultados. */
+  enCola?: EnCola | null;
 }) {
-  const [pestana, setPestana] = useState<Pestana>("orden");
+  // Si viene del laboratorio, lo que toca es anotar la consulta.
+  const [pestana, setPestana] = useState<Pestana>(enCola ? "nota" : "orden");
+  const [nota, setNota] = useState("");
   const [documentos, setDocumentos] = useState<Documento[]>(iniciales);
   const [marcados, setMarcados] = useState<string[]>([]);
   // De qué lado va cada estudio que lo pide. En la orden impresa es el "Der
@@ -89,7 +99,7 @@ export function Expediente({
 
   /** Los que están marcados, piden lado y todavía no lo tienen. */
   const sinLado = marcados.filter((id) => {
-    const e = areasDe(pestana === "receta" ? "orden" : pestana)
+    const e = areasDe(pestana === "receta" || pestana === "nota" ? "orden" : pestana)
       .flatMap((a) => a.examenes)
       .find((x) => x.id === id);
     return e?.lado && !lados[id];
@@ -104,7 +114,9 @@ export function Expediente({
     setAviso(null);
     try {
       const cuerpo =
-        pestana === "receta"
+        pestana === "nota"
+          ? { tipo: "nota", pacienteId: paciente.id, texto: nota }
+          : pestana === "receta"
           ? { tipo: "receta", pacienteId: paciente.id, medicamentos, indicaciones }
           : {
               tipo: pestana,
@@ -128,14 +140,15 @@ export function Expediente({
       }
 
       let doc: Documento = d.documento;
-      let texto = pestana === "receta" ? "Receta guardada." : "Orden guardada.";
+      let texto =
+        pestana === "nota" ? "Nota guardada." : pestana === "receta" ? "Receta guardada." : "Orden guardada.";
 
       if (enviar) {
         const e = await fetch(`/api/consultorio/documentos/${doc.id}/enviar`, { method: "POST" });
         const de = await e.json();
         if (!de.ok) {
           setAviso({ texto: `Se guardó, pero no se envió: ${de.error}`, tono: "mal" });
-        } else {
+        } else if (doc.tipo !== "nota") {
           doc = {
             ...doc,
             enviado: { a: de.a, cuando: new Date().toISOString(), simulado: de.simulado },
@@ -147,6 +160,7 @@ export function Expediente({
       }
 
       setDocumentos((prev) => [doc, ...prev]);
+      setNota("");
       setMarcados([]);
       setLados({});
       setDiagnostico("");
@@ -160,9 +174,11 @@ export function Expediente({
   }
 
   const puedeGuardar =
-    pestana === "receta"
-      ? medicamentos.some((m) => m.nombre.trim())
-      : marcados.length > 0 && sinLado.length === 0;
+    pestana === "nota"
+      ? nota.trim().length > 0
+      : pestana === "receta"
+        ? medicamentos.some((m) => m.nombre.trim())
+        : marcados.length > 0 && sinLado.length === 0;
 
   return (
     <>
@@ -183,6 +199,17 @@ export function Expediente({
       </Encabezado>
 
       <main className="px-6 py-6 pb-28">
+        {enCola && (
+          <p className="no-imprimir mb-5 flex flex-wrap items-center gap-2 border-l-2 border-[var(--exito)] bg-[var(--exito-claro)] px-4 py-3 text-[14px] text-[var(--texto)]">
+            <Receipt size={15} className="shrink-0 text-[var(--exito)]" />
+            <span>
+              Ya pagó sus exámenes hoy a las {horaCorta(enCola.pagado)}
+              {enCola.unidad ? ` en ${enCola.unidad}` : ""} (factura{" "}
+              <span className="font-mono">{enCola.factura}</span>).
+              {enCola.examenes.length > 0 && ` Se le hizo: ${enCola.examenes.join(", ")}.`}
+            </span>
+          </p>
+        )}
         {(paciente.motivo || paciente.alergias) && (
           <div className="tarjeta mb-6 px-5 py-4">
             {paciente.motivo && (
@@ -222,7 +249,25 @@ export function Expediente({
           ))}
         </div>
 
-        {pestana !== "receta" ? (
+        {pestana === "nota" ? (
+          <section className="tarjeta no-imprimir mt-5 px-6 py-5">
+            <label className="block">
+              <span className="block text-[13px] font-semibold text-[var(--texto-2)]">
+                Nota de la consulta
+              </span>
+              <span className="mt-0.5 block text-[12.5px] text-[var(--texto-3)]">
+                Hallazgos, plan, lo que hay que recordar la próxima vez. Es interna: no se
+                imprime ni se le envía al paciente.
+              </span>
+              <textarea
+                rows={7}
+                value={nota}
+                onChange={(e) => setNota(e.target.value)}
+                className="campo mt-2 resize-y font-serif text-[15.5px] leading-relaxed"
+              />
+            </label>
+          </section>
+        ) : pestana !== "receta" ? (
           <section className="tarjeta no-imprimir mt-5 px-6 py-5">
             {/* Columnas de verdad (CSS multicolumna): así la hoja se lee como el
                 formulario del laboratorio y cabe más en una pantalla sin
@@ -383,7 +428,19 @@ export function Expediente({
               Lo que ya le dejaste escrito
             </h2>
             <div className="mt-4 space-y-5">
-              {documentos.map((d) => (
+              {documentos.map((d) =>
+                d.tipo === "nota" ? (
+                  // La nota no es papel: no lleva membrete, ni código, ni firma.
+                  <article key={d.id} className="tarjeta px-6 py-5">
+                    <p className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="font-serif text-[16px] text-[var(--texto)]">Nota de consulta</span>
+                      <span className="text-[12.5px] text-[var(--texto-2)]">{fechaLarga(d.fecha)}</span>
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-[14.5px] leading-relaxed text-[var(--texto)]">
+                      {d.texto}
+                    </p>
+                  </article>
+                ) : (
                 <article key={d.id} className="documento px-6 py-5">
                   <header className="membrete flex flex-wrap items-start justify-between gap-3 pb-3">
                     <span className="flex items-center gap-3">
@@ -511,7 +568,8 @@ export function Expediente({
                     </button>
                   </footer>
                 </article>
-              ))}
+                ),
+              )}
             </div>
           </section>
         )}
@@ -526,6 +584,12 @@ export function Expediente({
               <span className="text-[var(--ambar)]">
                 Falta decir de qué lado: {sinLado.map((id) => conLado(id)).join(", ")}
               </span>
+            ) : pestana === "nota" ? (
+              puedeGuardar ? (
+                <span className="font-semibold text-[var(--texto)]">Nota lista para guardar</span>
+              ) : (
+                "Escribí la nota de la consulta."
+              )
             ) : pestana !== "receta" ? (
               marcados.length === 0 ? (
                 "Marcá los exámenes que le vas a dejar."
@@ -557,15 +621,17 @@ export function Expediente({
             >
               Guardar
             </button>
-            <button
-              type="button"
-              onClick={() => guardar(true)}
-              disabled={!puedeGuardar || guardando || !paciente.correo}
-              title={paciente.correo ? undefined : "Este paciente no dejó correo al registrarse"}
-              className="boton"
-            >
-              {guardando ? "Guardando" : "Guardar y enviar"}
-            </button>
+            {pestana !== "nota" && (
+              <button
+                type="button"
+                onClick={() => guardar(true)}
+                disabled={!puedeGuardar || guardando || !paciente.correo}
+                title={paciente.correo ? undefined : "Este paciente no dejó correo al registrarse"}
+                className="boton"
+              >
+                {guardando ? "Guardando" : "Guardar y enviar"}
+              </button>
+            )}
           </div>
         </div>
       </div>

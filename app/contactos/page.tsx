@@ -26,6 +26,7 @@ import { checklistDe, esEtiquetaDeDocumento, etiquetaDe } from "@/lib/crediq-req
 import { esContactoDeMeta, etiquetaDeContacto } from "@/lib/contacto-canal";
 import { Archivos } from "@/components/contactos/Archivos";
 import { ReservasDeContacto } from "@/components/contactos/ReservasDeContacto";
+import { HistorialClinico } from "@/components/contactos/HistorialClinico";
 import { Avatar, inicialesDe } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HuespedPms } from "@/components/hotel/HuespedPms";
@@ -594,6 +595,13 @@ function Ficha({
           {activeTenantId() === "yaly" && (
             <Seccion titulo="Reservas">
               <ReservasDeContacto from={contacto.telefono} />
+            </Seccion>
+          )}
+
+          {/* Lo que la clínica sabe del paciente: exámenes, facturas, recetas y notas. */}
+          {activeTenantId() === "consultorio" && (
+            <Seccion titulo="Historial en la clínica">
+              <HistorialClinico telefono={contacto.telefono} />
             </Seccion>
           )}
 

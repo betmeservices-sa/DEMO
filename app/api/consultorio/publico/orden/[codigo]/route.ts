@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: Request, { params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
   const doc = await documentoPorCodigo(codigo);
-  if (!doc || doc.tipo === "receta") {
+  if (!doc) {
     return NextResponse.json({ ok: false, error: "Ese código no existe." }, { status: 404 });
   }
 

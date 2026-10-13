@@ -106,6 +106,8 @@ export function armarPortal(
     // La consulta ya trae solo lo de estas personas; se vuelve a filtrar porque
     // es la línea entre ver lo propio y ver lo ajeno, y no cuesta nada.
     .filter((d) => deQuien.has(d.pacienteId))
+    // La nota de la consulta es del doctor, no del paciente: no se enseña.
+    .filter((d): d is Exclude<Documento, { tipo: "nota" }> => d.tipo !== "nota")
     .sort((a, b) => b.fecha.localeCompare(a.fecha))
     .map((d): DocumentoDelPortal => {
       const dr = doctores.find((x) => x.id === d.doctorId);

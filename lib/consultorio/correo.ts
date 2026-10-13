@@ -13,7 +13,7 @@
 import { NOMBRE_TIPO, agruparDe, conLado } from "./catalogos";
 import { armarHtml } from "./correo-html";
 import { CLINICA } from "./marca";
-import type { Doctor, Documento, Paciente } from "./tipos";
+import type { Doctor, Enviable, Paciente } from "./tipos";
 
 // El nombre vive en lib/consultorio/marca.ts, con el resto de la marca. Se
 // reexporta para no romper a quien ya lo importaba desde acá.
@@ -31,7 +31,7 @@ export interface CorreoDeDocumento {
   texto: string;
   clinica: string;
   codigo: string;
-  tipo: Documento["tipo"];
+  tipo: Enviable["tipo"];
   fecha: string;
   paciente: { nombre: string; telefono: string };
   doctor: { nombre: string; especialidad: string; registro: string; telefono: string };
@@ -39,7 +39,7 @@ export interface CorreoDeDocumento {
 
 /** El correo listo para enviar: asunto, cuerpo y los datos por si se necesitan. */
 export function armarCorreo(
-  doc: Documento,
+  doc: Enviable,
   paciente: Paciente,
   doctor: Doctor,
   /** La URL del portal del paciente, para el día que este correo se pierda. */

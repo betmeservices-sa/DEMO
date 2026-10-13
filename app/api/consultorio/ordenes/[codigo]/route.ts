@@ -27,7 +27,8 @@ export const dynamic = "force-dynamic";
 
 async function buscar(codigo: string) {
   const doc = await documentoPorCodigo(codigo);
-  if (!doc || doc.tipo === "receta") return null;
+  // documentoPorCodigo ya deja fuera recetas y notas: solo abre órdenes.
+  if (!doc) return null;
   const paciente = await pacientePorId(doc.pacienteId);
   return { doc, paciente, doctor: doctorPorId(doc.doctorId) };
 }
@@ -111,6 +112,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ codigo:
     telefono: paciente.telefono,
     correo: paciente.correo,
     examenes,
+    pacienteId: paciente.id,
   });
 
   return NextResponse.json({ ok: true, turno });

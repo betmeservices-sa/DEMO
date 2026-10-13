@@ -34,6 +34,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!doc || doc.doctorId !== doctorId) {
     return NextResponse.json({ ok: false, error: "Ese documento no existe." }, { status: 404 });
   }
+  if (doc.tipo === "nota") {
+    return NextResponse.json(
+      { ok: false, error: "La nota de la consulta es interna: no se envía." },
+      { status: 400 },
+    );
+  }
   const paciente = await pacientePorId(doc.pacienteId);
   if (!paciente?.correo) {
     return NextResponse.json(

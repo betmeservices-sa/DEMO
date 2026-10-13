@@ -111,6 +111,7 @@ export const consultorioTenant: TenantConfig = {
   },
   defaultDepartment: "recepcion",
   tags: [
+    "Paciente",
     "Cita de consulta",
     "Exámenes de laboratorio",
     "Exámenes pendientes",

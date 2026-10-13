@@ -87,7 +87,27 @@ export interface Orden {
   enviado: Envio | null;
 }
 
-export type Documento = Receta | Orden;
+/**
+ * La nota de la consulta: lo que el doctor anota para sí mismo y para la
+ * próxima vez (hallazgos, plan). Es interna: no se imprime, no se envía y el
+ * portal del paciente no la enseña. Vive junto a la receta y la orden porque
+ * la pregunta que se le hace es la misma ("qué le dejé a este paciente").
+ */
+export interface Nota {
+  id: string;
+  tipo: "nota";
+  pacienteId: string;
+  doctorId: string;
+  fecha: string;
+  codigo: string;
+  texto: string;
+  enviado: null;
+}
+
+export type Documento = Receta | Orden | Nota;
+
+/** Lo que sí se le manda al paciente por correo: la nota no. */
+export type Enviable = Receta | Orden;
 
 /**
  * El envío por correo.
@@ -214,4 +234,11 @@ export interface Turno {
   monto: number | null;
   /** El número de factura, que se genera al finalizar. */
   factura: string | null;
+  /**
+   * El expediente del doctor al que pertenece, cuando se sabe: viene de la
+   * orden (el paciente llegó con el código del doctor). Es lo que deja que, al
+   * pagar, la persona le aparezca al doctor como la que sigue. Sin esto se
+   * intenta por teléfono (lib/consultorio/cola.ts).
+   */
+  pacienteId: string | null;
 }

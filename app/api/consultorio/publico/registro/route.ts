@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { doctorPorCodigo, registrarPaciente } from "@/lib/consultorio/almacen";
+import { recordarPaciente } from "@/lib/consultorio/contacto";
 import type { Sexo } from "@/lib/consultorio/tipos";
 import { claveIp, golpe, respuestaBloqueado } from "@/lib/freno";
 
@@ -44,6 +45,9 @@ export async function POST(req: Request) {
     motivo: (b.motivo ?? "").trim(),
     alergias: (b.alergias ?? "").trim(),
   });
+
+  // Y queda en la pestaña Contactos de la clínica, con su historial.
+  await recordarPaciente({ nombre, telefono, correo: paciente.correo });
 
   return NextResponse.json({ ok: true, repetido, doctor: doctor.nombre, pacienteId: paciente.id });
 }

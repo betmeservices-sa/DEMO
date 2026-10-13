@@ -27,7 +27,7 @@ import {
 import { resumenDeHoy, valorDe } from "@/lib/consultorio/estadisticas";
 import { armarPortal, normalizarCorreo, patronExacto } from "@/lib/consultorio/portal";
 import { armarCorreo } from "@/lib/consultorio/correo";
-import type { Documento } from "@/lib/consultorio/tipos";
+import type { Documento, Enviable } from "@/lib/consultorio/tipos";
 
 const SUCURSAL = "suc_escalon";
 
@@ -317,7 +317,7 @@ describe("el portal del paciente", () => {
       alergias: "",
     }).then((r) => r.paciente);
 
-  const receta = (pacienteId: string, fecha: string): Documento => ({
+  const receta = (pacienteId: string, fecha: string): Enviable => ({
     id: `doc_r_${pacienteId}_${fecha}`,
     tipo: "receta",
     pacienteId,
@@ -337,7 +337,7 @@ describe("el portal del paciente", () => {
     tipo: "orden" | "imagen",
     examenes: string[],
     lados?: Record<string, "der" | "izq" | "ambos">,
-  ): Documento => ({
+  ): Enviable => ({
     id: `doc_${tipo}_${pacienteId}_${fecha}`,
     tipo,
     pacienteId,

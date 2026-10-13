@@ -250,37 +250,40 @@
   background: #a8b4c0;
 }
 
-/* Centro Médico San Benito va en CLARO: el verde quirúrgico de su módulo de
-   consultorio sobre papel. Va DESPUÉS del bloque de marca unificada para
-   ganarle con la misma especificidad, igual que los otros temas claros.
+/* El Centro Ginecológico va en CLARO y con los colores del hospital: el azul
+   de la marca (#1F78FF) manda en pestañas, botones y barras, y su verde
+   (#4AC12F) queda para lo que salió bien. Antes el módulo iba en verde
+   quirúrgico; desde 2026-10-13 toda la clínica usa la paleta del hospital. Va
+   DESPUÉS del bloque de marca unificada para ganarle con la misma
+   especificidad, igual que los otros temas claros.
 
-   Contraste medido sobre el fondo #EEF2F1: tinta #10202A 15.6:1, secundario
-   #40525C 7.6:1, terciario #5B6C76 5.1:1, verde #0A6152 6.3:1 y rojo #A3302A
-   6.2:1. Sobre la tarjeta blanca todos suben, y todos pasan el 4.5:1 de WCAG AA
-   para texto normal. */
+   Contraste medido sobre el fondo #EEF3FA: tinta #0F2340 15.4:1, secundario
+   #4A5D78 6.6:1, terciario #5C6F8A 4.9:1, azul oscuro #0A4FB8 6.5:1 y rojo
+   #B3261E 6.3:1. Sobre la tarjeta blanca todos suben, y todos pasan el 4.5:1
+   de WCAG AA para texto normal. */
 [data-tenant="consultorio"] {
-  --brand-blue: #0a6152;
-  --brand-blue-dark: #084a3f;
-  --brand-green: #0a6152;
-  --brand-red: #a3302a;
-  --brand-accent: #0e7c6b;
-  --brand-accent-soft: #e4f2ee;
+  --brand-blue: #1f78ff;
+  --brand-blue-dark: #0a4fb8;
+  --brand-green: #4ac12f;
+  --brand-red: #b3261e;
+  --brand-accent: #1f78ff;
+  --brand-accent-soft: #e8f1ff;
 
-  --surface: #eef2f1;
-  --surface-2: #e2e9e7;
+  --surface: #eef3fa;
+  --surface-2: #e1e9f5;
   --card: #ffffff;
-  --border: #dde5e3;
-  --border-2: #c6d3cf;
-  --text: #10202a;
-  --text-2: #40525c;
-  --text-3: #5b6c76;
+  --border: #dde6f2;
+  --border-2: #c3d1e6;
+  --text: #0f2340;
+  --text-2: #4a5d78;
+  --text-3: #5c6f8a;
 
   --font-app: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 /* La barra de scroll clara del consultorio. */
 [data-tenant="consultorio"] ::-webkit-scrollbar-thumb:hover {
-  background: #a7b8b3;
+  background: #a9b9d1;
 }
 
 /* Sala de ventas Nissan: la paleta de la marca, blanco y rojo. Va DESPUÉS del
@@ -645,28 +648,33 @@ select:-webkit-autofill {
    DOCUMENTOS (receta y orden) se ven como papel porque se imprimen y se firman;
    el resto es interfaz. */
 .cons {
-  /* Barra lateral */
-  --barra: #0d1a22;
-  --barra-2: #162b37;
-  --barra-3: #22475a;
-  --barra-texto: #cddadf;
+  /* Barra y membretes: un azul marino sacado del azul de la marca. */
+  --barra: #0b2a5b;
+  --barra-2: #123a7a;
+  --barra-3: #1f4f9c;
+  --barra-texto: #d7e3f7;
 
-  /* Superficies */
-  --fondo: #eef2f1;
+  /* Superficies, en gris azulado */
+  --fondo: #eef3fa;
   --panel: #ffffff;
-  --panel-2: #f5f8f7;
-  --linea: #e2e9e7;
-  --linea-2: #cbd6d3;
+  --panel-2: #f4f7fc;
+  --linea: #dde6f2;
+  --linea-2: #c3d1e6;
 
   /* Texto */
-  --texto: #10202a;
-  --texto-2: #536872;
-  --texto-3: #8397a0;
+  --texto: #0f2340;
+  --texto-2: #4a5d78;
+  --texto-3: #7f91ab;
 
-  /* Verde quirúrgico: el de las batas y los campos de cirugía. */
-  --verde: #0e7c6b;
-  --verde-hondo: #0a5d50;
-  --verde-claro: #e4f2ee;
+  /* El acento es el AZUL del hospital (#1F78FF). Las variables conservan el
+     nombre "verde" de cuando el módulo iba en verde quirúrgico, porque lo
+     usan todas las pantallas; desde 2026-10-13 valen el azul de la marca. */
+  --verde: #1f78ff;
+  --verde-hondo: #0a4fb8;
+  --verde-claro: #e8f1ff;
+  /* Lo que salió bien (hecho, facturado, enviada): el verde del hospital. */
+  --exito: #2f9e1f;
+  --exito-claro: #e9f7e3;
   --ambar: #9a6207;
   --ambar-claro: #fdf3e3;
   --alerta: #b3261e;
@@ -761,6 +769,10 @@ select:-webkit-autofill {
   background: var(--verde-claro);
   color: var(--verde-hondo);
 }
+.cons .chip-exito {
+  background: var(--exito-claro);
+  color: var(--exito);
+}
 .cons .chip-ambar {
   background: var(--ambar-claro);
   color: var(--ambar);
@@ -817,7 +829,7 @@ select:-webkit-autofill {
 }
 .cons .campo:focus {
   border-color: var(--verde);
-  box-shadow: 0 0 0 3px rgba(14, 124, 107, 0.13);
+  box-shadow: 0 0 0 3px rgba(31, 120, 255, 0.15);
 }
 /* Campo con icono adentro: el hueco lo reserva esta clase y no una utilidad,
    porque .campo se declara después y le ganaría. */

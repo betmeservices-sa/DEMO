@@ -15,11 +15,15 @@
 
 import { getSupabase } from "@/lib/supabase";
 import { normalizarCorreo, patronExacto } from "./portal";
+import { armarCola, ultimos8, type EnCola } from "./cola";
+import { armarHistorial, type Historial } from "./historial";
+import { recordarPaciente } from "./contacto";
 import {
   idNuevo,
   codigoReceta,
   type Doctor,
   type Documento,
+  type Orden,
   type Paciente,
   type Sucursal,
   type Turno,
@@ -280,6 +284,10 @@ const aDocumento = (d: Documento) => {
   };
 };
 
+/** Lo que se reclama con un código en un mostrador: ni la receta ni la nota. */
+const esOrden = (d: Documento): d is Orden =>
+  d.tipo === "orden" || d.tipo === "imagen" || d.tipo === "proceso";
+
 /**
  * El documento de un código.
  *
@@ -288,7 +296,7 @@ const aDocumento = (d: Documento) => {
  * mostrador. Lo que sí hace es no devolver recetas: lo que se reclama con un
  * código en el laboratorio son exámenes, imágenes o procedimientos.
  */
-export async function documentoPorCodigo(codigo: string): Promise<Documento | null> {
+export async function documentoPorCodigo(codigo: string): Promise<Orden | null> {
   const c = codigo.trim().toUpperCase().replace(/\s+/g, "");
   if (!/^[A-Z]{5}-\d{6}$/.test(c)) return null;
   const sb = db();
@@ -300,12 +308,12 @@ export async function documentoPorCodigo(codigo: string): Promise<Documento | nu
       .maybeSingle();
     if (!error) {
       const doc = data ? deDocumento(data) : null;
-      return doc && doc.tipo !== "receta" ? doc : null;
+      return doc && esOrden(doc) ? doc : null;
     }
     sinTablas("documentoPorCodigo", error?.message);
   }
   const doc = mem().documentos.find((d) => d.codigo?.toUpperCase() === c) ?? null;
-  return doc && doc.tipo !== "receta" ? doc : null;
+  return doc && esOrden(doc) ? doc : null;
 }
 
 export async function documentosDe(pacienteId: string): Promise<Documento[]> {
@@ -431,6 +439,7 @@ const deTurno = (f: Record<string, unknown>): Turno => ({
   cerrado: (f.cerrado as string | null) ?? null,
   monto: f.monto === null || f.monto === undefined ? null : Number(f.monto),
   factura: (f.factura as string | null) ?? null,
+  pacienteId: (f.paciente_id as string | null) ?? null,
 });
 
 const aTurno = (t: Turno) => ({
@@ -450,6 +459,7 @@ const aTurno = (t: Turno) => ({
   cerrado: t.cerrado,
   monto: t.monto,
   factura: t.factura,
+  paciente_id: t.pacienteId,
 });
 
 // "Hoy" es el día de El Salvador, no el del servidor. En Vercel el proceso
@@ -501,8 +511,12 @@ export async function turnoPorId(id: string): Promise<Turno | null> {
 }
 
 export async function crearTurno(
-  datos: Pick<Turno, "sucursalId" | "nombre" | "telefono" | "correo" | "examenes">,
+  datos: Pick<Turno, "sucursalId" | "nombre" | "telefono" | "correo" | "examenes"> &
+    Partial<Pick<Turno, "pacienteId">>,
 ): Promise<Turno> {
+  // Quien toma turno queda en Contactos. Va aparte y sin esperar: la fila no
+  // depende de la ficha.
+  void recordarPaciente({ nombre: datos.nombre, telefono: datos.telefono, correo: datos.correo });
   // El número corre por día y por sucursal: empezar en 1 cada mañana es lo que
   // la gente espera de una fila, y un correlativo eterno ("turno 4.812") no le
   // dice nada a nadie.
@@ -520,6 +534,7 @@ export async function crearTurno(
     cerrado: null,
     monto: null,
     factura: null,
+    pacienteId: datos.pacienteId ?? null,
   };
   const sb = db();
   if (sb) {
@@ -639,4 +654,76 @@ export async function cerrarTurno(
     t.factura = await facturaNueva(t.sucursalId, sigla);
   }
   return guardarTurno(t);
+}
+
+// ── La cola del doctor y el historial del paciente ──────────────────────────
+
+/** La fila de hoy de TODAS las unidades, para saber quién pagó dónde. */
+async function turnosDeHoy(): Promise<Turno[]> {
+  const listas = await Promise.all(SUCURSALES.map((s) => turnosDe(s.id)));
+  return listas.flat();
+}
+
+/**
+ * Quién ya pagó sus exámenes hoy y viene a la consulta de este doctor. La regla
+ * vive en lib/consultorio/cola.ts; acá solo se juntan las listas.
+ */
+export async function colaDelDoctor(doctorId: string): Promise<EnCola[]> {
+  const [turnos, pacientes, documentos] = await Promise.all([
+    turnosDeHoy(),
+    pacientesDe(doctorId),
+    documentosDeDoctor(doctorId),
+  ]);
+  return armarCola(doctorId, turnos, pacientes, documentos, SUCURSALES);
+}
+
+/**
+ * Los expedientes de un teléfono, con cualquier doctor. Se busca por los
+ * últimos ocho dígitos porque cada quien lo escribe distinto ("+503 7293
+ * 8961", "72938961"), y se vuelve a comparar acá por si el parecido coló a
+ * otra persona.
+ */
+export async function pacientesPorTelefono(telefono: string): Promise<Paciente[]> {
+  const tel = ultimos8(telefono);
+  if (tel.length < 8) return [];
+  const mismo = (p: Paciente) => ultimos8(p.telefono) === tel;
+  const sb = db();
+  if (sb) {
+    const { data, error } = await sb
+      .from("consultorio_pacientes")
+      .select("*")
+      .ilike("telefono", `%${tel}`);
+    if (!error && data) return data.map(dePaciente).filter(mismo);
+    sinTablas("pacientesPorTelefono", error?.message);
+  }
+  return mem().pacientes.filter(mismo);
+}
+
+/** Todas las visitas de un teléfono a cualquier unidad, de cualquier día. */
+export async function turnosPorTelefono(telefono: string): Promise<Turno[]> {
+  const tel = ultimos8(telefono);
+  if (tel.length < 8) return [];
+  const mismo = (t: Turno) => ultimos8(t.telefono) === tel;
+  const sb = db();
+  if (sb) {
+    const { data, error } = await sb
+      .from("consultorio_turnos")
+      .select("*")
+      .ilike("telefono", `%${tel}`)
+      .order("creado", { ascending: false })
+      .limit(200);
+    if (!error && data) return data.map(deTurno).filter(mismo);
+    sinTablas("turnosPorTelefono", error?.message);
+  }
+  return mem().turnos.filter(mismo);
+}
+
+/** Lo que la clínica sabe de un teléfono: registros, exámenes, facturas y documentos. */
+export async function historialDe(telefono: string): Promise<Historial> {
+  const [pacientes, turnos] = await Promise.all([
+    pacientesPorTelefono(telefono),
+    turnosPorTelefono(telefono),
+  ]);
+  const documentos = await documentosDePacientes(pacientes.map((p) => p.id));
+  return armarHistorial(telefono, pacientes, turnos, documentos, DOCTORES, SUCURSALES);
 }

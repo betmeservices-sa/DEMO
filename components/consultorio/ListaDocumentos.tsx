@@ -126,6 +126,10 @@ export function ListaDocumentos({
                         <span className="block truncate text-[13.5px] text-[var(--texto-2)]">
                           {d.medicamentos.map((m) => m.nombre).join(", ")}
                         </span>
+                      ) : d.tipo === "nota" ? (
+                        <span className="block truncate text-[13.5px] text-[var(--texto-2)]">
+                          {d.texto}
+                        </span>
                       ) : (
                         <span className="flex flex-wrap gap-1.5">
                           <span className="chip chip-verde">{d.examenes.length}</span>
@@ -145,7 +149,7 @@ export function ListaDocumentos({
                           No salió
                         </span>
                       ) : (
-                        <span className="chip chip-verde">Enviada</span>
+                        <span className="chip chip-exito">Enviada</span>
                       )}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 text-right text-[13px] text-[var(--texto-2)]">

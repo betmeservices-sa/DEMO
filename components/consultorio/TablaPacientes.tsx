@@ -9,9 +9,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Receipt, Search } from "lucide-react";
 import { Encabezado } from "@/components/consultorio/Encabezado";
 import { edad, type Paciente } from "@/lib/consultorio/tipos";
+import type { EnCola } from "@/lib/consultorio/cola";
 
 const MINUTO = 60_000;
 
@@ -32,21 +33,28 @@ function iniciales(nombre: string): string {
 
 const esDeHoy = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
 
-type Conteo = Record<string, { recetas: number; ordenes: number }>;
+const horaCorta = (iso: string) =>
+  new Date(iso).toLocaleTimeString("es-SV", { hour: "numeric", minute: "2-digit" });
+
+type Conteo = Record<string, { recetas: number; ordenes: number; notas: number }>;
 
 export function TablaPacientes({
   iniciales: primeros,
+  cola: primeraCola,
   documentos,
   codigo,
   escritorio,
 }: {
   iniciales: Paciente[];
+  /** Quién ya pagó sus exámenes hoy y viene a la consulta. */
+  cola: EnCola[];
   documentos: Conteo;
   codigo: string;
   /** El selector de con cuál doctor se está mirando. Lo arma la página. */
   escritorio?: React.ReactNode;
 }) {
   const [pacientes, setPacientes] = useState<Paciente[]>(primeros);
+  const [cola, setCola] = useState<EnCola[]>(primeraCola);
   const [busca, setBusca] = useState("");
   // El reloj vive en estado para que "hace 4 min" no se congele mientras la
   // pantalla está abierta, que es todo el turno.
@@ -56,7 +64,10 @@ export function TablaPacientes({
     try {
       const r = await fetch("/api/consultorio/pacientes", { cache: "no-store" });
       const d = await r.json();
-      if (d.ok) setPacientes(d.pacientes);
+      if (d.ok) {
+        setPacientes(d.pacientes);
+        setCola(d.cola ?? []);
+      }
     } catch {
       // Si falla una vuelta, la siguiente la corrige. Interrumpir al doctor con
       // un error por un parpadeo de red sería peor.
@@ -108,6 +119,55 @@ export function TablaPacientes({
       </Encabezado>
 
       <div className="p-6">
+        {/* Quien ya pagó en el laboratorio viene con resultados: va arriba de
+            todo, como la persona que sigue. Sale sola cuando el doctor le deja
+            algo escrito. */}
+        {cola.length > 0 && (
+          <section className="mb-6">
+            <h2 className="flex items-baseline gap-2 font-serif text-[19px] text-[var(--texto)]">
+              {cola.length === 1 ? "Siguiente paciente" : "Vienen del laboratorio"}
+              <span className="font-sans text-[12.5px] text-[var(--texto-3)]">
+                {cola.length === 1 ? "ya pagó sus exámenes" : `${cola.length} ya pagaron sus exámenes`}
+              </span>
+            </h2>
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {cola.map((c, i) => (
+                <li key={c.turnoId}>
+                  <Link
+                    href={`/consultorio/paciente/${c.paciente.id}`}
+                    className={`tarjeta fila-cola flex h-full items-start gap-3 px-4 py-3 transition ${
+                      i === 0 ? "abierta" : ""
+                    }`}
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--verde-claro)] font-serif text-[14px] text-[var(--verde-hondo)]">
+                      {iniciales(c.paciente.nombre)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-serif text-[16px] leading-snug text-[var(--texto)]">
+                        {c.paciente.nombre}
+                      </span>
+                      <span className="block text-[12.5px] text-[var(--texto-2)]">
+                        Pagó a las {horaCorta(c.pagado)}
+                        {c.unidad ? ` en ${c.unidad}` : ""}
+                      </span>
+                      <span className="mt-1 flex items-center gap-1.5 font-mono text-[12px] text-[var(--texto-3)]">
+                        <Receipt size={12} className="text-[var(--exito)]" />
+                        {c.factura}
+                      </span>
+                      {c.examenes.length > 0 && (
+                        <span className="mt-1 block truncate text-[12.5px] text-[var(--texto-2)]">
+                          {c.examenes.join(", ")}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronRight size={17} className="mt-1 shrink-0 text-[var(--texto-3)]" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {pacientes.length === 0 ? (
           <div className="tarjeta px-8 py-14 text-center">
             <p className="font-serif text-[20px] text-[var(--texto)]">
@@ -193,6 +253,11 @@ export function TablaPacientes({
                             {c.ordenes > 0 && (
                               <span className="chip chip-verde">
                                 {c.ordenes} {c.ordenes === 1 ? "orden" : "órdenes"}
+                              </span>
+                            )}
+                            {c.notas > 0 && (
+                              <span className="chip chip-gris">
+                                {c.notas} {c.notas === 1 ? "nota" : "notas"}
                               </span>
                             )}
                           </span>

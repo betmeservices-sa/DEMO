@@ -17,12 +17,13 @@
 
 import { NOMBRE_TIPO, agruparDe, conLado } from "./catalogos";
 import { LOGO_CORREO } from "./marca";
-import type { Doctor, Documento, Paciente } from "./tipos";
+import type { Doctor, Enviable, Paciente } from "./tipos";
 
 const TINTA = "#10202a";
 const SUAVE = "#536872";
-const LINEA = "#e2e9e7";
-const VERDE = "#0e7c6b";
+const LINEA = "#dde6f2";
+// El azul del hospital: desde 2026-10-13 el correo va con la paleta de la marca.
+const VERDE = "#1f78ff";
 const FUENTE = "Georgia, 'Times New Roman', serif";
 const SANS = "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
@@ -33,7 +34,7 @@ const fechaLarga = (iso: string) =>
   new Date(iso).toLocaleDateString("es-SV", { day: "numeric", month: "long", year: "numeric" });
 
 /** Los renglones del medio: medicamentos o estudios, según el documento. */
-function cuerpo(doc: Documento): string {
+function cuerpo(doc: Enviable): string {
   if (doc.tipo === "receta") {
     return doc.medicamentos
       .map(
@@ -82,7 +83,7 @@ function cuerpo(doc: Documento): string {
 }
 
 export function armarHtml(
-  doc: Documento,
+  doc: Enviable,
   paciente: Paciente,
   doctor: Doctor,
   clinica: string,
@@ -112,7 +113,7 @@ export function armarHtml(
       : `
       <tr>
         <td style="padding:18px 0 0;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e4f2ee;border-left:3px solid ${VERDE};">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8f1ff;border-left:3px solid ${VERDE};">
             <tr>
               <td style="padding:14px 16px;font:400 14px ${SANS};color:${TINTA};line-height:1.5;">
                 Al llegar, dé este código en recepción y le marcamos todo sin que llene nada:

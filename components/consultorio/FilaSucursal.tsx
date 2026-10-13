@@ -93,7 +93,16 @@ export function FilaSucursal({ sucursal }: { sucursal: Sucursal }) {
       const r = await fetch("/api/consultorio/publico/turnos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codigo: sucursal.codigo, nombre, telefono, correo, examenes: marcados }),
+        body: JSON.stringify({
+          codigo: sucursal.codigo,
+          nombre,
+          telefono,
+          correo,
+          examenes: marcados,
+          // El código de la orden, si la trajo: así el turno queda amarrado al
+          // expediente y al pagar le aparece al doctor.
+          orden: orden ? codigo.trim().toUpperCase() : "",
+        }),
       });
       const d = await r.json();
       if (!d.ok) {

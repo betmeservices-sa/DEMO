@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { doctorActual } from "@/lib/consultorio/actual";
-import { pacientesDe } from "@/lib/consultorio/almacen";
+import { colaDelDoctor, pacientesDe } from "@/lib/consultorio/almacen";
 import { tenantFromRequest } from "@/lib/tenants/server";
 
 export const runtime = "nodejs";
@@ -16,5 +16,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "No existe." }, { status: 404 });
   }
   const doctor = await doctorActual();
-  return NextResponse.json({ ok: true, pacientes: await pacientesDe(doctor.id) });
+  // La cola va en la misma respuesta: la pantalla del doctor se refresca cada
+  // cinco segundos, y pedirla aparte serían dos viajes por vuelta.
+  const [pacientes, cola] = await Promise.all([pacientesDe(doctor.id), colaDelDoctor(doctor.id)]);
+  return NextResponse.json({ ok: true, pacientes, cola });
 }
