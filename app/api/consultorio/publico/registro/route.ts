@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { doctorPorCodigo, registrarPaciente } from "@/lib/consultorio/almacen";
 import { recordarPaciente } from "@/lib/consultorio/contacto";
-import type { Sexo } from "@/lib/consultorio/tipos";
+import { leerPaciente } from "@/lib/consultorio/validar";
 import { claveIp, golpe, respuestaBloqueado } from "@/lib/freno";
 
 export const runtime = "nodejs";
@@ -19,35 +19,24 @@ const FRENO = { max: 60, ventanaSeg: 10 * 60 };
 
 export async function POST(req: Request) {
   if (await golpe(claveIp(req, "consultorio-publico"), FRENO)) return respuestaBloqueado(60);
-  const b = (await req.json().catch(() => ({}))) as Record<string, string>;
-  const doctor = doctorPorCodigo(b.codigo ?? "");
+  const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const doctor = doctorPorCodigo(String(b.codigo ?? ""));
   if (!doctor) {
     return NextResponse.json({ ok: false, error: "Ese código no existe." }, { status: 404 });
   }
 
-  const nombre = (b.nombre ?? "").trim();
-  const telefono = (b.telefono ?? "").replace(/[^\d+]/g, "");
-  if (nombre.length < 3) {
-    return NextResponse.json({ ok: false, error: "Escribí tu nombre completo." }, { status: 400 });
-  }
-  if (telefono.replace(/\D/g, "").length < 8) {
-    return NextResponse.json({ ok: false, error: "El teléfono no está completo." }, { status: 400 });
-  }
+  // La misma regla que el registro a mano del doctor (lib/consultorio/validar).
+  const leido = leerPaciente(b);
+  if (!leido.ok) return NextResponse.json({ ok: false, error: leido.error }, { status: 400 });
 
-  const sexo = ["F", "M", "otro"].includes(b.sexo ?? "") ? (b.sexo as Sexo) : null;
-  const { paciente, repetido } = await registrarPaciente({
-    doctorId: doctor.id,
-    nombre,
-    telefono,
-    correo: (b.correo ?? "").trim(),
-    nacimiento: (b.nacimiento ?? "").trim() || null,
-    sexo,
-    motivo: (b.motivo ?? "").trim(),
-    alergias: (b.alergias ?? "").trim(),
-  });
+  const { paciente, repetido } = await registrarPaciente({ ...leido.datos, doctorId: doctor.id });
 
   // Y queda en la pestaña Contactos de la clínica, con su historial.
-  await recordarPaciente({ nombre, telefono, correo: paciente.correo });
+  await recordarPaciente({
+    nombre: paciente.nombre,
+    telefono: paciente.telefono,
+    correo: paciente.correo,
+  });
 
   return NextResponse.json({ ok: true, repetido, doctor: doctor.nombre, pacienteId: paciente.id });
 }

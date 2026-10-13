@@ -9,8 +9,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Receipt, Search } from "lucide-react";
+import { ChevronRight, Receipt, Search, UserPlus } from "lucide-react";
 import { Encabezado } from "@/components/consultorio/Encabezado";
+import { NuevoPaciente } from "@/components/consultorio/NuevoPaciente";
 import { edad, type Paciente } from "@/lib/consultorio/tipos";
 import type { EnCola } from "@/lib/consultorio/cola";
 
@@ -56,6 +57,8 @@ export function TablaPacientes({
   const [pacientes, setPacientes] = useState<Paciente[]>(primeros);
   const [cola, setCola] = useState<EnCola[]>(primeraCola);
   const [busca, setBusca] = useState("");
+  // Registrar a mano a quien no escaneó el QR.
+  const [registrando, setRegistrando] = useState(false);
   // El reloj vive en estado para que "hace 4 min" no se congele mientras la
   // pantalla está abierta, que es todo el turno.
   const [ahora, setAhora] = useState(() => Date.now());
@@ -116,7 +119,14 @@ export function TablaPacientes({
             className="campo campo-icono w-[230px]"
           />
         </label>
+        <button type="button" onClick={() => setRegistrando(true)} className="boton">
+          <UserPlus size={15} /> Registrar paciente
+        </button>
       </Encabezado>
+
+      {registrando && (
+        <NuevoPaciente cerrar={() => setRegistrando(false)} registrado={() => void traer()} />
+      )}
 
       <div className="p-6">
         {/* Quien ya pagó en el laboratorio viene con resultados: va arriba de
@@ -177,11 +187,16 @@ export function TablaPacientes({
               Pegá tu código{" "}
               <span className="font-mono font-semibold text-[var(--texto)]">{codigo}</span> en la
               sala de espera. En cuanto alguien lo escanee va a aparecer acá, sin que tengas que
-              hacer nada.
+              hacer nada. Si alguien no puede escanear, registralo vos.
             </p>
-            <Link href="/consultorio/codigo" className="boton mt-5 inline-flex">
-              Ver mi código
-            </Link>
+            <span className="mt-5 inline-flex flex-wrap justify-center gap-2">
+              <Link href="/consultorio/codigo" className="boton">
+                Ver mi código
+              </Link>
+              <button type="button" onClick={() => setRegistrando(true)} className="boton-2">
+                <UserPlus size={15} /> Registrar paciente
+              </button>
+            </span>
           </div>
         ) : (
           <div className="tarjeta overflow-hidden">

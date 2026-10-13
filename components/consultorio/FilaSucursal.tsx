@@ -17,8 +17,10 @@ import {
   valorTotal,
   type TipoOrden,
 } from "@/lib/consultorio/catalogos";
+import { cuantos, filtrarAreas } from "@/lib/consultorio/buscar";
 import type { Sucursal } from "@/lib/consultorio/tipos";
 import { Turno } from "@/components/consultorio/Turno";
+import { BuscadorExamenes } from "@/components/consultorio/BuscadorExamenes";
 
 export function FilaSucursal({ sucursal }: { sucursal: Sucursal }) {
   // De qué es esta entrada: exámenes de laboratorio, estudios de imagenología o
@@ -31,6 +33,11 @@ export function FilaSucursal({ sucursal }: { sucursal: Sucursal }) {
   const [correo, setCorreo] = useState("");
   const [marcados, setMarcados] = useState<string[]>([]);
   const [abierta, setAbierta] = useState<string | null>(AREAS[0]?.id ?? null);
+  // Buscar en vez de abrir área por área. Mientras hay algo escrito, las áreas
+  // que calzan van abiertas: lo que se busca tiene que verse, no adivinarse.
+  const [busca, setBusca] = useState("");
+  const visibles = useMemo(() => filtrarAreas(AREAS, busca), [AREAS, busca]);
+  const filtrando = busca.trim().length > 0;
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnoId, setTurnoId] = useState<string | null>(null);
@@ -229,12 +236,24 @@ export function FilaSucursal({ sucursal }: { sucursal: Sucursal }) {
           <p className="mt-0.5 text-[13.5px] text-[var(--texto-2)]">
             Si traés una orden del doctor, marcá lo que dice ahí.
           </p>
+          <BuscadorExamenes
+            valor={busca}
+            cambiar={setBusca}
+            placeholder="Buscar por nombre"
+            className="mt-3"
+          />
         </div>
 
+        {filtrando && cuantos(visibles) === 0 && (
+          <p className="px-5 py-8 text-center text-[14px] text-[var(--texto-2)]">
+            Nada calza con “{busca}”. Probá con otra palabra.
+          </p>
+        )}
+
         <div className="divide-y divide-[var(--linea)]">
-          {AREAS.map((a) => {
+          {visibles.map((a) => {
             const n = a.examenes.filter((e) => marcados.includes(e.id)).length;
-            const on = abierta === a.id;
+            const on = filtrando || abierta === a.id;
             return (
               <div key={a.id}>
                 <button

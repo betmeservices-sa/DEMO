@@ -11,10 +11,13 @@
 // que nadie toque nada.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClipboardList, Download, Printer, Receipt, Search, Timer } from "lucide-react";
+import { ClipboardList, Download, Printer, Receipt, Search, Timer, UserPlus } from "lucide-react";
 import { TODOS, agruparDe, conLado, valorTotal, type TipoOrden } from "@/lib/consultorio/catalogos";
+import { coincide } from "@/lib/consultorio/buscar";
 import type { Sucursal, Turno } from "@/lib/consultorio/tipos";
 import { Logo } from "@/components/consultorio/Logo";
+import { BuscadorExamenes } from "@/components/consultorio/BuscadorExamenes";
+import { TurnoManual } from "@/components/consultorio/TurnoManual";
 
 /** Lo que devuelve el mostrador al buscar el código que trae el paciente. */
 interface Orden {
@@ -61,6 +64,8 @@ export function Mostrador({
   const [turnos, setTurnos] = useState<Turno[]>(iniciales);
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  // El turno a mano, para quien llegó sin escanear.
+  const [manual, setManual] = useState(false);
   // Empieza en null y lo llena el navegador: si el servidor pintara una hora,
   // el primer render del cliente no cuadraría con la que llegó en el HTML.
   const [ahora, setAhora] = useState<number | null>(null);
@@ -178,6 +183,13 @@ export function Mostrador({
             </span>
           </span>
           <span className="ml-auto flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setManual(true)}
+              className="flex items-center gap-1.5 rounded-[var(--r2)] border border-white/40 px-3 py-1.5 text-[13.5px] text-white transition hover:border-white hover:bg-white/10"
+            >
+              <UserPlus size={14} /> Turno a mano
+            </button>
             <a
               href={`/api/consultorio/turnos/reporte?unidad=${unidad.id}`}
               className="flex items-center gap-1.5 text-[13.5px] text-white/70 underline underline-offset-4 transition hover:text-white"
@@ -195,6 +207,21 @@ export function Mostrador({
           {escritorio}
         </div>
       </header>
+
+      {manual && (
+        <TurnoManual
+          unidad={unidad}
+          tipoOrden={tipoOrden}
+          cerrar={() => setManual(false)}
+          creado={(t) => {
+            // Entra a la fila y, si no hay nadie en el mostrador, se abre de una
+            // vez: quien lo registró a mano lo tiene enfrente.
+            setTurnos((prev) => [...prev, t]);
+            if (!abierto) void mandar(t.id, { accion: "abrir" });
+            else void traer();
+          }}
+        />
+      )}
 
       <main className="mx-auto max-w-5xl px-6 py-6 pb-24">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -579,6 +606,16 @@ function Record({
   const [tocado, setTocado] = useState(turno.monto !== null);
 
   const grupos = useMemo(() => agruparDe(tipoOrden, turno.examenes), [tipoOrden, turno.examenes]);
+  // Buscar dentro del récord. Con una orden larga, encontrar "creatinina"
+  // entre veinte casillas a ojo es lo que hace que se desmarque la equivocada.
+  const [busca, setBusca] = useState("");
+  const visibles = useMemo(
+    () =>
+      grupos
+        .map((g) => ({ ...g, examenes: g.examenes.filter((e) => coincide(e, busca)) }))
+        .filter((g) => g.examenes.length > 0),
+    [grupos, busca],
+  );
   const sugerido = valorTotal(marcados);
   const hayEstimados = grupos.some((g) => g.examenes.some((e) => e.estimado));
   const cobrado = Number(monto);
@@ -621,11 +658,26 @@ function Record({
       </div>
 
       <div className="px-6 py-5">
-        <p className="text-[13.5px] text-[var(--texto-2)]">
-          Desmarcá lo que no se va a hacer hoy. El total se arma con lo marcado.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[13.5px] text-[var(--texto-2)]">
+            Desmarcá lo que no se va a hacer hoy. El total se arma con lo marcado.
+          </p>
+          {turno.examenes.length > 5 && (
+            <BuscadorExamenes
+              valor={busca}
+              cambiar={setBusca}
+              placeholder="Buscar en el récord"
+              className="w-full sm:w-[260px]"
+            />
+          )}
+        </div>
+        {busca.trim() && visibles.length === 0 && (
+          <p className="py-6 text-center text-[14px] text-[var(--texto-2)]">
+            Nada de este récord calza con “{busca.trim()}”.
+          </p>
+        )}
         <div className="mt-3 sm:columns-2">
-          {grupos.map((g) => (
+          {visibles.map((g) => (
             <div key={g.area} className="mb-4 break-inside-avoid">
               <p className="px-2 text-[12.5px] font-semibold text-[var(--texto-3)]">{g.area}</p>
               {g.examenes.map((e) => (

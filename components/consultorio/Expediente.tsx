@@ -36,7 +36,9 @@ import {
   type Paciente,
 } from "@/lib/consultorio/tipos";
 import { Logo } from "@/components/consultorio/Logo";
+import { BuscadorExamenes } from "@/components/consultorio/BuscadorExamenes";
 import { CLINICA } from "@/lib/consultorio/marca";
+import { cuantos, filtrarAreas } from "@/lib/consultorio/buscar";
 import type { EnCola } from "@/lib/consultorio/cola";
 
 type Pestana = TipoOrden | "receta" | "nota";
@@ -87,6 +89,13 @@ export function Expediente({
 
   const anios = edad(paciente.nacimiento);
   const avisos = useMemo(() => preparacion(marcados), [marcados]);
+  // Buscar en la hoja: lo marcado no se pierde al filtrar, solo se esconde.
+  const [busca, setBusca] = useState("");
+  const visibles = useMemo(
+    () =>
+      pestana === "receta" || pestana === "nota" ? [] : filtrarAreas(areasDe(pestana), busca),
+    [pestana, busca],
+  );
 
   function marcar(id: string) {
     setMarcados((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
@@ -237,6 +246,7 @@ export function Expediente({
                 setPestana(id);
                 setMarcados([]);
                 setLados({});
+                setBusca("");
               }}
               className={`-mb-px border-b-2 pb-2.5 font-serif text-[17px] transition ${
                 pestana === id
@@ -269,11 +279,29 @@ export function Expediente({
           </section>
         ) : pestana !== "receta" ? (
           <section className="tarjeta no-imprimir mt-5 px-6 py-5">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[13.5px] text-[var(--texto-2)]">
+                {busca.trim()
+                  ? `${cuantos(visibles)} ${cuantos(visibles) === 1 ? "calza" : "calzan"} con “${busca.trim()}”`
+                  : "Marcá lo que le vas a dejar, o buscalo por nombre."}
+              </p>
+              <BuscadorExamenes
+                valor={busca}
+                cambiar={setBusca}
+                placeholder="Buscar examen"
+                className="w-full sm:w-[300px]"
+              />
+            </div>
+            {busca.trim() && cuantos(visibles) === 0 && (
+              <p className="py-8 text-center text-[14px] text-[var(--texto-2)]">
+                Nada calza con “{busca.trim()}”. Probá con otra palabra o con el código.
+              </p>
+            )}
             {/* Columnas de verdad (CSS multicolumna): así la hoja se lee como el
                 formulario del laboratorio y cabe más en una pantalla sin
                 volverse una lista infinita. */}
             <div className="columns-1 gap-9 sm:columns-2 lg:columns-3">
-              {areasDe(pestana).map((a) => {
+              {visibles.map((a) => {
                 const n = a.examenes.filter((e) => marcados.includes(e.id)).length;
                 return (
                   <div key={a.id} className="mb-7 break-inside-avoid">
