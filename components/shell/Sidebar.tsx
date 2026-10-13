@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Stethoscope, UserPlus, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
-import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_PIZZAHUT } from "@/lib/modulos";
+import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
 import { useStore } from "@/lib/store";
 import { sinLeerPorCanal, useInterno } from "@/lib/interno-bridge";
 import { activeTenantId } from "@/lib/tenants/active";
@@ -147,9 +147,11 @@ export function Sidebar({
   // forma de Redes, y por eso sale del mismo lugar.
   const veComentarios = (veRedes && !soloMiraRedes(tenant)) || veBetme;
   // La clinica NO es un centro de comunicacion: son tres vistas y nada mas
-  // (el doctor, el laboratorio y lo que ve el paciente). Bandeja, contactos,
-  // redes, comentarios y dashboard son de los otros clientes y aca solo hacen
-  // ruido, asi que su menu se arma aparte en vez de filtrarse.
+  // (el doctor, el laboratorio y lo que ve el paciente), mas Contactos, que
+  // desde 2026-10-13 es donde queda cada paciente con su historial (examenes,
+  // facturas, recetas y notas). Bandeja, redes, comentarios y dashboard son
+  // de los otros clientes y aca solo hacen ruido, asi que su menu se arma
+  // aparte en vez de filtrarse.
   // Pizza Hut tambien arma su menu aparte, y en su propio orden: primero el
   // tablero, despues lo que entra (bandeja), las propuestas y las llamadas.
   const vePizza = tenant === "pizzahut";
@@ -162,7 +164,9 @@ export function Sidebar({
         (item): item is NavItem => Boolean(item) && def.ve.includes((item as NavItem).id),
       )
     : veClinica
-    ? NAV.filter((item) => MODULOS_CLINICA.includes(item.id) && def.ve.includes(item.id))
+    ? VE_CLINICA.map((id) => NAV.find((item) => item.id === id)).filter(
+        (item): item is NavItem => Boolean(item) && def.ve.includes((item as NavItem).id),
+      )
     : NAV.filter(
     (item) =>
       def.ve.includes(item.id) &&

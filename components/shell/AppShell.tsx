@@ -8,7 +8,7 @@ import { LiveProvider } from "@/lib/live-context";
 import { useAuth } from "@/lib/auth";
 import { activeTenant, activeTenantId } from "@/lib/tenants/active";
 import { useRole, moduloDeRuta, primerModulo, MODULO_RUTA } from "@/lib/roles";
-import { MODULOS_CLINICA, agenciaVeRuta, destinoAgencia } from "@/lib/modulos";
+import { VE_CLINICA, agenciaVeRuta, destinoAgencia } from "@/lib/modulos";
 import { Sidebar } from "./Sidebar";
 import { LiveMount } from "./LiveMount";
 import { LoginPage } from "./LoginPage";
@@ -67,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     // abría y se devolvía sola al consultorio.
     if (esPublica(pathname) || pathname === RUTA_PANELES) return;
     if (!sesion || activeTenantId() !== "consultorio") return;
-    if (!modulo || !MODULOS_CLINICA.includes(modulo)) router.replace("/consultorio");
+    if (!modulo || !VE_CLINICA.includes(modulo)) router.replace("/consultorio");
   }, [sesion, modulo, pathname, router]);
 
   // Aplica el tema del cliente activo en <html data-tenant>. Sin sesión se quita

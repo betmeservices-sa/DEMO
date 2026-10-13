@@ -97,6 +97,13 @@ export const MODULOS_CLINICA: readonly ModuleId[] = [
   "mensajes",
 ];
 
+// Lo que la clinica VE, en el orden de su menu: sus modulos propios y, desde
+// 2026-10-13, Contactos, que es donde queda cada paciente con su historial
+// (examenes, facturas, recetas y notas). Contactos NO entra en MODULOS_CLINICA
+// porque esa lista es la que esconde modulos a los demas clientes, y
+// Contactos es de todos.
+export const VE_CLINICA: readonly ModuleId[] = [...MODULOS_CLINICA, "contactos"];
+
 // El menu de MiAgentIA Comercial (las asesoras), EN ESTE ORDEN: primero los
 // leads, que es para lo que entran, despues el WhatsApp comercial y sus
 // contactos. Sin ajustes: ahi viven interruptores que mueven a todo el demo.

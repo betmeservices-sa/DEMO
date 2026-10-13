@@ -19,6 +19,8 @@ import {
   registrarPaciente,
 } from "@/lib/consultorio/almacen";
 import type { Documento, Paciente, Turno } from "@/lib/consultorio/tipos";
+import { MODULOS_CLINICA, VE_CLINICA } from "@/lib/modulos";
+import { TENANTS } from "@/lib/tenants";
 
 const SUCURSALES = listarSucursales();
 const DOCTORES = listarDoctores();
@@ -232,5 +234,18 @@ describe("el historial del paciente", () => {
   it("sin nada, las tres listas van vacías", () => {
     const h = armarHistorial("77112233", [], [], [], DOCTORES, SUCURSALES);
     expect(h).toEqual({ registros: [], examenes: [], facturas: [], documentos: [] });
+  });
+});
+
+describe("el paciente en Contactos", () => {
+  it("la clínica ve Contactos, y Contactos sigue siendo de todos", () => {
+    expect(VE_CLINICA).toContain("contactos");
+    for (const m of MODULOS_CLINICA) expect(VE_CLINICA).toContain(m);
+    // Contactos NO va en la lista que esconde módulos a los demás clientes.
+    expect(MODULOS_CLINICA).not.toContain("contactos");
+  });
+
+  it("la etiqueta con la que entra el paciente existe en el cliente", () => {
+    expect(TENANTS.consultorio.tags).toContain("Paciente");
   });
 });
