@@ -13,9 +13,15 @@ describe("el panel comercial", () => {
     expect(resolveTenantByLogin("demoagentia", "demok")).toBe("miagentia");
   });
 
-  it("tiene sus leads, su bandeja y sus contactos; la agencia no ve los leads", () => {
-    expect([...MODULOS_COMERCIAL]).toEqual(["leads", "bandeja", "contactos"]);
+  it("tiene sus leads, su bandeja, sus contactos y el alta en vivo; la agencia no ve los leads", () => {
+    expect([...MODULOS_COMERCIAL]).toEqual(["leads", "bandeja", "contactos", "alta-numero"]);
     expect(MODULOS_AGENCIA).not.toContain("leads");
+  });
+
+  it("el alta de numero en vivo es solo de este panel", () => {
+    // Es la demo que ensena la agencia: da de alta un numero de WhatsApp de
+    // verdad. Ningun panel de cliente tiene por que verla.
+    expect(MODULOS_AGENCIA).not.toContain("alta-numero");
   });
 
   it("habla por su propio número", () => {

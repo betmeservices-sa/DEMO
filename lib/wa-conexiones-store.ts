@@ -80,6 +80,10 @@ export async function guardarConexionWa(cx: WaConnection): Promise<"db" | "memor
       access_token: cx.accessToken,
       pin: cx.pin ?? null,
       connected_at: new Date().toISOString(),
+      // Solo cuando quien guarda decidió el interruptor de ESTE número. Sin esto
+      // un número que nace encendido (el del alta en vivo) se guardaba apagado y
+      // había que prenderlo a mano desde el panel.
+      ...(cx.iaActiva === undefined ? {} : { ia_activa: cx.iaActiva }),
     },
     { onConflict: "phone_number_id" },
   );

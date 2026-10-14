@@ -83,6 +83,10 @@ export type ModuleId =
   // /andrea): quien dejo sus datos o pidio la llamada demo. Solo en el panel
   // comercial de MiAgentIA (tenant "comercial").
   | "leads"
+  // Dar de alta un numero de WhatsApp en vivo: Meta llama para dictar el codigo,
+  // el agente de voz lo contesta y lo devuelve. Es una demo para ensenarle a un
+  // prospecto lo rapido que se conecta su numero. Solo en el panel comercial.
+  | "alta-numero"
   // Escuchar lo que dijo el agente. Va aparte de "llamadas" (que es el tablero
   // de costo y volumen) porque quien hace QA no viene a mirar cifras.
   | "qa"
@@ -112,7 +116,7 @@ export const VE_CLINICA: readonly ModuleId[] = [...MODULOS_CLINICA, "contactos"]
 // El menu de MiAgentIA Comercial (las asesoras), EN ESTE ORDEN: primero los
 // leads, que es para lo que entran, despues el WhatsApp comercial y sus
 // contactos. Sin ajustes: ahi viven interruptores que mueven a todo el demo.
-export const MODULOS_COMERCIAL: readonly ModuleId[] = ["leads", "bandeja", "contactos"];
+export const MODULOS_COMERCIAL: readonly ModuleId[] = ["leads", "bandeja", "contactos", "alta-numero"];
 
 // El riel de la Caja de Credito de Chalatenango, EN ESTE ORDEN: la bandeja es
 // el centro de su panel, despues el tablero, los contactos, el chat del equipo
@@ -168,7 +172,7 @@ export interface RoleDef {
 // marketing no gestiona casos, asi que no lo ve.
 // "mis-chats" lo ve todo el mundo: es donde caen los chats que el agente pasa a
 // una persona, y quien atiende tiene que verlos sin depender de su rol.
-const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "auditoria", "costos", "llamadas", "leads", "qa", "agentes", "settings"];
+const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "auditoria", "costos", "llamadas", "leads", "alta-numero", "qa", "agentes", "settings"];
 export const VE: Record<RoleId, ModuleId[]> = {
   // Recepcion del consultorio es quien recibe al paciente y quien mueve la
   // fila del laboratorio: los dos modulos del modulo clinico son suyos.
@@ -232,6 +236,7 @@ export const MODULO_RUTA: Record<ModuleId, string> = {
   costos: "/costos",
   llamadas: "/llamadas",
   leads: "/leads",
+  "alta-numero": "/alta-numero",
   qa: "/qa",
   agentes: "/agentes",
   settings: "/settings",
@@ -278,6 +283,7 @@ export function moduloDeRuta(pathname: string): ModuleId | null {
   if (pathname.startsWith("/dashboard")) return "dashboard";
   if (pathname.startsWith("/llamadas")) return "llamadas";
   if (pathname.startsWith("/leads")) return "leads";
+  if (pathname.startsWith("/alta-numero")) return "alta-numero";
   if (pathname.startsWith("/qa")) return "qa";
   if (pathname.startsWith("/agentes")) return "agentes";
   if (pathname.startsWith("/settings")) return "settings";
