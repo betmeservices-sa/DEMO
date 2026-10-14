@@ -24,6 +24,15 @@ describe("el codigo que dicta Meta", () => {
     expect(codigoDeTranscript(real)).toBe("406317");
   });
 
+  it("lo saca aunque el reconocedor parta los digitos con puntos", () => {
+    // Segunda llamada real (2505 4611, 2026-10-14): Deepgram metio puntos en
+    // medio de los digitos y el agente contesto algo al final. El codigo era
+    // 640729 y con el se registro el numero.
+    const real =
+      "User: Su código de verificación es 6. 4 0 7 2. 9. Su código de verificación es 6 4 0 7 2 9.\nAI: Dame un momento.";
+    expect(codigoDeTranscript(real)).toBe("640729");
+  });
+
   it("acepta una sola lectura, sin repeticion", () => {
     expect(codigoDeTranscript("Tu código es 9 1 8 2 7 3")).toBe("918273");
   });
