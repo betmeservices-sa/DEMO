@@ -198,3 +198,53 @@ async function conectarAlPanel(creds: CredsAlta, numero: string, phoneNumberId: 
 export async function estadoDeCorrida(id: string): Promise<Corrida | null> {
   return leerCorrida(id);
 }
+
+/**
+ * Volver a pedirle a Meta que llame.
+ *
+ * Hace falta porque Meta puede contestar `success: true` y no llamar nunca: pasó
+ * con el 2505 4610 el 2026-10-14, con la línea sana (se le marcó y timbró). El
+ * número ya está dado de alta, así que no se empieza de cero: se vuelve a pedir
+ * el código y se reinicia el reloj de la espera.
+ */
+export async function reintentarCodigo(id: string): Promise<Corrida | null> {
+  const c = await leerCorrida(id);
+  if (!c || !c.phoneNumberId) return c;
+  if (c.estado === "listo") return c;
+
+  const creds = await credencialesAlta();
+  if (!creds) return c;
+
+  try {
+    await pedirCodigoPorLlamada(creds, c.phoneNumberId);
+    const reintentada: Corrida = {
+      ...c,
+      estado: "corriendo",
+      error: null,
+      paso: "esperando-codigo",
+      marcas: { ...c.marcas, "esperando-codigo": new Date().toISOString() },
+      terminadoEn: null,
+    };
+    await guardarCorrida(reintentada);
+    return reintentada;
+  } catch (e) {
+    const rota = conError(c, e instanceof Error ? e.message : "Meta no aceptó pedir el código otra vez.");
+    await guardarCorrida(rota);
+    return rota;
+  }
+}
+
+/**
+ * Dejar de esperar.
+ *
+ * El número queda dado de alta en Meta (eso no se puede deshacer con este token),
+ * así que la corrida se marca cerrada y esa línea sale de la lista: lo honesto es
+ * decirlo, no fingir que no pasó nada.
+ */
+export async function cancelarCorrida(id: string): Promise<Corrida | null> {
+  const c = await leerCorrida(id);
+  if (!c || c.estado === "listo") return c;
+  const cerrada = conError(c, "Se dejó de esperar. El número quedó dado de alta en Meta, sin verificar.");
+  await guardarCorrida(cerrada);
+  return cerrada;
+}

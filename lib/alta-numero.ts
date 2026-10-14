@@ -157,6 +157,24 @@ export function lineasDisponibles(
   });
 }
 
+/**
+ * Cuánto se espera la llamada de Meta antes de decir que algo pasó.
+ *
+ * Meta contesta `success: true` al pedido y después llama por su cuenta, pero no
+ * siempre llama: el 2026-10-14 acepto el pedido del 2505 4610 y la llamada nunca
+ * entró (la línea estaba bien; se comprobó marcándole y timbró). Sin este tope la
+ * pantalla se queda girando para siempre y no hay forma de saber si sigue
+ * esperando o si se murió.
+ */
+export const ESPERA_MAX_SEG = 120;
+
+/** Lleva demasiado esperando la llamada: hay que ofrecer pedir el código otra vez. */
+export function esperaVencida(c: Corrida, ahora = Date.now()): boolean {
+  if (c.estado !== "corriendo" || c.paso !== "esperando-codigo") return false;
+  const desde = c.marcas["esperando-codigo"] ?? c.iniciadoEn;
+  return (ahora - Date.parse(desde)) / 1000 > ESPERA_MAX_SEG;
+}
+
 /** Cuánto duró (o lleva) la corrida, en segundos. */
 export function segundos(c: Pick<Corrida, "iniciadoEn" | "terminadoEn">, ahora = Date.now()): number {
   const fin = c.terminadoEn ? Date.parse(c.terminadoEn) : ahora;

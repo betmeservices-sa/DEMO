@@ -7,6 +7,7 @@ import {
   codigoValido,
   conError,
   corridaNueva,
+  esperaVencida,
   lineaLegible,
   lineasDisponibles,
   normalizarLinea,
@@ -122,6 +123,26 @@ describe("la corrida", () => {
     expect(segundos(c, Date.parse("2026-10-14T20:00:48Z"))).toBe(48);
     c = { ...c, terminadoEn: "2026-10-14T20:00:48.000Z" };
     expect(segundos(c, Date.parse("2026-10-14T21:00:00Z"))).toBe(48);
+  });
+
+  it("avisa cuando Meta acepto el pedido y no llamo", () => {
+    // Paso de verdad con el 2505 4610 el 2026-10-14: request_code devolvio
+    // success y la llamada nunca entro, con la linea sana.
+    const inicio = new Date("2026-10-14T21:10:28Z");
+    let c = corridaNueva("id-6", "+50325054610", inicio);
+    c = avanzar(c, "esperando-codigo", new Date("2026-10-14T21:10:34Z"));
+
+    expect(esperaVencida(c, Date.parse("2026-10-14T21:11:00Z"))).toBe(false);
+    expect(esperaVencida(c, Date.parse("2026-10-14T21:13:00Z"))).toBe(true);
+  });
+
+  it("no avisa de espera vencida si ya no esta esperando", () => {
+    let c = corridaNueva("id-7", "+50325054610", new Date("2026-10-14T21:00:00Z"));
+    c = avanzar(c, "codigo-recibido");
+    expect(esperaVencida(c, Date.parse("2026-10-14T23:00:00Z"))).toBe(false);
+
+    const rota = conError(corridaNueva("id-8", "+50325054610", new Date("2026-10-14T21:00:00Z")), "ya fue");
+    expect(esperaVencida(rota, Date.parse("2026-10-14T23:00:00Z"))).toBe(false);
   });
 
   it("guarda el motivo cuando algo falla", () => {

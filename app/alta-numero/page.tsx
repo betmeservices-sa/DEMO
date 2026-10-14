@@ -14,8 +14,10 @@ import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Loader2, MessageCircle, PhoneCall, Sparkles, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
+  ESPERA_MAX_SEG,
   PASOS,
   TEXTO_PASO,
+  esperaVencida,
   indiceDePaso,
   lineaLegible,
   segundos,
@@ -29,6 +31,7 @@ interface RespuestaLista {
   error?: string;
   lineas?: string[];
   motivo?: string | null;
+  viva?: Corrida | null;
   conBase?: boolean;
   historial?: Corrida[];
 }
@@ -50,7 +53,7 @@ export default function AltaNumeroPage() {
   const [arrancando, setArrancando] = useState(false);
   const [ahora, setAhora] = useState(() => Date.now());
 
-  const cargarLineas = useCallback(async () => {
+  const cargarLineas = useCallback(async (retomar = false) => {
     try {
       const r = await fetch("/api/alta-numero", { cache: "no-store" });
       const d = (await r.json()) as RespuestaLista;
@@ -58,6 +61,10 @@ export default function AltaNumeroPage() {
       setLineas(d.lineas ?? []);
       setMotivo(d.motivo ?? null);
       setElegida((prev) => prev || (d.lineas?.[0] ?? ""));
+      // Al abrir la pantalla, si hay un alta en curso se retoma. Sin esto, salir
+      // a otro modulo y volver la hacia desaparecer de la vista aunque siguiera
+      // corriendo en el servidor.
+      if (retomar && d.viva) setCorrida(d.viva);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudieron leer las líneas.");
       setLineas([]);
@@ -65,7 +72,7 @@ export default function AltaNumeroPage() {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(cargarLineas, 0);
+    const t = setTimeout(() => void cargarLineas(true), 0);
     return () => clearTimeout(t);
   }, [cargarLineas]);
 
@@ -126,6 +133,24 @@ export default function AltaNumeroPage() {
     void cargarLineas();
   };
 
+  const accionSobreCorrida = async (accion: "reintentar" | "cancelar") => {
+    if (!corrida) return;
+    setError(null);
+    try {
+      const r = await fetch("/api/alta-numero", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accion, id: corrida.id }),
+      });
+      const d = (await r.json()) as RespuestaCorrida;
+      if (d.corrida) setCorrida(d.corrida);
+      if (!d.ok && d.error) setError(d.error);
+      if (accion === "reintentar") setAhora(Date.now());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo hacer eso.");
+    }
+  };
+
   const transcurrido = corrida ? segundos(corrida, ahora) : 0;
 
   return (
@@ -169,7 +194,13 @@ export default function AltaNumeroPage() {
               arrancando={arrancando}
             />
           ) : (
-            <Progreso corrida={corrida} deNuevo={deNuevo} />
+            <Progreso
+              corrida={corrida}
+              ahora={ahora}
+              deNuevo={deNuevo}
+              reintentar={() => void accionSobreCorrida("reintentar")}
+              cancelar={() => void accionSobreCorrida("cancelar")}
+            />
           )}
         </div>
       </div>
@@ -241,13 +272,29 @@ function Arranque({
   );
 }
 
-function Progreso({ corrida, deNuevo }: { corrida: Corrida; deNuevo: () => void }) {
+function Progreso({
+  corrida,
+  ahora,
+  deNuevo,
+  reintentar,
+  cancelar,
+}: {
+  corrida: Corrida;
+  ahora: number;
+  deNuevo: () => void;
+  reintentar: () => void;
+  cancelar: () => void;
+}) {
   const actual = indiceDePaso(corrida.paso);
   const esperando = corrida.paso === "esperando-codigo" && corrida.estado === "corriendo";
+  const vencida = esperaVencida(corrida, ahora);
 
   return (
     <>
-      {esperando && <Llamando numero={corrida.numero} />}
+      {esperando && !vencida && <Llamando numero={corrida.numero} />}
+      {esperando && vencida && (
+        <NoLlamo numero={corrida.numero} reintentar={reintentar} cancelar={cancelar} />
+      )}
 
       {corrida.codigo && <Codigo digitos={corrida.codigo} oido={corrida.oido} />}
 
@@ -329,6 +376,52 @@ function Llamando({ numero }: { numero: string }) {
       <p className="mt-3 flex items-center justify-center gap-1.5 text-[11.5px] text-[var(--text-3)]">
         <Loader2 size={13} className="animate-spin" /> Suele tardar entre 20 y 40 segundos
       </p>
+    </section>
+  );
+}
+
+/**
+ * Meta acepto el pedido y no llamo.
+ *
+ * Pasa: el 2026-10-14 el 2505 4610 quedo esperando una llamada que nunca entro,
+ * con la linea sana. Lo peor que puede hacer la pantalla es seguir girando como
+ * si nada, porque entonces no se sabe si continua, si se pauso o si murio.
+ */
+function NoLlamo({
+  numero,
+  reintentar,
+  cancelar,
+}: {
+  numero: string;
+  reintentar: () => void;
+  cancelar: () => void;
+}) {
+  return (
+    <section className="rounded-2xl border border-[var(--brand-red)]/40 bg-[var(--brand-red)]/10 p-5 text-center">
+      <p className="flex items-center justify-center gap-2 text-[15px] font-extrabold">
+        <TriangleAlert size={17} /> Meta no ha llamado
+      </p>
+      <p className="mx-auto mt-1.5 max-w-md text-[12.5px] text-[var(--text-2)]">
+        Pasaron más de {ESPERA_MAX_SEG} segundos desde que se pidió el código y la llamada al{" "}
+        <span className="font-mono font-bold">{lineaLegible(numero)}</span> no entró. El número ya quedó dado de alta,
+        así que se puede volver a pedir sin empezar de cero.
+      </p>
+      <div className="mt-3.5 flex flex-wrap justify-center gap-2">
+        <button
+          type="button"
+          onClick={reintentar}
+          className="flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-[13px] font-bold text-white shadow-sm transition hover:brightness-110"
+        >
+          <PhoneCall size={15} /> Pedir el código otra vez
+        </button>
+        <button
+          type="button"
+          onClick={cancelar}
+          className="rounded-xl border border-line bg-surface px-3.5 py-2 text-[12.5px] font-semibold text-[var(--text-2)] hover:bg-card"
+        >
+          Dejar de esperar
+        </button>
+      </div>
     </section>
   );
 }

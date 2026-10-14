@@ -10,11 +10,13 @@ import { NextResponse } from "next/server";
 import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
 import {
   TENANT_DEMO,
+  cancelarCorrida,
   estadoDeCorrida,
   iniciarAlta,
   lineasParaOfrecer,
+  reintentarCodigo,
 } from "@/lib/alta-numero-orquestador";
-import { hayBase, ultimasCorridas } from "@/lib/alta-numero-store";
+import { corridaVivaDelPanel, hayBase, ultimasCorridas } from "@/lib/alta-numero-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,11 +37,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, corrida });
   }
 
-  const { lineas, motivo } = await lineasParaOfrecer();
+  // `viva` es lo que deja que la pantalla retome un alta en curso al volver de
+  // otro modulo: el alta sigue en el servidor, lo que se perdia era verla.
+  const [{ lineas, motivo }, viva] = await Promise.all([
+    lineasParaOfrecer(),
+    corridaVivaDelPanel(TENANT_DEMO),
+  ]);
   return NextResponse.json({
     ok: true,
     lineas,
     motivo,
+    viva,
     conBase: hayBase(),
     historial: await ultimasCorridas(TENANT_DEMO, 5),
   });
@@ -59,13 +67,27 @@ export async function POST(req: Request) {
     );
   }
 
-  let numero = "";
+  let cuerpo: { numero?: string; accion?: string; id?: string };
   try {
-    numero = String(((await req.json()) as { numero?: string }).numero ?? "");
+    cuerpo = (await req.json()) as { numero?: string; accion?: string; id?: string };
   } catch {
     return NextResponse.json({ ok: false, error: "Falta el número." }, { status: 400 });
   }
 
-  const r = await iniciarAlta(numero);
+  // Meta puede aceptar el pedido y no llamar nunca, asi que la pantalla tiene
+  // que poder volver a pedirlo o dejar de esperar sin recargar nada.
+  if (cuerpo.accion === "reintentar" && cuerpo.id) {
+    const corrida = await reintentarCodigo(cuerpo.id);
+    if (!corrida) return NextResponse.json({ ok: false, error: "No existe esa corrida." }, { status: 404 });
+    return NextResponse.json({ ok: corrida.estado !== "error", corrida, error: corrida.error ?? undefined });
+  }
+
+  if (cuerpo.accion === "cancelar" && cuerpo.id) {
+    const corrida = await cancelarCorrida(cuerpo.id);
+    if (!corrida) return NextResponse.json({ ok: false, error: "No existe esa corrida." }, { status: 404 });
+    return NextResponse.json({ ok: true, corrida });
+  }
+
+  const r = await iniciarAlta(String(cuerpo.numero ?? ""));
   return NextResponse.json(r, { status: r.ok ? 200 : 400 });
 }

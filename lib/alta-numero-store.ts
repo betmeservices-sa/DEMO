@@ -92,6 +92,33 @@ export async function corridaVivaDe(numero: string, tenant = "comercial"): Promi
   return vivas[0] ?? null;
 }
 
+/**
+ * La corrida que está corriendo ahora en el panel, si hay alguna.
+ *
+ * La pantalla la pide al abrirse: sin esto, salir a la bandeja y volver hacía
+ * desaparecer el alta en curso de la vista, y no había forma de saber si seguía,
+ * si se habia pausado o si habia fallado. El alta sigue viva en el servidor;
+ * lo que se perdía era verla.
+ */
+export async function corridaVivaDelPanel(tenant = "comercial"): Promise<Corrida | null> {
+  const sb = getSupabase(tenant);
+  if (sb) {
+    const { data, error } = await sb
+      .from(TABLA)
+      .select("*")
+      .eq("tenant", tenant)
+      .eq("estado", "corriendo")
+      .order("iniciado_en", { ascending: false })
+      .limit(1);
+    if (!error && data && data.length) return deFila(data[0] as Record<string, unknown>);
+    if (!error) return null;
+  }
+  const vivas = [...memoria.values()]
+    .filter((c) => c.estado === "corriendo")
+    .sort((a, b) => b.iniciadoEn.localeCompare(a.iniciadoEn));
+  return vivas[0] ?? null;
+}
+
 export async function ultimasCorridas(tenant = "comercial", tope = 10): Promise<Corrida[]> {
   const sb = getSupabase(tenant);
   if (sb) {
