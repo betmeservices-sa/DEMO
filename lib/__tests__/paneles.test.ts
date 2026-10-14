@@ -2,7 +2,8 @@
 // fija es que la lista sale ordenada por nombre y que la búsqueda encuentra
 // aunque se escriba sin tildes, en mayúsculas, por el nombre corto o por el id.
 import { describe, expect, it } from "vitest";
-import { filtrarPaneles, inicialesDe, ordenarPaneles, primerNombre, sinTildes } from "@/lib/paneles";
+import { PANELES_EXTERNOS, filtrarPaneles, inicialesDe, ordenarPaneles, primerNombre, sinTildes } from "@/lib/paneles";
+import { isTenantId } from "@/lib/tenants";
 
 const LISTA = [
   { id: "yaly", nombre: "YALÍ Hotel & Resort", corto: "YALÍ" },
@@ -29,6 +30,18 @@ describe("elegir panel", () => {
   it("sin texto devuelve todos; sin coincidencia, nada", () => {
     expect(filtrarPaneles(LISTA, "   ")).toHaveLength(3);
     expect(filtrarPaneles(LISTA, "banco")).toHaveLength(0);
+  });
+
+  // Los demos externos entran a la misma lista que los tenants: si un id
+  // chocara con un tenant, el mosaico equivocado abriría la app de afuera.
+  it("los demos externos tienen url https, no chocan con tenants y se encuentran buscando", () => {
+    for (const d of PANELES_EXTERNOS) {
+      expect(d.url).toMatch(/^https:\/\//);
+      expect(isTenantId(d.id)).toBe(false);
+      expect(d.nombre.length).toBeGreaterThan(0);
+    }
+    const lista = [...LISTA, ...PANELES_EXTERNOS];
+    expect(filtrarPaneles(lista, "vet").map((p) => p.id)).toEqual(["vets"]);
   });
 
   it("normaliza, saluda por el primer nombre y saca iniciales", () => {

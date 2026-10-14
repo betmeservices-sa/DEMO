@@ -12,11 +12,12 @@
 // el login: los módulos leen el cliente al evaluarse.
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { LogOut, Search } from "lucide-react";
+import { ExternalLink, LogOut, Search } from "lucide-react";
 import { cerrarSesion } from "@/lib/auth";
 import { TENANTS, isTenantId } from "@/lib/tenants";
 import { setActiveTenant } from "@/lib/tenants/active";
 import {
+  PANELES_EXTERNOS,
   filtrarPaneles,
   inicialesDe,
   ordenarPaneles,
@@ -32,7 +33,8 @@ interface Sesion {
 }
 
 // La lista la manda el servidor (solo los clientes de esta cuenta); el nombre
-// completo y el corto salen de la marca de cada cliente.
+// completo y el corto salen de la marca de cada cliente. Al final se suman los
+// demos externos (apps aparte), que se ordenan junto con los demás.
 function panelesDe(clientes: { id: string; nombre: string }[]): PanelElegible[] {
   const lista: PanelElegible[] = [];
   for (const c of clientes) {
@@ -40,6 +42,7 @@ function panelesDe(clientes: { id: string; nombre: string }[]): PanelElegible[] 
     const { brand } = TENANTS[c.id];
     lista.push({ id: c.id, nombre: brand.nombre, corto: brand.nombreCorto || c.nombre });
   }
+  lista.push(...PANELES_EXTERNOS);
   return ordenarPaneles(lista);
 }
 
@@ -90,8 +93,16 @@ export function ElegirPanel({ destino = destinoDe }: { destino?: (tenant: string
     if (paneles) buscador.current?.focus();
   }, [paneles]);
 
-  async function entrar(id: string) {
-    if (entrando || !isTenantId(id)) return;
+  async function entrar(p: PanelElegible) {
+    if (entrando) return;
+    // Un demo externo no tiene sesión aquí: se abre su app en otra pestaña y
+    // esta pantalla queda como está, para seguir eligiendo.
+    if (p.url) {
+      window.open(p.url, "_blank", "noopener");
+      return;
+    }
+    const id = p.id;
+    if (!isTenantId(id)) return;
     setEntrando(id);
     setError(false);
     try {
@@ -120,7 +131,7 @@ export function ElegirPanel({ destino = destinoDe }: { destino?: (tenant: string
     } else if (e.key === "Enter") {
       e.preventDefault();
       const p = visibles[marcado];
-      if (p) void entrar(p.id);
+      if (p) void entrar(p);
     }
   }
 
@@ -193,7 +204,7 @@ export function ElegirPanel({ destino = destinoDe }: { destino?: (tenant: string
                   <li key={p.id} role="option" aria-selected={activo}>
                     <button
                       type="button"
-                      onClick={() => void entrar(p.id)}
+                      onClick={() => void entrar(p)}
                       onMouseEnter={() => setMarcado(i)}
                       disabled={entrando !== null}
                       data-panel={p.id}
@@ -213,8 +224,16 @@ export function ElegirPanel({ destino = destinoDe }: { destino?: (tenant: string
                           <span className="block truncate text-[11.5px] text-white/40">{p.corto}</span>
                         )}
                       </span>
-                      <span className="shrink-0 text-[11.5px] font-semibold text-white/50">
-                        {cargando ? "Entrando…" : "Entrar"}
+                      <span className="flex shrink-0 items-center gap-1 text-[11.5px] font-semibold text-white/50">
+                        {p.url ? (
+                          <>
+                            Abrir <ExternalLink size={12} />
+                          </>
+                        ) : cargando ? (
+                          "Entrando…"
+                        ) : (
+                          "Entrar"
+                        )}
                       </span>
                     </button>
                   </li>

@@ -11,7 +11,21 @@ export interface PanelElegible {
   nombre: string;
   /** Nombre corto: el del mosaico, y el que hace que "nissan" encuentre a Nissan El Salvador. */
   corto: string;
+  /** Con url, el mosaico no entra a un tenant: abre esa app aparte en otra pestaña. */
+  url?: string;
 }
+
+// Demos que viven FUERA de este código (app propia, deploy propio) pero que el
+// equipo espera encontrar en esta lista. No son tenants: no tienen sesión aquí,
+// el mosaico solo abre su URL. Sumar uno = agregarlo acá.
+export const PANELES_EXTERNOS: readonly PanelElegible[] = [
+  {
+    id: "vets",
+    nombre: "Clínica Veterinaria",
+    corto: "MiAgentIA Vets · demo aparte",
+    url: "https://mi-agent-ia-vets.vercel.app",
+  },
+];
 
 /** Sin tildes ni mayúsculas: "Ginecológico" y "ginecologico" son lo mismo al buscar. */
 export function sinTildes(texto: string): string {
