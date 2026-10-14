@@ -5,13 +5,21 @@
 // desde SU número (lib/wa-credenciales.ts). Sin cliente, habla el número de la
 // demo, que es lo que hacía siempre.
 
-import { credencialesWa } from "./wa-credenciales";
+import { credencialesParaResponder } from "./wa-credenciales";
 
 const VERSION = process.env.WHATSAPP_GRAPH_VERSION || "v21.0";
 const GRAPH = `https://graph.facebook.com/${VERSION}`;
 
 export interface OpcionesEnvio {
   tenant?: string;
+  /**
+   * El numero al que llego el mensaje que se esta contestando.
+   *
+   * Con el se responde POR ESE numero. Sin el, un cliente con varios numeros
+   * contesta por el primero de su lista, que es arbitrario: el 2026-10-14 una
+   * persona escribio al 2505 4613 y Sofia le contesto desde el 7560 5872.
+   */
+  phoneNumberId?: string | null;
 }
 
 /**
@@ -28,7 +36,7 @@ export async function enviarTextoWa(
   text: string,
   opts: OpcionesEnvio = {},
 ): Promise<{ ok: boolean; id?: string; error?: string }> {
-  const c = await credencialesWa(opts.tenant);
+  const c = await credencialesParaResponder(opts.tenant, opts.phoneNumberId);
   if (!c) return { ok: false, error: SIN_NUMERO };
   const { token, phoneId } = c;
 
@@ -61,7 +69,7 @@ export async function bloquearNumeroWa(
   waId: string,
   opts: OpcionesEnvio = {},
 ): Promise<{ ok: boolean; error?: string }> {
-  const c = await credencialesWa(opts.tenant);
+  const c = await credencialesParaResponder(opts.tenant, opts.phoneNumberId);
   if (!c) return { ok: false, error: SIN_NUMERO };
   const { token, phoneId } = c;
   const res = await fetch(`${GRAPH}/${phoneId}/block_users`, {
@@ -81,7 +89,7 @@ export async function bloquearNumeroWa(
 // Muestra "escribiendo..." en el WhatsApp del cliente (y marca leído) usando el
 // wamid del último mensaje recibido. Dura hasta 25s o hasta que llegue la respuesta.
 export async function mostrarEscribiendo(messageId: string, opts: OpcionesEnvio = {}): Promise<void> {
-  const c = await credencialesWa(opts.tenant);
+  const c = await credencialesParaResponder(opts.tenant, opts.phoneNumberId);
   if (!c) return;
   const { token, phoneId } = c;
   await fetch(`${GRAPH}/${phoneId}/messages`, {
@@ -106,7 +114,7 @@ export async function enviarPlantilla(
   variables: string[] = [],
   opts: OpcionesEnvio = {},
 ): Promise<{ ok: boolean; id?: string; error?: string }> {
-  const c = await credencialesWa(opts.tenant);
+  const c = await credencialesParaResponder(opts.tenant, opts.phoneNumberId);
   if (!c) return { ok: false, error: SIN_NUMERO };
   const { token, phoneId } = c;
 
@@ -147,7 +155,7 @@ export async function enviarReaccion(
   emoji: string,
   opts: OpcionesEnvio = {},
 ): Promise<void> {
-  const c = await credencialesWa(opts.tenant);
+  const c = await credencialesParaResponder(opts.tenant, opts.phoneNumberId);
   if (!c) return;
   const { token, phoneId } = c;
   await fetch(`${GRAPH}/${phoneId}/messages`, {

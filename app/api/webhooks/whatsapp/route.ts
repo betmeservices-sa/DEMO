@@ -329,6 +329,10 @@ export async function POST(req: Request) {
               triggerWamid: t.wamid,
               tenant: tenantActivo,
               iaDelNumero: conexion?.iaActiva ?? null,
+              // Contestar POR EL NUMERO al que escribieron: un cliente puede
+              // tener varios y responder por otro deja la respuesta en un chat
+              // que la persona no esta mirando.
+              phoneNumberId: conexion?.phoneNumberId ?? null,
             }),
           ),
         );

@@ -129,6 +129,8 @@ export async function programarRespuestaIA(opts: {
   tenant?: TenantId;
   /** El interruptor de IA del número al que llegó (null = sigue el global). */
   iaDelNumero?: boolean | null;
+  /** El número al que llegó, para contestar POR ESE y no por otro del cliente. */
+  phoneNumberId?: string | null;
 }): Promise<void> {
   const tenantId: TenantId = opts.tenant ?? DEFAULT_TENANT;
   const cfg = TENANTS[tenantId];
@@ -144,7 +146,10 @@ export async function programarRespuestaIA(opts: {
     // Recien ahora aparece el "escribiendo...". Va aqui y no antes porque Meta
     // pide no mostrarlo si no vas a responder, y hasta este punto no lo sabiamos.
     // Ojo: mostrarlo tambien marca el mensaje como leido (doble check azul).
-    await mostrarEscribiendo(opts.triggerWamid, { tenant: opts.tenant });
+    await mostrarEscribiendo(opts.triggerWamid, {
+      tenant: opts.tenant,
+      phoneNumberId: opts.phoneNumberId,
+    });
 
     // Tramo 2: el resto de la espera, ya con el indicador puesto.
     await sleep(restoAleatorio());
@@ -179,7 +184,7 @@ export async function programarRespuestaIA(opts: {
     // huésped no dijo nada más que un saludo; si trajo contenido, responde el
     // modelo (ver decidirTurno).
     if (decision.tipo === "preguntar_sucursal") {
-      await enviarYGuardar(opts.from, decision.texto, tenantId);
+      await enviarYGuardar(opts.from, decision.texto, tenantId, opts.phoneNumberId);
       await marcarPreguntaSucursal(opts.from, tenantId, estado.intentos);
       return;
     }
@@ -188,7 +193,7 @@ export async function programarRespuestaIA(opts: {
     // persona. La IA queda apagada PARA ESTE CHAT (el interruptor global sigue
     // como está y el staff puede reactivarla desde la bandeja).
     if (decision.tipo === "handoff_sucursal" || decision.tipo === "cerrar_por_limite") {
-      await enviarYGuardar(opts.from, decision.texto, tenantId);
+      await enviarYGuardar(opts.from, decision.texto, tenantId, opts.phoneNumberId);
       await setChatOverride(tenantId, opts.from, false);
       console.warn(
         `IA: chat ${opts.from} pasa a una persona (${decision.tipo}). Tope: ${limiteDe(cfg.ai.limiteMensajes)} mensajes.`,
@@ -229,7 +234,7 @@ export async function programarRespuestaIA(opts: {
     if (ultimo.media?.tipo === "image") {
       const apartado = await recibirComprobante(tenantId, `wa:${opts.from}`, { mid: ultimo.waId });
       if (apartado) {
-        await enviarYGuardar(opts.from, textoComprobanteRecibido(), tenantId);
+        await enviarYGuardar(opts.from, textoComprobanteRecibido(), tenantId, opts.phoneNumberId);
         await pasarAPersona(tenantId, opts.from, "pago", "reservas");
         return;
       }
@@ -250,7 +255,11 @@ export async function programarRespuestaIA(opts: {
             tenant: opts.tenant,
           });
         },
-        onReaccionar: (emoji) => enviarReaccion(opts.from, opts.triggerWamid, emoji, { tenant: opts.tenant }),
+        onReaccionar: (emoji) =>
+          enviarReaccion(opts.from, opts.triggerWamid, emoji, {
+            tenant: opts.tenant,
+            phoneNumberId: opts.phoneNumberId,
+          }),
         // El modelo dedujo de qué hotel habla el huésped: se guarda igual que si
         // lo hubiera contestado a la pregunta fija, para no volver a pedirlo.
         onElegirHotel: async (sede) => {
@@ -272,7 +281,10 @@ export async function programarRespuestaIA(opts: {
     );
 
     const textoWa = paraWhatsApp(respuesta.texto);
-    const env = await enviarTextoWa(opts.from, textoWa, { tenant: opts.tenant });
+    const env = await enviarTextoWa(opts.from, textoWa, {
+      tenant: opts.tenant,
+      phoneNumberId: opts.phoneNumberId,
+    });
     if (env.ok) ultimoAtendidoWa.set(opts.from, opts.triggerWamid);
     if (env.ok && env.id) {
       await addOutbound({
@@ -304,8 +316,13 @@ export async function programarRespuestaIA(opts: {
 }
 
 /** Manda un texto fijo del agente y lo deja en el hilo (para que cuente). */
-async function enviarYGuardar(from: string, texto: string, tenant: TenantId): Promise<void> {
-  const env = await enviarTextoWa(from, texto, { tenant });
+async function enviarYGuardar(
+  from: string,
+  texto: string,
+  tenant: TenantId,
+  phoneNumberId?: string | null,
+): Promise<void> {
+  const env = await enviarTextoWa(from, texto, { tenant, phoneNumberId });
   if (env.ok && env.id) {
     await addOutbound({
       waId: env.id,

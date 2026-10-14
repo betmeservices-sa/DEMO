@@ -49,6 +49,30 @@ export async function credencialesWa(tenant?: string): Promise<CredencialesWa | 
 }
 
 /**
+ * Con qué número contestar.
+ *
+ * Si se sabe a cuál llegó el mensaje, se contesta POR ESE. Importa cuando un
+ * cliente tiene varios números: `credencialesWa` devuelve el primero de la
+ * lista, que es arbitrario, y entonces la respuesta sale por un número al que la
+ * persona nunca escribió. Pasó el 2026-10-14 en el panel comercial: alguien
+ * escribió al 2505 4613 recién dado de alta y Sofía contestó desde el 7560 5872,
+ * así que la respuesta no aparecía en el chat donde la estaban esperando.
+ *
+ * Sin `phoneNumberId` se comporta igual que antes, y para un cliente con un solo
+ * número las dos rutas dan lo mismo.
+ */
+export async function credencialesParaResponder(
+  tenant?: string,
+  phoneNumberId?: string | null,
+): Promise<CredencialesWa | null> {
+  if (phoneNumberId) {
+    const porNumero = await credencialesPorNumero(phoneNumberId);
+    if (porNumero) return porNumero;
+  }
+  return credencialesWa(tenant);
+}
+
+/**
  * Las credenciales del número al que LLEGÓ un mensaje, para contestar por el
  * mismo. Si no es de ningún cliente, es el de la demo.
  */
