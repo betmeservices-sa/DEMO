@@ -64,8 +64,24 @@ function esRol(v: string): v is RoleId {
  */
 const EN_CODIGO: CuentaUsuario[] = [];
 
+/**
+ * Todas las variables de cuentas: `USUARIOS` y cualquier `USUARIOS_LO_QUE_SEA`.
+ *
+ * POR QUÉ MÁS DE UNA. En el despliegue `USUARIOS` está marcada como sensible y
+ * NO SE PUEDE LEER DE VUELTA. Con una sola variable, agregar a una persona
+ * obliga a reescribir la lista entera de memoria. Con varias, agregar a alguien
+ * es crear una variable nueva sin tocar lo que ya funciona. Mismo mecanismo que
+ * el panel de Yali.
+ */
+function variablesDeCuentas(): string[] {
+  const nombres = Object.keys(process.env)
+    .filter((k) => k === "USUARIOS" || k.startsWith("USUARIOS_"))
+    .sort((a, b) => (a === "USUARIOS" ? -1 : b === "USUARIOS" ? 1 : a.localeCompare(b)));
+  return nombres.map((n) => process.env[n] ?? "").filter((v) => v.trim());
+}
+
 function desdeEnv(): CuentaUsuario[] | null {
-  const raw = process.env.USUARIOS;
+  const raw = variablesDeCuentas().join(",");
   if (!raw) return null;
   const cuentas: CuentaUsuario[] = [];
   for (const linea of raw.split(",")) {
