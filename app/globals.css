@@ -3,6 +3,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ── Tema por cliente (tenant) ──
@@ -469,6 +470,58 @@
 /* La barra de scroll clara de la Caja. */
 [data-tenant="chalatenango"] ::-webkit-scrollbar-thumb:hover {
   background: #a9b8a6;
+}
+
+/* Express Shopping va en CLARO, con los colores REALES de exs.sv: el marino
+   #00345E y el verde #00C900 de su calculadora de /cotizar (los mismos del
+   logo, que suma el celeste #00A6EA) y el azul #125CA1 de su sitio. Tipografia:
+   Inter, la del cuerpo de su calculadora.
+   El verde y el celeste del logo dan 2.2:1 y 2.8:1 sobre blanco: son relleno
+   (puntos de etapa, barras, la marca del vuelo), NUNCA texto. Para texto verde
+   va el #00661C que su calculadora usa como tinta.
+   Contraste medido sobre el fondo #F3F6F9: tinta #16263A 14.4:1, secundario
+   #3B4D63 8.1:1, terciario #5A6B7F 5.0:1, marino #00345E 11.7:1, azul #125CA1
+   6.3:1, verde #00661C 6.6:1, rojo #B42318 6.1:1 y ambar #A15C00 4.8:1. Sobre
+   la tarjeta blanca todos suben. Lo cubre exs-tema.test.ts. */
+[data-tenant="exs"] {
+  --brand-blue: #00345e;
+  --brand-blue-dark: #002544;
+  --brand-green: #00661c;
+  --brand-red: #b42318;
+  --brand-accent: #125ca1;
+  --brand-accent-soft: #e8f1fa;
+
+  --surface: #f3f6f9;
+  --surface-2: #e8eef4;
+  --card: #ffffff;
+  --border: #e3e9f0;
+  --border-2: #cdd7e1;
+  --text: #16263a;
+  --text-2: #3b4d63;
+  --text-3: #5a6b7f;
+
+  /* Tokens propios de la linea de paquetes. */
+  --exs-verde: #00c900;
+  --exs-verde-suave: #e7f9e7;
+  --exs-celeste: #00a6ea;
+  --exs-celeste-suave: #e6f6fd;
+  --exs-ambar: #a15c00;
+  --exs-ambar-fondo: #fff4e0;
+  --exs-rojo-fondo: #fdecea;
+  /* Color de cada etapa (puntos, barras, columnas del pipeline). */
+  --exs-etapa-prealertado: #94a3b8;
+  --exs-etapa-miami: #00a6ea;
+  --exs-etapa-vuelo: #125ca1;
+  --exs-etapa-aduana: #e8a317;
+  --exs-etapa-listo: #00c900;
+  --exs-etapa-entregado: #00345e;
+
+  --font-app: 'Inter', Arial, system-ui, sans-serif;
+}
+
+/* La barra de scroll clara de Express Shopping. */
+[data-tenant="exs"] ::-webkit-scrollbar-thumb:hover {
+  background: #a8b6c6;
 }
 
 

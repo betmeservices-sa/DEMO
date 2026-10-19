@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="720" viewBox="0 0 360 720" font-family="Arial, Helvetica, sans-serif">
+  <rect width="360" height="720" fill="#ffffff"/>
+  <!-- barra de estado -->
+  <rect width="360" height="28" fill="#1c232c"/>
+  <text x="18" y="19" font-size="12" font-weight="700" fill="#ffffff">10:42</text>
+  <rect x="306" y="10" width="22" height="10" rx="2" fill="none" stroke="#ffffff" stroke-width="1.3"/>
+  <rect x="308" y="12" width="15" height="6" rx="1" fill="#ffffff"/>
+  <rect x="329" y="13" width="2" height="4" fill="#ffffff"/>
+  <!-- cabecera de la tienda -->
+  <rect y="28" width="360" height="62" fill="#232f3e"/>
+  <rect x="14" y="44" width="332" height="32" rx="8" fill="#ffffff"/>
+  <text x="28" y="65" font-size="13" fill="#6b7280">Buscar en amazon.com</text>
+  <!-- título -->
+  <text x="18" y="122" font-size="19" font-weight="700" fill="#111827">Detalles del pedido</text>
+  <text x="18" y="144" font-size="12" fill="#4b5563">Pedido n.º 112-4821930-5528214</text>
+  <text x="18" y="162" font-size="12" fill="#4b5563">Realizado el 17 de octubre de 2026</text>
+  <line x1="18" y1="178" x2="342" y2="178" stroke="#e5e7eb"/>
+  <!-- estado -->
+  <text x="18" y="206" font-size="17" font-weight="700" fill="#067d62">Llega el jueves</text>
+  <text x="18" y="226" font-size="12" fill="#4b5563">Enviado con Amazon Logistics</text>
+  <!-- producto -->
+  <rect x="18" y="244" width="86" height="86" rx="8" fill="#f3f4f6"/>
+  <path d="M38 300 v-18 a23 23 0 0 1 46 0 v18" fill="none" stroke="#1f2937" stroke-width="5" stroke-linecap="round"/>
+  <rect x="32" y="292" width="13" height="22" rx="5" fill="#1f2937"/>
+  <rect x="77" y="292" width="13" height="22" rx="5" fill="#1f2937"/>
+  <text x="116" y="262" font-size="13" font-weight="700" fill="#111827">Sony WH-CH720N</text>
+  <text x="116" y="280" font-size="12" fill="#374151">Audífonos inalámbricos con</text>
+  <text x="116" y="296" font-size="12" fill="#374151">cancelación de ruido, negro</text>
+  <text x="116" y="316" font-size="12" fill="#4b5563">Cantidad: 1</text>
+  <!-- rastreo -->
+  <rect x="18" y="350" width="324" height="40" rx="20" fill="#ffd814"/>
+  <text x="180" y="375" font-size="14" font-weight="700" fill="#111827" text-anchor="middle">Rastrear paquete</text>
+  <rect x="18" y="404" width="324" height="70" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="32" y="428" font-size="11" fill="#4b5563">Número de rastreo</text>
+  <text x="32" y="450" font-size="16" font-weight="700" fill="#111827" letter-spacing="0.5">TBA318274650012</text>
+  <text x="32" y="466" font-size="11" fill="#4b5563">Transportista: Amazon Logistics</text>
+  <!-- envío -->
+  <text x="18" y="506" font-size="13" font-weight="700" fill="#111827">Dirección de envío</text>
+  <text x="18" y="526" font-size="12" fill="#374151">María José Hernández</text>
+  <text x="18" y="543" font-size="12" fill="#374151">EXS-10482</text>
+  <text x="18" y="560" font-size="12" fill="#374151">Miami, FL, Estados Unidos</text>
+  <line x1="18" y1="580" x2="342" y2="580" stroke="#e5e7eb"/>
+  <!-- totales -->
+  <text x="18" y="606" font-size="12" fill="#374151">Subtotal de productos</text>
+  <text x="342" y="606" font-size="12" fill="#374151" text-anchor="end">$89.99</text>
+  <text x="18" y="626" font-size="12" fill="#374151">Envío</text>
+  <text x="342" y="626" font-size="12" fill="#374151" text-anchor="end">$0.00</text>
+  <text x="18" y="654" font-size="15" font-weight="700" fill="#111827">Total del pedido</text>
+  <text x="342" y="654" font-size="15" font-weight="700" fill="#111827" text-anchor="end">$89.99</text>
+  <rect x="120" y="700" width="120" height="5" rx="2.5" fill="#d1d5db"/>
+</svg>

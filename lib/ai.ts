@@ -415,7 +415,7 @@ function toolsPara(tenantId?: TenantId): Anthropic.Tool[] {
         ? TOOLS_YALI
         : tenantId === "hospital"
           ? TOOLS_HOSPITAL
-          : tenantId === "comercial" || tenantId === "chalatenango"
+          : tenantId === "comercial" || tenantId === "chalatenango" || tenantId === "exs"
             ? TOOLS_SIN_AGENDA
             : TOOLS_BASE;
   const elegir = toolElegirHotel(tenantId);

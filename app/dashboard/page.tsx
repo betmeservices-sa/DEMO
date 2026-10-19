@@ -32,6 +32,7 @@ import { NissanDashboard } from "@/components/dashboard/NissanDashboard";
 import { BetmeDashboard } from "@/components/dashboard/BetmeDashboard";
 import { PizzaHutDashboard } from "@/components/dashboard/PizzaHutDashboard";
 import { CajaDashboard } from "@/components/dashboard/CajaDashboard";
+import { ExsDashboard } from "@/components/exs/ExsDashboard";
 import { HospitalDashboard } from "@/components/dashboard/HospitalDashboard";
 import { OrigenCanales } from "@/components/dashboard/OrigenCanales";
 import { ConsumoIA } from "@/components/dashboard/ConsumoIA";
@@ -102,6 +103,8 @@ export default function DashboardPage() {
   // La Caja mira sus tres areas (consultas, cobros, tarjetas) y lo urgente del
   // dia, dentro de su shell flotante.
   if (activeTenantId() === "chalatenango") return <CajaDashboard />;
+  // Express Shopping mira la línea de paquetes: etapas, urgencias y vuelos.
+  if (activeTenantId() === "exs") return <ExsDashboard />;
   // El hospital atiende pacientes reales desde su propio numero: su tablero
   // sale de la base (WhatsApp y tickets), no de las tarjetas de muestra.
   if (activeTenantId() === "hospital") return <HospitalDashboard />;

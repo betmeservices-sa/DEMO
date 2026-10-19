@@ -79,6 +79,24 @@ export type StoreAction =
     }
   // Respuesta automática del agente de IA (staff sin persona detrás).
   | { type: "RESPUESTA_IA"; conversationId: string; texto: string }
+  // Un aviso que el sistema le mandó al cliente (Express Shopping: "tu paquete
+  // llegó a Miami"). Trae su propio id y su hora, así repetirlo no lo duplica,
+  // y si el cliente todavía no tenía chat, se le abre uno.
+  | {
+      type: "AVISO_SALIENTE";
+      id: string;
+      conversationId: string;
+      texto: string;
+      ts: string;
+      staffId?: string;
+      staffNombre?: string;
+      nueva?: {
+        canal: Exclude<Channel, "internal">;
+        nombre: string;
+        telefono?: string;
+        departamento?: DepartmentId;
+      };
+    }
   | { type: "ESCRIBIENDO"; conversationId: string; activo: boolean }
   | { type: "HISTORIAL_PENDIENTE"; pendiente: boolean }
   | { type: "SEND_INTERNAL"; channelId: string; texto: string; staffId: string }
@@ -338,6 +356,47 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
         ),
         escribiendo: state.escribiendo.filter((id) => id !== action.conversationId),
         idSeq: state.idSeq + 1,
+      };
+    }
+    case "AVISO_SALIENTE": {
+      if (state.messages.some((m) => m.id === action.id)) return state;
+      let { contacts, conversations } = state;
+      if (!conversations.some((c) => c.id === action.conversationId)) {
+        if (!action.nueva) return state;
+        const contactId = `sc-${action.conversationId}`;
+        contacts = [
+          { id: contactId, nombre: action.nueva.nombre, telefono: action.nueva.telefono, canal: action.nueva.canal },
+          ...contacts,
+        ];
+        conversations = [
+          {
+            id: action.conversationId,
+            canal: action.nueva.canal,
+            contactId,
+            departamento: action.nueva.departamento ?? activeTenant().defaultDepartment,
+            // Lo que sale solo no espera respuesta de nadie del equipo.
+            estado: "resuelto",
+            noLeidos: 0,
+            ultimoMensajeTs: action.ts,
+          },
+          ...conversations,
+        ];
+      }
+      const msg: Message = {
+        id: action.id,
+        conversationId: action.conversationId,
+        autor: "staff",
+        ...(action.staffId ? { staffId: action.staffId } : { staffNombre: action.staffNombre }),
+        texto: action.texto,
+        ts: action.ts,
+      };
+      return {
+        ...state,
+        contacts,
+        messages: [...state.messages, msg],
+        conversations: conversations.map((c) =>
+          c.id === action.conversationId && action.ts > c.ultimoMensajeTs ? { ...c, ultimoMensajeTs: action.ts } : c,
+        ),
       };
     }
     case "HISTORIAL_PENDIENTE": {

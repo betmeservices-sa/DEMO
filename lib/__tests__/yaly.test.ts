@@ -265,15 +265,18 @@ describe("configuración del agente", () => {
   // pasar por acá, y por la prueba de abajo que revisa su guion.
   // "comercial" es la demo de Mia en el WhatsApp de las asesoras: las fotos
   // son parte de lo que se muestra, y su guion lo dice.
-  it("solo yaly, miagentia y comercial ven imágenes", () => {
+  // "exs" (Express Shopping) vive de leer la captura del pedido que manda el
+  // cliente: es su prealerta, y su guion lo dice.
+  it("solo yaly, miagentia, comercial y exs ven imágenes", () => {
     expect(TENANTS.yaly.ai.imagenes).toBe(true);
     expect(TENANTS.miagentia.ai.imagenes).toBe(true);
     expect(TENANTS.comercial.ai.imagenes).toBe(true);
+    expect(TENANTS.exs.ai.imagenes).toBe(true);
     const conVision = Object.values(TENANTS)
       .filter((t) => t.ai.imagenes === true)
       .map((t) => t.id)
       .sort();
-    expect(conVision).toEqual(["comercial", "miagentia", "yaly"]);
+    expect(conVision).toEqual(["comercial", "exs", "miagentia", "yaly"]);
   });
 
   // La otra mitad del guardarraíl: el guion de quien SÍ ve tiene que decirlo, o

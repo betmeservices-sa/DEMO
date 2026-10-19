@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="720" viewBox="0 0 360 720" font-family="Arial, Helvetica, sans-serif">
+  <rect width="360" height="720" fill="#ffffff"/>
+  <!-- barra de estado -->
+  <rect width="360" height="28" fill="#ffffff"/>
+  <text x="18" y="19" font-size="12" font-weight="700" fill="#111827">7:58</text>
+  <rect x="306" y="10" width="22" height="10" rx="2" fill="none" stroke="#111827" stroke-width="1.3"/>
+  <rect x="308" y="12" width="17" height="6" rx="1" fill="#111827"/>
+  <rect x="329" y="13" width="2" height="4" fill="#111827"/>
+  <line x1="0" y1="28" x2="360" y2="28" stroke="#e5e7eb"/>
+  <!-- encabezado -->
+  <text x="18" y="66" font-size="20" font-weight="700" fill="#111827">Recibo de compra</text>
+  <text x="18" y="88" font-size="12" fill="#4b5563">ebay.com · Número de pedido 24-11873-50926</text>
+  <text x="18" y="106" font-size="12" fill="#4b5563">Fecha de compra: 11 de octubre de 2026</text>
+  <line x1="18" y1="124" x2="342" y2="124" stroke="#e5e7eb"/>
+  <!-- artículo -->
+  <rect x="18" y="140" width="76" height="76" rx="8" fill="#f3f4f6"/>
+  <circle cx="56" cy="178" r="22" fill="none" stroke="#374151" stroke-width="4"/>
+  <line x1="56" y1="178" x2="56" y2="164" stroke="#374151" stroke-width="3" stroke-linecap="round"/>
+  <line x1="56" y1="178" x2="66" y2="184" stroke="#374151" stroke-width="3" stroke-linecap="round"/>
+  <text x="106" y="158" font-size="13" font-weight="700" fill="#111827">Reloj Seiko 5 automático</text>
+  <text x="106" y="176" font-size="12" fill="#374151">SNK809, correa de lona</text>
+  <text x="106" y="194" font-size="12" fill="#374151">Estado: usado</text>
+  <text x="106" y="212" font-size="12" fill="#4b5563">Cantidad: 1</text>
+  <line x1="18" y1="234" x2="342" y2="234" stroke="#e5e7eb"/>
+  <!-- cobro -->
+  <text x="18" y="262" font-size="13" font-weight="700" fill="#111827">Resumen del pago</text>
+  <text x="18" y="288" font-size="12" fill="#374151">Precio del artículo</text>
+  <text x="342" y="288" font-size="12" fill="#374151" text-anchor="end">$175.00</text>
+  <text x="18" y="308" font-size="12" fill="#374151">Envío</text>
+  <text x="342" y="308" font-size="12" fill="#374151" text-anchor="end">$10.00</text>
+  <line x1="18" y1="324" x2="342" y2="324" stroke="#e5e7eb"/>
+  <text x="18" y="352" font-size="16" font-weight="700" fill="#111827">Total pagado</text>
+  <text x="342" y="352" font-size="16" font-weight="700" fill="#111827" text-anchor="end">$185.00</text>
+  <text x="18" y="374" font-size="11" fill="#4b5563">Pagado con tarjeta de débito terminada en 2290</text>
+  <!-- envío -->
+  <rect x="18" y="396" width="324" height="132" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="32" y="422" font-size="13" font-weight="700" fill="#111827">Enviado a</text>
+  <text x="32" y="442" font-size="12" fill="#374151">José Roberto Fuentes</text>
+  <text x="32" y="459" font-size="12" fill="#374151">EXS-10094</text>
+  <text x="32" y="476" font-size="12" fill="#374151">Miami, FL</text>
+  <text x="32" y="500" font-size="11" fill="#4b5563">USPS: 9400 1118 9956 2417 7009 83</text>
+  <text x="32" y="516" font-size="11" fill="#067d62" font-weight="700">Entregado</text>
+  <!-- vendedor -->
+  <text x="18" y="562" font-size="12" fill="#4b5563">Vendedor: relojes_vintage_fl (99.4% positivo)</text>
+  <rect x="120" y="700" width="120" height="5" rx="2.5" fill="#d1d5db"/>
+</svg>

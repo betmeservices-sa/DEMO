@@ -9,6 +9,7 @@ import { ChannelBadge } from "@/components/ui/ChannelBadge";
 import { ConversationAiToggle } from "./ConversationAiToggle";
 import { VentanaIndicator } from "./VentanaIndicator";
 import { ReservaPendienteCard } from "@/components/yali/Apartados";
+import { PaquetesEnBandeja } from "@/components/exs/PaquetesEnBandeja";
 import { activeTenantId } from "@/lib/tenants/active";
 import type {
   Contact,
@@ -95,6 +96,10 @@ export function ContextPanel({
           refreshKey={aiRefresh ?? 0}
         />
       )}
+
+      {/* Los paquetes del cliente y la prealerta desde la captura que mandó
+          por el chat. Solo Express Shopping trabaja así. */}
+      {activeTenantId() === "exs" && <PaquetesEnBandeja conversation={conversation} contact={contact} />}
 
       <div className="space-y-2 rounded-xl border border-line bg-surface/60 p-3 text-[13px]">
         {contact.telefono && (
