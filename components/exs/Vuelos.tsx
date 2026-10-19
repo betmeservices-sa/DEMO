@@ -157,7 +157,7 @@ export function Vuelos({
               <div className="space-y-2 border-t border-line bg-surface/60 px-4 py-3">
                 {sobre.map((s) => (
                   <div key={s.cliente.id} className="flex flex-wrap items-center gap-2 text-[12.5px]">
-                    <AlertaChip tipo="limite">Pasa de {dinero(LIMITE_VUELO)}</AlertaChip>
+                    <AlertaChip tipo="limite">Pasa de ${LIMITE_VUELO}</AlertaChip>
                     <span className="text-[var(--text)]">
                       <b>{s.cliente.nombre}</b> trae {dinero(s.total)} en este vuelo: aduana cobraría IVA más DAI.
                     </span>
