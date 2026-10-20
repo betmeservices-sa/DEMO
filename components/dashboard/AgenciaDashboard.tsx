@@ -19,7 +19,7 @@
 // Los periodos (hoy, ayer, 7 días, 30 días, rango) se cortan en hora de El
 // Salvador en el servidor; acá solo se pintan.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BedDouble,
   Bot,
@@ -42,7 +42,7 @@ import { cn } from "@/lib/cn";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { CalendarioRango } from "@/components/dashboard/CalendarioRango";
 import { ConversacionCierre } from "@/components/dashboard/ConversacionCierre";
-import { PERIODOS, type Canal, type Periodo, type ReporteConsumo } from "@/lib/agencia-consumo";
+import { PERIODOS, queMostrarEnTablero, type Canal, type Periodo, type ReporteConsumo } from "@/lib/agencia-consumo";
 import { PERIODOS_AGENCIA, type ReservasDelPeriodo, type TicketsDelPeriodo } from "@/lib/agencia-resumen";
 import { ROL, TZ, fechaCorta, fechaHora, miles } from "@/lib/formato-agencia";
 import { PlanDelCiclo } from "@/components/dashboard/PlanDelCiclo";
@@ -223,20 +223,28 @@ export function AgenciaDashboard() {
     }
   }, [filtro, rangoInvalido]);
 
+  // Cada pedido va numerado y solo contesta el ultimo. Si mientras viene uno
+  // se pide otro (cambiar de cliente o de periodo), el que llega tarde se
+  // descarta: si no, la respuesta vieja pisa a la nueva y el cliente que se
+  // esta mirando se queda sin cifras hasta el refresco del minuto.
+  const pedido = useRef(0);
+
   const cargarReporte = useCallback(async () => {
     if (rangoInvalido) return;
+    const mio = ++pedido.current;
     setCargando(true);
     try {
       const r = await fetch(`/api/agencia/consumo?cliente=${encodeURIComponent(cliente)}&${filtro}`, { cache: "no-store" });
       const d = (await r.json()) as Reporte & { ok: boolean; error?: string };
+      if (mio !== pedido.current) return;
       if (d.ok) {
         setReporte(d);
         setError(null);
       } else setError(d.error ?? "No se pudo leer.");
     } catch {
-      setError("No se pudo leer.");
+      if (mio === pedido.current) setError("No se pudo leer.");
     } finally {
-      setCargando(false);
+      if (mio === pedido.current) setCargando(false);
     }
   }, [cliente, filtro, rangoInvalido]);
 
@@ -279,6 +287,10 @@ export function AgenciaDashboard() {
   const cerrarChat = useCallback(() => setChat(null), []);
 
   const paraCliente = vista === "cliente";
+
+  // Debajo del filtro: los numeros del cliente que se mira, o la espera. Nunca
+  // el hueco mudo que hacia parecer que un cliente no tenia estadisticas.
+  const muestra = queMostrarEnTablero({ reporteDe: reporte?.cliente.id, cliente, cargando, error });
 
   return (
     <div className="flex h-full flex-col">
@@ -388,7 +400,7 @@ export function AgenciaDashboard() {
         </div>
 
         {error && <p className="rounded-xl border border-[var(--brand-red)]/40 bg-[var(--brand-red)]/10 px-3.5 py-2.5 text-[12.5px]">{error}</p>}
-        {cargando && !reporte && (
+        {muestra === "cargando" && (
           <p className="flex items-center gap-2 text-[13px] text-[var(--text-3)]">
             <Loader2 size={15} className="animate-spin text-brand" /> Leyendo el trabajo del agente
           </p>
@@ -396,7 +408,7 @@ export function AgenciaDashboard() {
 
         {/* Debajo del filtro, todo se corta con el mismo periodo: primero el
             trabajo del agente y, debajo, las reservas (así lo pidió el cliente). */}
-        {reporte && reporte.cliente.id === cliente && (
+        {muestra === "datos" && reporte && (
           <Consumo r={reporte} metrica={metrica} setMetrica={setMetrica} paraCliente={paraCliente} />
         )}
 

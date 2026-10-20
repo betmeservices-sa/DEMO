@@ -297,3 +297,31 @@ export function reporteConsumo(filas: FilaConsumo[], rango: Rango, ahora: Date =
     modelos: modelosDe(actuales),
   };
 }
+
+/**
+ * Qué va debajo del filtro del tablero de la agencia: los números del cliente,
+ * el "cargando", o nada (porque el error ya se pinta arriba).
+ *
+ * Existe por un HUECO que vio el usuario el 2026-10-20 en el Centro
+ * Ginecológico: al cambiar de pestaña, el reporte que quedaba en pantalla era
+ * del cliente anterior, así que no se pintaba (el render compara el id), y el
+ * "cargando" solo salía cuando no había NINGÚN reporte. Entre los dos dejaban
+ * un hueco mudo: ni cifras, ni espera, ni error, y el tablero parecía no tener
+ * estadísticas de ese cliente. Los datos estaban; la pantalla no los pedía de
+ * nuevo a tiempo de decirlo.
+ *
+ * La regla: hay reporte DEL CLIENTE QUE SE MIRA o se está esperando. Un
+ * reporte de otro cliente no cuenta como tener datos. Mientras se refresca uno
+ * que ya está (cada minuto), se siguen viendo sus cifras en vez de parpadear.
+ */
+export function queMostrarEnTablero(p: {
+  /** De qué cliente es el reporte que hay en mano, si hay alguno. */
+  reporteDe: string | null | undefined;
+  /** El cliente cuya pestaña está abierta. */
+  cliente: string;
+  cargando: boolean;
+  error: string | null;
+}): "datos" | "cargando" | "solo-error" {
+  if (p.reporteDe && p.reporteDe === p.cliente) return "datos";
+  return p.error && !p.cargando ? "solo-error" : "cargando";
+}
