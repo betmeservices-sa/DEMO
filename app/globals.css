@@ -472,56 +472,60 @@
   background: #a9b8a6;
 }
 
-/* Express Shopping va en CLARO, con los colores REALES de exs.sv: el marino
-   #00345E y el verde #00C900 de su calculadora de /cotizar (los mismos del
-   logo, que suma el celeste #00A6EA) y el azul #125CA1 de su sitio. Tipografia:
-   Inter, la del cuerpo de su calculadora.
-   El verde y el celeste del logo dan 2.2:1 y 2.8:1 sobre blanco: son relleno
-   (puntos de etapa, barras, la marca del vuelo), NUNCA texto. Para texto verde
-   va el #00661C que su calculadora usa como tinta.
-   Contraste medido sobre el fondo #F3F6F9: tinta #16263A 14.4:1, secundario
-   #3B4D63 8.1:1, terciario #5A6B7F 5.0:1, marino #00345E 11.7:1, azul #125CA1
-   6.3:1, verde #00661C 6.6:1, rojo #B42318 6.1:1 y ambar #A15C00 4.8:1. Sobre
-   la tarjeta blanca todos suben. Lo cubre exs-tema.test.ts. */
-[data-tenant="exs"] {
-  --brand-blue: #00345e;
-  --brand-blue-dark: #002544;
-  --brand-green: #00661c;
-  --brand-red: #b42318;
-  --brand-accent: #125ca1;
-  --brand-accent-soft: #e8f1fa;
+/* ShopUSA va en CLARO, con los colores REALES de shopusa.la (su paleta de
+   Tailwind y su logo): el azul petróleo #003D5C de los botones y el texto, el
+   oscuro #002233 del hover, el rojo #99132C de las alas del logo y del "USA",
+   los azules #0088CC y #2AA1C4, el celeste #BEE7F3 y el verde #2FDD92.
+   Tipografía: Inter, la de su sitio (sus títulos usan Founders Grotesk, que
+   es de pago y no se carga aquí).
+   El #0088CC, el #2AA1C4 y el verde dan 3.9:1, 3.0:1 y 1.8:1 sobre blanco:
+   son relleno (puntos de etapa, barras, la carga en el aire), NUNCA texto.
+   Para texto azul va #006A9E y para texto verde #087443, de su misma familia.
+   Contraste medido sobre el fondo #F2F6FA: tinta #0F2638 14.3:1, secundario
+   #3A5266 7.5:1, terciario #566676 5.4:1 (su gris #6E7A84 da 4.1:1, no
+   alcanza), petróleo #003D5C 10.6:1, azul #006A9E 5.4:1, verde #087443
+   5.4:1, rojo #99132C 7.8:1 y ámbar #A15C00 4.8:1. Sobre la tarjeta blanca
+   todos suben. Lo cubre shopusa-tema.test.ts. */
+[data-tenant="shopusa"] {
+  --brand-blue: #003d5c;
+  --brand-blue-dark: #002233;
+  --brand-green: #087443;
+  --brand-red: #99132c;
+  --brand-accent: #006a9e;
+  --brand-accent-soft: #e6f3fa;
 
-  --surface: #f3f6f9;
-  --surface-2: #e8eef4;
+  --surface: #f2f6fa;
+  --surface-2: #e5edf4;
   --card: #ffffff;
-  --border: #e3e9f0;
-  --border-2: #cdd7e1;
-  --text: #16263a;
-  --text-2: #3b4d63;
-  --text-3: #5a6b7f;
+  --border: #dce5ef;
+  --border-2: #b9cbdf;
+  --text: #0f2638;
+  --text-2: #3a5266;
+  --text-3: #566676;
 
   /* Tokens propios de la linea de paquetes. */
-  --exs-verde: #00c900;
-  --exs-verde-suave: #e7f9e7;
-  --exs-celeste: #00a6ea;
-  --exs-celeste-suave: #e6f6fd;
-  --exs-ambar: #a15c00;
-  --exs-ambar-fondo: #fff4e0;
-  --exs-rojo-fondo: #fdecea;
+  --susa-azul: #0088cc;
+  --susa-celeste: #2aa1c4;
+  --susa-hielo: #bee7f3;
+  --susa-verde: #2fdd92;
+  --susa-verde-suave: #e5f8ef;
+  --susa-ambar: #a15c00;
+  --susa-ambar-fondo: #fff4e0;
+  --susa-rojo-fondo: #fbeaed;
   /* Color de cada etapa (puntos, barras, columnas del pipeline). */
-  --exs-etapa-prealertado: #94a3b8;
-  --exs-etapa-miami: #00a6ea;
-  --exs-etapa-vuelo: #125ca1;
-  --exs-etapa-aduana: #e8a317;
-  --exs-etapa-listo: #00c900;
-  --exs-etapa-entregado: #00345e;
+  --susa-etapa-pendiente: #94a3b8;
+  --susa-etapa-miami: #2aa1c4;
+  --susa-etapa-transito: #0088cc;
+  --susa-etapa-aduana: #e8a317;
+  --susa-etapa-listo: #2fdd92;
+  --susa-etapa-entregado: #003d5c;
 
   --font-app: 'Inter', Arial, system-ui, sans-serif;
 }
 
-/* La barra de scroll clara de Express Shopping. */
-[data-tenant="exs"] ::-webkit-scrollbar-thumb:hover {
-  background: #a8b6c6;
+/* La barra de scroll clara de ShopUSA. */
+[data-tenant="shopusa"] ::-webkit-scrollbar-thumb:hover {
+  background: #b9cbdf;
 }
 
 

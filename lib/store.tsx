@@ -79,7 +79,7 @@ export type StoreAction =
     }
   // Respuesta automática del agente de IA (staff sin persona detrás).
   | { type: "RESPUESTA_IA"; conversationId: string; texto: string }
-  // Un aviso que el sistema le mandó al cliente (Express Shopping: "tu paquete
+  // Un aviso que el sistema le mandó al cliente (ShopUSA: "tu paquete
   // llegó a Miami"). Trae su propio id y su hora, así repetirlo no lo duplica,
   // y si el cliente todavía no tenía chat, se le abre uno.
   | {

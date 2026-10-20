@@ -55,8 +55,8 @@ export type DepartmentId =
   // usan "cobranza", el mismo que el banco.
   | "consultas"
   | "tarjetas"
-  // Express Shopping (casillero en Miami): las prealertas que mandan los
-  // clientes, lo que retiene aduana y la entrega en sucursal o a domicilio.
+  // ShopUSA (bodega en Miami): las prealertas que mandan los
+  // clientes, lo que detiene aduana y la entrega en sucursal o a domicilio.
   // La atención general usa "atencion", el mismo de los demás.
   | "prealertas"
   | "aduana"

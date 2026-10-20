@@ -21,7 +21,7 @@ import { ContextPanel } from "@/components/inbox/ContextPanel";
 import { estadoVentana } from "@/lib/ventana";
 import { enArea, useArea } from "@/lib/area-shell";
 import { activeTenantId } from "@/lib/tenants/active";
-import { AvisosExs } from "@/components/exs/AvisosExs";
+import { AvisosShopusa } from "@/components/shopusa/AvisosShopusa";
 import type { ConversationStatus, DepartmentId } from "@/lib/data/types";
 
 const FILTROS_INICIALES: Filtros = {
@@ -278,9 +278,9 @@ export default function BandejaPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Express Shopping: los avisos de lo que se movió en Paquetes llegan al
+      {/* ShopUSA: los avisos de lo que se movió en Paquetes llegan al
           chat de cada cliente. */}
-      {activeTenantId() === "exs" && <AvisosExs />}
+      {activeTenantId() === "shopusa" && <AvisosShopusa />}
       {/* Top bar (se oculta en movil cuando hay una conversacion abierta) */}
       <header
         data-panel="cabecera"

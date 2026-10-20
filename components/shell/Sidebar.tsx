@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
-import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_EXS, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
+import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
 import { useStore } from "@/lib/store";
 import { sinLeerPorCanal, useInterno } from "@/lib/interno-bridge";
 import { activeTenantId } from "@/lib/tenants/active";
@@ -162,9 +162,9 @@ export function Sidebar({
   // MiAgentIA Comercial (las asesoras) tambien arma su menu aparte: leads,
   // bandeja y contactos, en ese orden.
   const veComercial = tenant === "comercial";
-  // Express Shopping tambien: su panel es la linea de paquetes y los casilleros.
-  const veExs = tenant === "exs";
-  const listaCerrada = vePizza ? MODULOS_PIZZAHUT : veComercial ? MODULOS_COMERCIAL : veExs ? MODULOS_EXS : null;
+  // ShopUSA tambien: su panel es la linea de paquetes y los clientes.
+  const veShopusa = tenant === "shopusa";
+  const listaCerrada = vePizza ? MODULOS_PIZZAHUT : veComercial ? MODULOS_COMERCIAL : veShopusa ? MODULOS_SHOPUSA : null;
   const visibles = listaCerrada
     ? listaCerrada.map((id) => NAV.find((item) => item.id === id)).filter(
         (item): item is NavItem => Boolean(item) && def.ve.includes((item as NavItem).id),
@@ -189,7 +189,7 @@ export function Sidebar({
       (item.id !== "contactos" || !veBetme) &&
       // Eventos es solo de Pizza Hut, que arma su menu arriba.
       item.id !== "eventos" &&
-      // Paquetes y Clientes son solo de Express Shopping, que tambien.
+      // Paquetes y Clientes son solo de ShopUSA, que tambien.
       item.id !== "paquetes" &&
       item.id !== "clientes" &&
       (item.id !== "visitas" || veInmobiliaria) &&

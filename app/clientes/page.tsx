@@ -1,14 +1,14 @@
 "use client";
 
-import { ClientesVista } from "@/components/exs/ClientesVista";
-import { SoloExs } from "@/components/exs/SoloExs";
+import { ClientesVista } from "@/components/shopusa/ClientesVista";
+import { SoloShopusa } from "@/components/shopusa/SoloShopusa";
 
-// Los casilleros de Express Shopping. Solo existe en su menú y sus datos no se
+// Los clientes de ShopUSA. Solo existe en su menú y sus datos no se
 // le muestran a ningún otro cliente.
 export default function ClientesPage() {
   return (
-    <SoloExs>
+    <SoloShopusa>
       <ClientesVista />
-    </SoloExs>
+    </SoloShopusa>
   );
 }

@@ -37,8 +37,8 @@ export type ModuleId =
   // Pizza Hut: las propuestas de organizadores para vender en sus eventos
   // (lista, tablero por etapa y calendario). Es el corazon de ese panel.
   | "eventos"
-  // Express Shopping: la línea de cada paquete (prealerta, bodega de Miami,
-  // vuelo, aduana, entrega) con sus vuelos, y los clientes con su casillero.
+  // ShopUSA: la línea de cada paquete (prealerta, bodega de Miami, carga,
+  // aduana, entrega) con sus cargas, y los clientes con su código.
   | "paquetes"
   | "clientes"
   | "visitas"
@@ -135,10 +135,10 @@ export const MODULOS_CAJA: readonly ModuleId[] = [
   "agentes",
 ];
 
-// El menu de Express Shopping, EN ESTE ORDEN: el tablero, lo que entra por la
-// bandeja, la línea de paquetes y los casilleros. Sin ajustes: ahi viven
+// El menu de ShopUSA, EN ESTE ORDEN: el tablero, lo que entra por la
+// bandeja, la línea de paquetes y los clientes. Sin ajustes: ahi viven
 // interruptores que mueven a todo el demo, y este panel no tiene numero propio.
-export const MODULOS_EXS: readonly ModuleId[] = ["dashboard", "bandeja", "paquetes", "clientes", "interno"];
+export const MODULOS_SHOPUSA: readonly ModuleId[] = ["dashboard", "bandeja", "paquetes", "clientes", "interno"];
 
 // El menu de Pizza Hut, EN ESTE ORDEN. Es una lista cerrada como la de la
 // clinica: su panel gira alrededor de las propuestas de eventos, y lo demas
