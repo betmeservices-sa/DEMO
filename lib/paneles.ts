@@ -25,6 +25,12 @@ export const PANELES_EXTERNOS: readonly PanelElegible[] = [
     corto: "MiAgentIA Vets · demo aparte",
     url: "https://mi-agent-ia-vets.vercel.app",
   },
+  {
+    id: "porta",
+    nombre: "Porta Stays",
+    corto: "Rentas vacacionales · demo aparte",
+    url: "https://porta-stays-demo.vercel.app",
+  },
 ];
 
 /** Sin tildes ni mayúsculas: "Ginecológico" y "ginecologico" son lo mismo al buscar. */
