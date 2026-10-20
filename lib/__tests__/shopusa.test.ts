@@ -341,7 +341,7 @@ describe("movimientos y avisos", () => {
   it("el selectivo rojo y la salida a domicilio dejan su aviso", () => {
     const v = armarVista(base, [mov("selectivo", "P-24419", { motivo: "Aduana revisa el contenido del paquete" }), mov("en_camino", "P-24291")]);
     const textos = avisosDelDemo(v).map((a) => a.texto);
-    expect(textos.some((t) => t.includes("selectivo rojo") && t.includes("termine la revisión"))).toBe(true);
+    expect(textos.some((t) => t.includes("le salió selectivo rojo: Aduana revisa el contenido del paquete") && t.includes("termine la revisión"))).toBe(true);
     expect(textos.some((t) => t.includes("va en camino a tu casa en Santa Tecla"))).toBe(true);
   });
 
@@ -360,6 +360,8 @@ describe("movimientos y avisos", () => {
         expect(a.texto, a.id).not.toMatch(/\busted\b/i);
         // Una hora que termina en "p. m." no lleva otro punto pegado.
         expect(a.texto, a.id).not.toMatch(/m\.\./);
+        // Ni paréntesis dentro de paréntesis: el contenido va como en su formulario ("9 piezas de ropa").
+        expect(a.texto, a.id).not.toMatch(/\([^()]*\(/);
       }
       const listo = p.historial.find((e) => e.tipo === "listo");
       if (listo) {

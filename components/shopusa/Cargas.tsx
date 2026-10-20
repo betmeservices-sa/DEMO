@@ -14,7 +14,7 @@ import { salidaDe } from "@/lib/shopusa/avisos";
 import { clienteDe, type VistaShopusa } from "@/lib/shopusa/vista";
 import { registrar } from "@/lib/shopusa/store";
 import { diaHora, horaCorta } from "@/lib/eventos/fechas";
-import { cuantos, nombreCarga } from "@/lib/shopusa/formato";
+import { cuantos, motivoEnFrase, nombreCarga } from "@/lib/shopusa/formato";
 import { AlertaChip, EtapaChip, EtiquetaChip } from "./ui";
 
 const NOMBRE_ESTADO: Record<EstadoCarga, string> = {
@@ -179,7 +179,7 @@ export function Cargas({
                   <button key={p.id} type="button" onClick={() => onAbrir(p.id)} className="flex w-full items-center gap-2 text-left text-[12.5px]">
                     <AlertaChip tipo="selectivo">Selectivo rojo</AlertaChip>
                     <span className="text-[var(--text)]">
-                      {p.contenido} de <b>{clienteDe(vista, p.clienteId)?.nombre}</b>: {p.selectivo?.motivo.toLowerCase()}.
+                      {p.contenido} de <b>{clienteDe(vista, p.clienteId)?.nombre}</b>: {motivoEnFrase(p.selectivo?.motivo ?? "")}.
                     </span>
                   </button>
                 ))}

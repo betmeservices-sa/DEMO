@@ -18,14 +18,15 @@ import { sucursalDef } from "@/lib/shopusa/catalogo";
 import { arancelDe, cobroDeEnvio, dinero, envioDe, ivaDe } from "@/lib/shopusa/cobro";
 import { paquetesDe } from "@/lib/shopusa/vista";
 import { crearPrealerta, registrar, useShopusa } from "@/lib/shopusa/store";
-import { nombreCarga } from "@/lib/shopusa/formato";
+import { motivoEnFrase, nombreCarga } from "@/lib/shopusa/formato";
 import { useYo } from "@/lib/yo";
 import { AlertaChip, EtapaChip, IaChip, categoriaCorta, trackingLegible } from "./ui";
 
 export function PaquetesEnBandeja({ conversation, contact }: { conversation: Conversation; contact: Contact }) {
   const vista = useShopusa();
   const yo = useYo();
-  const [hecho, setHecho] = useState<string | null>(null);
+  const [hecho, setHechoEn] = useState<{ conv: string; texto: string } | null>(null);
+  const setHecho = (texto: string) => setHechoEn({ conv: conversation.id, texto });
 
   const cliente =
     vista.clientes.find((c) => c.conversationId === conversation.id) ??
@@ -83,7 +84,9 @@ export function PaquetesEnBandeja({ conversation, contact }: { conversation: Con
         );
       })}
 
-      {hecho && <p className="rounded-lg bg-[var(--susa-verde-suave)] px-3 py-2 text-[12px] font-semibold text-[var(--brand-green)]">{hecho}</p>}
+      {hecho?.conv === conversation.id && (
+        <p className="rounded-lg bg-[var(--susa-verde-suave)] px-3 py-2 text-[12px] font-semibold text-[var(--brand-green)]">{hecho.texto}</p>
+      )}
 
       <div className="rounded-xl border border-line bg-surface/60 p-3">
         <div className="flex items-center justify-between gap-2">
@@ -131,7 +134,7 @@ export function PaquetesEnBandeja({ conversation, contact }: { conversation: Con
                 </Link>
                 {p.etapa === "aduana" && p.selectivo && (
                   <div className="mt-2 border-t border-line pt-2">
-                    <p className="text-[11.5px] font-semibold text-[var(--brand-red)]">Selectivo rojo: {p.selectivo.motivo.toLowerCase()}</p>
+                    <p className="text-[11.5px] font-semibold text-[var(--brand-red)]">Selectivo rojo: {motivoEnFrase(p.selectivo.motivo)}</p>
                     <button
                       type="button"
                       onClick={() => {

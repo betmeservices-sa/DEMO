@@ -37,6 +37,14 @@ export function articuloFijo(categoria: string): string {
   return ARTICULO_FIJO[categoria] ?? "un electrónico";
 }
 
+/**
+ * El motivo de un selectivo dentro de una frase ("...: el valor declarado no
+ * coincide"). "Aduana" es la institución y conserva la mayúscula.
+ */
+export function motivoEnFrase(texto: string): string {
+  return /^Aduana\b/.test(texto) ? texto : texto.replace(/^\p{Lu}/u, (l) => l.toLowerCase());
+}
+
 /** "a", "a y b", "a, b y c". */
 export function listaDeCosas(xs: readonly string[]): string {
   if (xs.length <= 1) return xs[0] ?? "";

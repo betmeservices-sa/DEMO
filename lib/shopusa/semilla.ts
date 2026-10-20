@@ -164,9 +164,9 @@ const PAQUETES_DEF: readonly DefPaquete[] = [
 
   // 1037: entregados la semana pasada.
   { id: "P-24102", c: "c15", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA310027715309", contenido: "Kindle Paperwhite", cat: "Kindles y lectores electrónicos", valor: 149.99, peso: 0.9, etapa: "entregado", carga: "1037", pre: "captura", hEntregado: 123, pagado: true },
-  { id: "P-24105", c: "c2", tienda: "SHEIN", tr: "USPS", tracking: "9400111899562341778801", contenido: "Ropa variada (6 piezas)", cat: ROPA, valor: 46.8, peso: 2.1, etapa: "entregado", carga: "1037", pre: "web", hEntregado: 140, pagado: true },
+  { id: "P-24105", c: "c2", tienda: "SHEIN", tr: "USPS", tracking: "9400111899562341778801", contenido: "6 piezas de ropa variada", cat: ROPA, valor: 46.8, peso: 2.1, etapa: "entregado", carga: "1037", pre: "web", hEntregado: 140, pagado: true },
   { id: "P-24109", c: "c18", tienda: "Sephora", tr: "UPS", tracking: "1ZA4W8920394817726", contenido: "Set de maquillaje", cat: MAQUILLAJE, valor: 72, peso: 1.4, etapa: "entregado", carga: "1037", pre: "captura", hEntregado: 118, pagado: true },
-  { id: "P-24113", c: "c21", tienda: "ColourPop", tr: "USPS", tracking: "9400111899562344102236", contenido: "Paletas de sombras y labiales (12)", cat: MAQUILLAJE, valor: 118.4, peso: 3.6, etapa: "entregado", carga: "1037", pre: "web", hEntregado: 142, pagado: true },
+  { id: "P-24113", c: "c21", tienda: "ColourPop", tr: "USPS", tracking: "9400111899562344102236", contenido: "12 paletas de sombras y labiales", cat: MAQUILLAJE, valor: 118.4, peso: 3.6, etapa: "entregado", carga: "1037", pre: "web", hEntregado: 142, pagado: true },
   { id: "P-24117", c: "c17", tienda: "Walmart", tr: "FedEx", tracking: "774812370415", contenido: "Licuadora Ninja", cat: COCINA_ELECTRO, valor: 79, peso: 8.3, etapa: "entregado", carga: "1037", pre: "captura", hEntregado: 116, domicilio: true, pagado: true },
 
   // 1039: liberada hace tres días; casi todo listo para retirar.
@@ -174,16 +174,16 @@ const PAQUETES_DEF: readonly DefPaquete[] = [
   { id: "P-24291", c: "c6", tienda: "IKEA", tr: "UPS", tracking: "1ZA4W8920395098812", contenido: "Edredón y almohadas", cat: MUEBLES, valor: 89.99, peso: 4.2, medidas: { largo: 22, ancho: 16, alto: 12 }, etapa: "listo", carga: "1039", pre: "captura", domicilio: true },
   { id: "P-24295", c: "c13", tienda: "Macy's", tr: "UPS", tracking: "1ZA4W8920395102233", contenido: "Zapatos de vestir", cat: CALZADO, valor: 95, peso: 3.2, etapa: "listo", carga: "1039", pre: "web", pagado: true },
   { id: "P-24298", c: "c19", tienda: "eBay", tr: "USPS", tracking: "9400111899562399120457", contenido: "Control de PlayStation 5", cat: CONSOLAS, valor: 64.99, peso: 1.3, etapa: "listo", carga: "1039", pre: "web" },
-  { id: "P-24302", c: "c14", tienda: "Carter's", tr: "FedEx", tracking: "774812371188", contenido: "Ropa de niño (8 piezas)", cat: ROPA, valor: 58.4, peso: 2.6, etapa: "entregado", carga: "1039", pre: "web", hEntregado: 50, pagado: true },
+  { id: "P-24302", c: "c14", tienda: "Carter's", tr: "FedEx", tracking: "774812371188", contenido: "8 piezas de ropa de niño", cat: ROPA, valor: 58.4, peso: 2.6, etapa: "entregado", carga: "1039", pre: "web", hEntregado: 50, pagado: true },
   { id: "P-24305", c: "c20", tienda: "Target", tr: "USPS", tracking: "9200190311845527390012", contenido: "Organizadores de cocina", cat: "Manufacturas plásticas", valor: 23.6, peso: 1.8, etapa: "listo", carga: "1039", pre: "captura" },
-  { id: "P-24309", c: "c1", tienda: "SHEIN", tr: "USPS", tracking: "9400111899562401887736", contenido: "Vestidos (3)", cat: ROPA, valor: 41.97, peso: 1.2, etapa: "entregado", carga: "1039", pre: "captura", hEntregado: 46, pagado: true },
+  { id: "P-24309", c: "c1", tienda: "SHEIN", tr: "USPS", tracking: "9400111899562401887736", contenido: "3 vestidos", cat: ROPA, valor: 41.97, peso: 1.2, etapa: "entregado", carga: "1039", pre: "captura", hEntregado: 46, pagado: true },
 
   // 1040: aterrizó antier; a dos les salió selectivo rojo.
-  { id: "P-24410", c: "c4", tienda: "eBay", tr: "USPS", tracking: "9400111899562417700983", contenido: "Reloj Seiko 5 automático (usado)", cat: "Relojes tradicionales, joyería y accesorios de moda", valor: 185, peso: 0.8, etapa: "aduana", carga: "1040", pre: "equipo", selectivo: "Aduana pide la factura de compra", conv: "x4" },
+  { id: "P-24410", c: "c4", tienda: "eBay", tr: "USPS", tracking: "9400111899562417700983", contenido: "Reloj Seiko 5 automático usado", cat: "Relojes tradicionales, joyería y accesorios de moda", valor: 185, peso: 0.8, etapa: "aduana", carga: "1040", pre: "equipo", selectivo: "Aduana pide la factura de compra", conv: "x4" },
   { id: "P-24413", c: "c12", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA313372086615", contenido: "Tablet Samsung Galaxy Tab A9", cat: "Tablets", valor: 139.99, peso: 1.6, etapa: "aduana", carga: "1040", pre: "captura", selectivo: "El valor declarado no coincide con la factura" },
   { id: "P-24416", c: "c16", tienda: "Walmart", tr: "FedEx", tracking: "774812372650", contenido: "Set de LEGO Classic", cat: JUGUETES, valor: 54.97, peso: 2.4, etapa: "aduana", carga: "1040", pre: "equipo" },
   { id: "P-24419", c: "c15", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA313380471228", contenido: "Bocina JBL Flip 6", cat: AUDIO, valor: 99.95, peso: 2, etapa: "aduana", carga: "1040", pre: "captura" },
-  { id: "P-24422", c: "c21", tienda: "Ulta", tr: "UPS", tracking: "1ZA4W8920396229014", contenido: "Labiales y delineadores (10)", cat: MAQUILLAJE, valor: 67.8, peso: 1.4, etapa: "aduana", carga: "1040", pre: "web" },
+  { id: "P-24422", c: "c21", tienda: "Ulta", tr: "UPS", tracking: "1ZA4W8920396229014", contenido: "10 labiales y delineadores", cat: MAQUILLAJE, valor: 67.8, peso: 1.4, etapa: "aduana", carga: "1040", pre: "web" },
   { id: "P-24425", c: "c9", tienda: "Sephora", tr: "UPS", tracking: "1ZA4W8920396230519", contenido: "Crema facial y sérum", cat: PIEL, valor: 86, peso: 1.1, etapa: "aduana", carga: "1040", pre: "captura" },
   { id: "P-24428", c: "c18", tienda: "Nordstrom Rack", tr: "UPS", tracking: "1ZA4W8920396241870", contenido: "Cartera de cuero", cat: "Carteras, billeteras, bolsos y maletas", valor: 168, peso: 2.2, etapa: "aduana", carga: "1040", pre: "web" },
 
@@ -191,17 +191,17 @@ const PAQUETES_DEF: readonly DefPaquete[] = [
   { id: "P-24502", c: "c2", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA314190553820", contenido: "Smartwatch Amazfit Bip 5", cat: "Relojes y smartwatch", valor: 69.99, peso: 0.7, etapa: "transito", carga: "1041", pre: "captura" },
   { id: "P-24505", c: "c10", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA314197762095", contenido: "Audífonos Bose QuietComfort", cat: AUDIO, valor: 229, peso: 1.5, etapa: "transito", carga: "1041", pre: "captura" },
   { id: "P-24508", c: "c11", tienda: "Walmart", tr: "FedEx", tracking: "774812374406", contenido: "Set de ollas antiadherentes", cat: "Artículos para cocina y mesa", valor: 49.88, peso: 7.2, etapa: "transito", carga: "1041", pre: "captura" },
-  { id: "P-24511", c: "c13", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA314203318547", contenido: "Proteína en polvo (5 lb)", cat: "Medicamentos, vitaminas, fórmulas y equipo de diagnóstico", valor: 64.99, peso: 5.6, etapa: "transito", carga: "1041", pre: "web" },
+  { id: "P-24511", c: "c13", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA314203318547", contenido: "Proteína en polvo de 5 lb", cat: "Medicamentos, vitaminas, fórmulas y equipo de diagnóstico", valor: 64.99, peso: 5.6, etapa: "transito", carga: "1041", pre: "web" },
   { id: "P-24514", c: "c19", tienda: "AliExpress", tr: "USPS", tracking: "9400111899562455028164", contenido: "Cables USB-C y cargador", cat: "Cables, cargadores de pared y baterías externas", valor: 18.4, peso: 0.6, etapa: "transito", carga: "1041", pre: "web" },
-  { id: "P-24517", c: "c20", tienda: "H&M", tr: "UPS", tracking: "1ZA4W8920397018342", contenido: "Ropa de mujer (5 piezas)", cat: ROPA, valor: 76.95, peso: 2.3, etapa: "transito", carga: "1041", pre: "captura" },
+  { id: "P-24517", c: "c20", tienda: "H&M", tr: "UPS", tracking: "1ZA4W8920397018342", contenido: "5 piezas de ropa de mujer", cat: ROPA, valor: 76.95, peso: 2.3, etapa: "transito", carga: "1041", pre: "captura" },
   { id: "P-24520", c: "c17", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA314211904736", contenido: "Taladro inalámbrico DeWalt", cat: "Herramientas de bricolaje", valor: 99, peso: 4.9, etapa: "transito", carga: "1041", pre: "web", domicilio: true },
   { id: "P-24523", c: "c8", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA314215580913", contenido: "Mochila para laptop", cat: FUNDAS, valor: 45.99, peso: 1.9, etapa: "transito", carga: "1041", pre: "captura" },
   { id: "P-24526", c: "c1", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA314222675140", contenido: "iPhone 15 de 128 GB", cat: "Celulares y smartphones", valor: 629, peso: 1, etapa: "transito", carga: "1041", pre: "captura" },
 
   // 1042: en la bodega, esperando la carga de esta noche.
   { id: "P-24601", c: "c10", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA315022710488", contenido: "Nintendo Switch Lite", cat: CONSOLAS, valor: 199.99, peso: 2.1, etapa: "miami", carga: "1042", pre: "captura", hMiami: 6 },
-  { id: "P-24604", c: "c10", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA315029384173", contenido: "Juegos de Nintendo Switch (2)", cat: "Cartuchos y discos físicos de videojuegos", valor: 109.98, peso: 0.5, etapa: "miami", carga: "1042", pre: "captura", hMiami: 1.5, conv: "x10" },
-  { id: "P-24607", c: "c2", tienda: "SHEIN", tr: "USPS", tracking: "9400111899562470093551", contenido: "Ropa y accesorios (9 piezas)", cat: ROPA, valor: 58.73, peso: 1.9, etapa: "miami", carga: "1042", pre: "web", hMiami: 0.45, conv: "x2" },
+  { id: "P-24604", c: "c10", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA315029384173", contenido: "2 juegos de Nintendo Switch", cat: "Cartuchos y discos físicos de videojuegos", valor: 109.98, peso: 0.5, etapa: "miami", carga: "1042", pre: "captura", hMiami: 1.5, conv: "x10" },
+  { id: "P-24607", c: "c2", tienda: "SHEIN", tr: "USPS", tracking: "9400111899562470093551", contenido: "9 piezas de ropa y accesorios", cat: ROPA, valor: 58.73, peso: 1.9, etapa: "miami", carga: "1042", pre: "web", hMiami: 0.45, conv: "x2" },
   { id: "P-24610", c: "c16", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA315035521604", contenido: "Aspiradora robot Eufy", cat: "Aspiradoras y planchas de ropa", valor: 159.99, peso: 7.9, medidas: { largo: 18, ancho: 17, alto: 6 }, etapa: "miami", carga: "1042", pre: "equipo", hMiami: 5 },
   { id: "P-24613", c: "c14", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA315040986312", contenido: "Por confirmar", cat: "Otros bienes", valor: 0, peso: 3.4, etapa: "miami", carga: "1042", pre: "sin", hMiami: 4 },
   { id: "P-24616", c: "c12", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA315044213378", contenido: "Funda y protector de pantalla", cat: FUNDAS, valor: 24.99, peso: 0.4, etapa: "miami", carga: "1042", pre: "captura", hMiami: 8 },
@@ -212,9 +212,9 @@ const PAQUETES_DEF: readonly DefPaquete[] = [
 
   // Pendientes de recepción: la prealerta ya llegó, el paquete todavía no.
   { id: "P-24701", c: "c1", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA318274650012", contenido: "Audífonos Sony WH-CH720N", cat: AUDIO, valor: 89.99, etapa: "pendiente", pre: "captura", hPre: 3.1, captura: "/demo/shopusa/captura-amazon.svg", conv: "x1", confianza: 0.97 },
-  { id: "P-24704", c: "c7", tienda: "SHEIN", tr: "USPS", tracking: "9400111899562488215530", contenido: "Blusas y pantalón (4 piezas)", cat: ROPA, valor: 38.5, etapa: "pendiente", pre: "web", hPre: 22 },
+  { id: "P-24704", c: "c7", tienda: "SHEIN", tr: "USPS", tracking: "9400111899562488215530", contenido: "3 blusas y un pantalón", cat: ROPA, valor: 38.5, etapa: "pendiente", pre: "web", hPre: 22 },
   { id: "P-24707", c: "c15", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA318240913377", contenido: "Disco duro externo WD de 2 TB", cat: "SSD, HDD, GPU, CPU, motherboards y memoria RAM", valor: 79.99, etapa: "pendiente", pre: "captura", hPre: 46 },
-  { id: "P-24710", c: "c21", tienda: "ColourPop", tr: "USPS", tracking: "9400111899562479930118", contenido: "Paletas de sombras (6)", cat: MAQUILLAJE, valor: 96, etapa: "pendiente", pre: "web", hPre: 28 },
+  { id: "P-24710", c: "c21", tienda: "ColourPop", tr: "USPS", tracking: "9400111899562479930118", contenido: "6 paletas de sombras", cat: MAQUILLAJE, valor: 96, etapa: "pendiente", pre: "web", hPre: 28 },
   { id: "P-24713", c: "c18", tienda: "Ulta", tr: "UPS", tracking: "1ZA4W8920399105527", contenido: "Accesorios para el cabello", cat: PIEL, valor: 16.8, etapa: "pendiente", pre: "web", hPre: 5 },
   { id: "P-24716", c: "c8", tienda: "Walmart", tr: "USPS", tracking: "9400111899562491670244", contenido: "Zapatos escolares", cat: CALZADO, valor: 34.97, etapa: "pendiente", pre: "captura", hPre: 70, conv: "x8" },
   { id: "P-24719", c: "c13", tienda: "Amazon", tr: "Amazon Logistics", tracking: "TBA318262207791", contenido: "Laptop Lenovo IdeaPad Slim 3", cat: "Laptops y notebooks", valor: 549, etapa: "pendiente", pre: "web", hPre: 12 },

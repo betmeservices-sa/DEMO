@@ -13,7 +13,7 @@ import type { Aviso, Carga, Cliente, EventoPaquete, Paquete } from "./tipos";
 import { DIAS_ABANDONO, DIAS_SIN_ALMACENAJE, esSucursal, motivoSelectivo, sucursalDef } from "./catalogo";
 import { arancelDe, cobroDeEnvio, dinero, libras, listoDesde, type Cobro } from "./cobro";
 import { fechaCorta, horaCorta, diaSV } from "@/lib/eventos/fechas";
-import { articuloFijo, diaDeCarga, listaDeCosas, trackingLegible } from "./formato";
+import { articuloFijo, diaDeCarga, listaDeCosas, motivoEnFrase, trackingLegible } from "./formato";
 
 export interface ContextoAviso {
   cliente: Cliente;
@@ -120,13 +120,12 @@ export function textoAviso(ev: EventoPaquete, p: Paquete, ctx: ContextoAviso): s
 
     case "selectivo": {
       const m = motivoSelectivo(ev.detalle ?? p.selectivo?.motivo ?? "Aduana revisa el contenido del paquete");
-      const motivo = m.texto.replace(/^\p{Lu}/u, (l) => l.toLowerCase());
       const sigue = m.pideFactura
         ? " ¿Nos mandas por aquí la factura de la compra para liberarlo?"
         : /permiso/i.test(m.texto)
           ? " Te escribimos para explicarte el trámite."
           : " Te aviso apenas termine la revisión.";
-      return `${nombre}, Aduana le dio selectivo rojo a tu paquete ${deTienda} (${p.contenido}): ${motivo}.${sigue}`;
+      return `${nombre}, a tu paquete ${deTienda} (${p.contenido}) le salió selectivo rojo: ${motivoEnFrase(m.texto)}.${sigue}`;
     }
 
     case "listo": {

@@ -129,7 +129,7 @@ export const shopusaTenant: TenantConfig = {
         {
           type: "BODY",
           text: "{{1}}, recibimos en nuestra bodega de Miami tu paquete de {{2}} ({{3}}): {{4}}. Sale en la carga del {{5}}.",
-          example: { body_text: [["Carlos", "SHEIN", "Ropa y accesorios", "1.9 lb", "lunes 19 de octubre"]] },
+          example: { body_text: [["Carlos", "SHEIN", "9 piezas de ropa y accesorios", "1.9 lb", "lunes 19 de octubre"]] },
         },
         { type: "FOOTER", text: "ShopUSA" },
       ],
@@ -156,8 +156,8 @@ export const shopusaTenant: TenantConfig = {
       components: [
         {
           type: "BODY",
-          text: "{{1}}, Aduana le dio selectivo rojo a tu paquete de {{2}} ({{3}}): {{4}}. ¿Nos mandas por aquí la factura de la compra para liberarlo?",
-          example: { body_text: [["José Roberto", "eBay", "Reloj Seiko 5", "aduana pide la factura de compra"]] },
+          text: "{{1}}, a tu paquete de {{2}} ({{3}}) le salió selectivo rojo: {{4}}. ¿Nos mandas por aquí la factura de la compra para liberarlo?",
+          example: { body_text: [["José Roberto", "eBay", "Reloj Seiko 5", "Aduana pide la factura de compra"]] },
         },
         { type: "FOOTER", text: "ShopUSA" },
       ],

@@ -17,7 +17,7 @@ import { clienteDe } from "@/lib/shopusa/vista";
 import { useShopusa } from "@/lib/shopusa/store";
 import { diaHora, diaSV, fechaCorta, fechaLarga, horaCorta, sumarDias } from "@/lib/eventos/fechas";
 import { useStore } from "@/lib/store";
-import { cuantos, conMayuscula, nombreCarga } from "@/lib/shopusa/formato";
+import { cuantos, conMayuscula, motivoEnFrase, nombreCarga } from "@/lib/shopusa/formato";
 import { AlertaChip, PuntoEtapa } from "./ui";
 
 const DIA_MS = 86_400_000;
@@ -144,7 +144,7 @@ export function ShopusaDashboard() {
               <ul className="divide-y divide-[var(--border)]">
                 {urgentes.selectivos.map((p) => (
                   <Urgente key={`r-${p.id}`} chip={<AlertaChip tipo="selectivo">Selectivo rojo</AlertaChip>} href={`/paquetes?id=${p.id}`}>
-                    {p.contenido} de <b>{clienteDe(vista, p.clienteId)?.nombre}</b>: {p.selectivo?.motivo.toLowerCase()}.
+                    {p.contenido} de <b>{clienteDe(vista, p.clienteId)?.nombre}</b>: {motivoEnFrase(p.selectivo?.motivo ?? "")}.
                   </Urgente>
                 ))}
                 {urgentes.sinPrealerta.map((p) => (

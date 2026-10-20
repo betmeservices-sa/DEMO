@@ -18,7 +18,7 @@ import { salidaDe } from "@/lib/shopusa/avisos";
 import { prealertoATiempo } from "@/lib/shopusa/estado";
 import { clienteDe, type VistaShopusa } from "@/lib/shopusa/vista";
 import { registrar } from "@/lib/shopusa/store";
-import { listaDeCosas, nombreCarga } from "@/lib/shopusa/formato";
+import { listaDeCosas, motivoEnFrase, nombreCarga } from "@/lib/shopusa/formato";
 import { diaHora, diaSV, fechaCorta, horaCorta } from "@/lib/eventos/fechas";
 import { AlertaChip, Dato, EtapaChip, EtiquetaChip, IaChip, Seccion, abrirEnBandeja, trackingLegible, useCerrarConEscape } from "./ui";
 
@@ -151,7 +151,7 @@ export function FichaPaquete({
           {/* Lo que pide atención, con su acción a la mano */}
           {p.etapa === "aduana" && p.selectivo && (
             <div className="rounded-xl border border-[var(--brand-red)]/25 bg-[var(--susa-rojo-fondo)] p-3.5">
-              <p className="text-[13px] font-bold text-[var(--brand-red)]">Selectivo rojo: {p.selectivo.motivo.charAt(0).toLowerCase() + p.selectivo.motivo.slice(1)}</p>
+              <p className="text-[13px] font-bold text-[var(--brand-red)]">Selectivo rojo: {motivoEnFrase(p.selectivo.motivo)}</p>
               <p className="mt-0.5 text-[12px] text-[var(--text-2)]">
                 Desde el {diaHora(p.selectivo.desde)}.{" "}
                 {motivoSelectivo(p.selectivo.motivo).pideFactura
