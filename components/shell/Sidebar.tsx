@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
-import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
+import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_HOTEL_MUESTRA, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
+import { esHotelMuestra } from "@/lib/hotel-muestra/registro";
 import { useStore } from "@/lib/store";
 import { sinLeerPorCanal, useInterno } from "@/lib/interno-bridge";
 import { activeTenantId } from "@/lib/tenants/active";
@@ -64,6 +65,7 @@ const NAV: NavItem[] = [
   { id: "perfil", href: "/perfil", label: "Perfil del agente", Icon: IdCard },
   { id: "sofia", href: "/sofia", label: "Probar a Sofía", Icon: Bot },
   { id: "dashboard", href: "/dashboard", label: "Dashboard", Icon: BarChart3 },
+  { id: "ia", href: "/ia", label: "IA Performance", Icon: Gauge },
   { id: "reporte", href: "/reporte", label: "Reporte", Icon: FileBarChart },
   { id: "auditoria", href: "/auditoria", label: "Audit logs", Icon: ScrollText },
   { id: "costos", href: "/costos", label: "Costos de Sofía", Icon: Receipt },
@@ -164,7 +166,17 @@ export function Sidebar({
   const veComercial = tenant === "comercial";
   // ShopUSA tambien: su panel es la linea de paquetes y los clientes.
   const veShopusa = tenant === "shopusa";
-  const listaCerrada = vePizza ? MODULOS_PIZZAHUT : veComercial ? MODULOS_COMERCIAL : veShopusa ? MODULOS_SHOPUSA : null;
+  // Los hoteles de muestra (NAWI) llevan el menu de Porta Stays, en su orden.
+  const veHotelMuestra = esHotelMuestra(tenant);
+  const listaCerrada = vePizza
+    ? MODULOS_PIZZAHUT
+    : veComercial
+    ? MODULOS_COMERCIAL
+    : veShopusa
+    ? MODULOS_SHOPUSA
+    : veHotelMuestra
+    ? MODULOS_HOTEL_MUESTRA
+    : null;
   const visibles = listaCerrada
     ? listaCerrada.map((id) => NAV.find((item) => item.id === id)).filter(
         (item): item is NavItem => Boolean(item) && def.ve.includes((item as NavItem).id),
@@ -218,6 +230,8 @@ export function Sidebar({
       item.id !== "leads" &&
       // El alta de numero en vivo tambien: es la demo que ensena la agencia.
       item.id !== "alta-numero" &&
+      // IA Performance es de los hoteles de muestra, que arman su menu arriba.
+      item.id !== "ia" &&
       // La agencia es SOLO metricas de clientes: su lista cerrada manda.
       (tenant !== "miagentia" || MODULOS_AGENCIA.includes(item.id)),
       );

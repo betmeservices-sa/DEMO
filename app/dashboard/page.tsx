@@ -33,6 +33,8 @@ import { BetmeDashboard } from "@/components/dashboard/BetmeDashboard";
 import { PizzaHutDashboard } from "@/components/dashboard/PizzaHutDashboard";
 import { CajaDashboard } from "@/components/dashboard/CajaDashboard";
 import { ShopusaDashboard } from "@/components/shopusa/ShopusaDashboard";
+import { HotelMuestraDashboard } from "@/components/hotel-muestra/HotelMuestraDashboard";
+import { esHotelMuestra } from "@/lib/hotel-muestra/registro";
 import { HospitalDashboard } from "@/components/dashboard/HospitalDashboard";
 import { OrigenCanales } from "@/components/dashboard/OrigenCanales";
 import { ConsumoIA } from "@/components/dashboard/ConsumoIA";
@@ -105,6 +107,9 @@ export default function DashboardPage() {
   if (activeTenantId() === "chalatenango") return <CajaDashboard />;
   // ShopUSA mira la línea de paquetes: etapas, urgencias y cargas.
   if (activeTenantId() === "shopusa") return <ShopusaDashboard />;
+  // Los hoteles de muestra (NAWI) llevan el tablero de Porta Stays con su libro
+  // de muestra: ocupación por zona, apartados y llegadas.
+  if (esHotelMuestra(activeTenantId())) return <HotelMuestraDashboard />;
   // El hospital atiende pacientes reales desde su propio numero: su tablero
   // sale de la base (WhatsApp y tickets), no de las tarjetas de muestra.
   if (activeTenantId() === "hospital") return <HospitalDashboard />;

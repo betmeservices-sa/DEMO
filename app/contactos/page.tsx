@@ -350,6 +350,9 @@ function ContactosGeneral() {
           {/* El interruptor va PEGADO al boton de importar, no escondido en
               ajustes: quien sube el archivo tiene que ver, en ese momento, que
               esto va a marcarle a la gente. */}
+          {/* Sin agente de voz no hay con quién llamar: el cliente no ve la
+              casilla (antes salía "con Sofía", la agente de otro cliente). */}
+          {activeTenant().voz && (
           <label className="mt-2 flex cursor-pointer items-center gap-2 text-[12px] text-[var(--text-2)]">
             <input
               type="checkbox"
@@ -364,6 +367,7 @@ function ContactosGeneral() {
               </span>
             )}
           </label>
+          )}
 
           <input
             ref={fileRef}

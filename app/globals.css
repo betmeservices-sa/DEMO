@@ -4,6 +4,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ── Tema por cliente (tenant) ──
@@ -526,6 +527,41 @@
 /* La barra de scroll clara de ShopUSA. */
 [data-tenant="shopusa"] ::-webkit-scrollbar-thumb:hover {
   background: #b9cbdf;
+}
+
+/* NAWI Beach House va en CLARO, con los colores de su logo y su sitio
+   (antiresort.com/nawibeachhouse): el morado #5C56EB de la "N", la "i" y
+   "BEACH HOUSE" manda en botones y pestañas; el turquesa #029FA3 de la "A" y
+   el naranja #FF881E de la "W" (y el #EF5000 de sus botones de reserva) son
+   los acentos; el crema #F7EBDE de sus secciones, aclarado, es el fondo.
+   Tipografía: Commissioner, la de su sitio (sus títulos usan Wilden, que no
+   está en Google Fonts).
+   El turquesa y el naranja de la marca dan 3.2:1 y 3.6:1 sobre blanco: son
+   relleno, NUNCA texto. Para texto van #00767A y #B83E00, de su misma familia.
+   Lo cubre nawi-tema.test.ts, que mide cada par sobre el fondo y la tarjeta. */
+[data-tenant="nawi"] {
+  --brand-blue: #5c56eb;
+  --brand-blue-dark: #4640c9;
+  --brand-green: #00767a;
+  --brand-red: #b42318;
+  --brand-accent: #b83e00;
+  --brand-accent-soft: #fff1e8;
+
+  --surface: #fbf7f2;
+  --surface-2: #f2eadf;
+  --card: #ffffff;
+  --border: #ede3d6;
+  --border-2: #d9cbb8;
+  --text: #1e2630;
+  --text-2: #454d5a;
+  --text-3: #636b78;
+
+  --font-app: 'Commissioner', system-ui, sans-serif;
+}
+
+/* La barra de scroll clara de NAWI. */
+[data-tenant="nawi"] ::-webkit-scrollbar-thumb:hover {
+  background: #d9cbb8;
 }
 
 

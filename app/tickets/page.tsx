@@ -40,6 +40,8 @@ import type { MetricasTickets } from "@/lib/tickets-metricas";
 import { formatearMinutos, horasPorDiaHabil } from "@/lib/tickets-sla";
 import { configTickets, explicacionReloj, horarioDeArea } from "@/lib/tickets-tenant";
 import { activeTenant, activeTenantId } from "@/lib/tenants/active";
+import { esHotelMuestra } from "@/lib/hotel-muestra/registro";
+import { cambiarTicketMuestra, crearTicketMuestra, leerTicketsMuestra } from "@/lib/hotel-muestra/tickets";
 
 interface Respuesta {
   ok: boolean;
@@ -57,6 +59,9 @@ const TENANT = activeTenantId();
 // resto): el tablero habla de quien de verdad abre los casos.
 const AGENTE = activeTenant().ai.nombre ?? "Sofía";
 const CFG = configTickets(TENANT);
+// Los hoteles de muestra (NAWI) leen y escriben sus tickets en el navegador:
+// es el mismo tablero, sin tocar la base de nadie.
+const MUESTRA = esHotelMuestra(TENANT);
 const AREAS = CFG.areas;
 // La jornada con la que se convierten minutos en "días" al mostrarlos. Sin
 // esto, 30 horas de una sede que no cierra se leerían como "2 d 6 h".
@@ -91,6 +96,11 @@ export default function TicketsPage() {
   const [creando, setCreando] = useState(false);
 
   const cargar = useCallback(async () => {
+    if (MUESTRA) {
+      setDatos(leerTicketsMuestra(TENANT));
+      setCargando(false);
+      return;
+    }
     const r = await fetch("/api/tickets", { cache: "no-store" });
     setDatos((await r.json()) as Respuesta);
     setCargando(false);
@@ -115,6 +125,11 @@ export default function TicketsPage() {
   );
 
   async function actualizar(id: string, cambios: Record<string, unknown>) {
+    if (MUESTRA) {
+      cambiarTicketMuestra(id, cambios);
+      await cargar();
+      return;
+    }
     await fetch("/api/tickets", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -525,6 +540,12 @@ function FormularioNuevo({ onCerrar, onCreado }: { onCerrar: () => void; onCread
     e.preventDefault();
     setGuardando(true);
     setError(null);
+    if (MUESTRA) {
+      const fallo = crearTicketMuestra({ ...form, creadoPor: "Mostrador" });
+      setGuardando(false);
+      if (fallo) return setError(fallo);
+      return onCreado();
+    }
     const r = await fetch("/api/tickets", {
       method: "POST",
       headers: { "content-type": "application/json" },

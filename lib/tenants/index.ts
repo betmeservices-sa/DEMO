@@ -17,6 +17,7 @@ import { pizzahutTenant } from "./pizzahut";
 import { comercialTenant } from "./comercial";
 import { chalatenangoTenant } from "./chalatenango";
 import { shopusaTenant } from "./shopusa";
+import { nawiTenant } from "./nawi";
 
 export type { TenantConfig, TenantId } from "./types";
 export { EN_HUB, esDelDemo } from "./types";
@@ -37,6 +38,7 @@ export const TENANTS: Record<TenantId, TenantConfig> = {
   comercial: comercialTenant,
   chalatenango: chalatenangoTenant,
   shopusa: shopusaTenant,
+  nawi: nawiTenant,
 };
 
 // Tenant por defecto (SSR / antes de login). No es visible: la UI se pinta tras
@@ -59,7 +61,8 @@ export function isTenantId(v: string | null | undefined): v is TenantId {
     v === "pizzahut" ||
     v === "comercial" ||
     v === "chalatenango" ||
-    v === "shopusa"
+    v === "shopusa" ||
+    v === "nawi"
   );
 }
 
@@ -110,6 +113,9 @@ export const DEMO_LOGINS: DemoLogin[] = [
   // ShopUSA: lo que la gente compra en tiendas de Estados Unidos y llega a El
   // Salvador (bandeja, paquetes de la bodega de Miami a la entrega, y los clientes).
   { usuario: "demoagentia", password: "demoshopusa", tenant: "shopusa" },
+  // NAWI Beach House: el panel de hotel de Porta Stays con todo de muestra
+  // (bandeja, tickets, ocupación y reservas por zona, IA Performance).
+  { usuario: "demoagentia", password: "demonawi", tenant: "nawi" },
   // Acceso directo al dashboard de llamadas (tenant miagentia).
   // OJO: esta clave queda visible mientras el repo sea publico. Para cerrarla,
   // hacer el repo privado o mover las credenciales a la env LOGIN_PASSWORDS.

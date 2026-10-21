@@ -96,7 +96,27 @@ const YALI: ConfigTickets = {
   areaPorDefecto: "reservas",
 };
 
-const POR_TENANT: Record<string, ConfigTickets> = { hospital: HOSPITAL, yaly: YALI };
+/**
+ * NAWI Beach House (demo con datos de muestra, ver lib/hotel-muestra). Las
+ * áreas son las del club y el hotel: Reservas con su horario de oficina, el
+ * club con el horario que publica (abre a las 7:30 y cierra a las 10 de la
+ * noche), y operaciones a reloj corrido, porque el huésped está adentro de
+ * noche también.
+ */
+const NAWI: ConfigTickets = {
+  tipos: ["reserva", "pago", "checkin_especial", "cotizacion", "queja", "objeto_perdido", "mantenimiento", "informacion", "otro"],
+  areas: [
+    { id: "reservas", label: "Reservas", horario: horarioDiario(8, 18) },
+    { id: "club", label: "Club de playa", horario: horarioDiario(7, 22) },
+    { id: "concierge", label: "Concierge", horario: horarioDiario(7, 22) },
+    { id: "operaciones", label: "Operaciones" },
+    { id: "gerencia", label: "Gerencia", horario: horarioDiario(8, 17) },
+  ],
+  horario: HORARIO_CONTINUO,
+  areaPorDefecto: "reservas",
+};
+
+const POR_TENANT: Record<string, ConfigTickets> = { hospital: HOSPITAL, yaly: YALI, nawi: NAWI };
 
 /**
  * Quién recibe TODOS los casos que abre Claudia en el hospital.

@@ -23,6 +23,8 @@ export default function MisChatsPage() {
   const tenant = activeTenant();
   const miId = useYo();
   const yo = staff.find((s) => s.id === miId);
+  // El agente de ESTE cliente: en Yali es Sofía, en Nawi es Camila.
+  const agente = tenant.ai.nombre ?? "Sofía";
 
   const mios = state.conversations
     .filter((c) => c.asignadoA === miId)
@@ -55,15 +57,15 @@ export default function MisChatsPage() {
       <header className="border-b border-line bg-card px-5 py-3">
         <h1 className="text-[17px] font-extrabold tracking-tight text-brand">Mis chats</h1>
         <p className="text-[12.5px] text-[var(--text-3)]">
-          Las conversaciones que Sofía te pasó a vos{yo ? `, ${yo.nombre}` : ""}
+          Las conversaciones que {agente} te pasó a vos{yo ? `, ${yo.nombre}` : ""}
         </p>
       </header>
 
       <div className="flex-1 space-y-5 overflow-y-auto p-5">
         <p className="flex items-start gap-2.5 rounded-xl border border-line bg-card px-4 py-3 text-[12.5px] leading-relaxed text-[var(--text-2)]">
           <BotOff size={16} className="mt-0.5 shrink-0 text-brand" />
-          Cuando un chat es tuyo, la IA se apaga en ese chat y no vuelve a escribir. Sofía te lo
-          pasa cuando el huésped pide hablar con una persona, cuando la conversación se alarga o
+          Cuando un chat es tuyo, la IA se apaga en ese chat y no vuelve a escribir. {agente} te lo
+          pasa cuando el {tenant.labels.contacto} pide hablar con una persona, cuando la conversación se alarga o
           cuando hay algo que ella no puede confirmar.
         </p>
 
@@ -74,7 +76,7 @@ export default function MisChatsPage() {
               No tenés chats asignados
             </p>
             <p className="mx-auto mt-1 max-w-md text-[12.5px] leading-relaxed text-[var(--text-3)]">
-              Sofía está atendiendo todo. Acá van a aparecer los que te pase.
+              {agente} está atendiendo todo. Acá van a aparecer los que te pase.
             </p>
           </div>
         ) : (
@@ -134,7 +136,7 @@ export default function MisChatsPage() {
                       )}
                     >
                       <Undo2 size={13} />
-                      Devolver a Sofía
+                      Devolver a {agente}
                     </button>
                   </div>
                 </li>

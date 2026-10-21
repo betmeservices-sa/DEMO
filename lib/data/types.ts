@@ -61,6 +61,9 @@ export type DepartmentId =
   | "prealertas"
   | "aduana"
   | "entregas"
+  // NAWI Beach House: el club de playa (Day Pass, camas de día, lo que pasa
+  // en la piscina). Las habitaciones van por "reservas", igual que el hotel.
+  | "club"
   // Todavía nadie dijo de qué es. Existe para no tener que mentir: antes toda
   // conversación nueva nacía con el departamento por defecto del cliente, así
   // que en Yali TODO entraba marcado como "Reservas", incluida una queja.
