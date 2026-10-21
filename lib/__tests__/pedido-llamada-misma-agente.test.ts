@@ -113,7 +113,7 @@ describe("el aviso dice de qué número entra la llamada", () => {
   });
 
   it("el guion de WhatsApp también lo sabe", () => {
-    expect(TENANTS.comercial.ai.systemPrompt).toMatch(/desde este mismo número, el 2505-4610/);
+    expect(TENANTS.comercial.ai.systemPrompt).toMatch(/marca solo con tu voz desde el 2505-4610/);
   });
 });
 

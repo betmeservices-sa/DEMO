@@ -52,8 +52,10 @@ describe("Sofía en modo demo", () => {
     expect(guion).toMatch(/respóndele eso primero, en corto, y después ofrécele la demostración/);
   });
 
-  it("sabe que su número también recibe llamadas", () => {
+  it("las llamadas son al 2505-4610 aunque le escriban por el 7560 5872", () => {
     expect(guion).toMatch(/puede llamar al 2505-4610 y contestas tú/);
+    expect(guion).toMatch(/si te escriben por otro de nuestros números de WhatsApp, atiendes igual/);
+    expect(guion).not.toMatch(/este mismo número/i);
   });
 
   it("si el chat lo abrió la plantilla, no se vuelve a presentar", () => {
