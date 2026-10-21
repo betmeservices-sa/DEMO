@@ -345,7 +345,10 @@ export function Sidebar({
       </nav>
 
       <div className="space-y-3 border-t border-line p-3">
-        <ClienteSwitcher />
+        {/* En los hoteles de muestra (NAWI, Tesoro Beach) no se cambia de
+            cliente desde la barra: para pasar a otro demo hay que cerrar
+            sesión. Pedido del usuario el 2026-10-21. */}
+        {!veHotelMuestra && <ClienteSwitcher />}
         {!veClinica && <RoleSwitcher />}
         <div className="flex items-center gap-2.5 rounded-xl px-2 py-1.5">
           <Avatar iniciales={yo.iniciales} size={34} />
