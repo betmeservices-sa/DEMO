@@ -136,7 +136,10 @@ describe("el demo no envejece", () => {
 
   it("respeta las distancias entre fechas, que es de donde salen las alertas", async () => {
     const { sembrar, guardarSolicitud, leerSolicitud } = await limpio();
-    const t = (dias: number) => new Date(Date.now() - dias * DIA).toISOString();
+    // Un solo "ahora": con Date.now() en cada llamada, bajo carga pasa un
+    // milisegundo entre una fecha y otra y la distancia deja de ser un día.
+    const ahora = Date.now();
+    const t = (dias: number) => new Date(ahora - dias * DIA).toISOString();
     await guardarSolicitud({
       ...base(DEL_DEMO),
       creado: t(10),
