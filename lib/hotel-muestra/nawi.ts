@@ -140,8 +140,8 @@ export const NAWI: HotelMuestra = {
     },
   ],
   pausa: [
-    { huesped: "Óscar Peña", grupo: "se_cayo", llegaEnDias: 1, noches: 2, total: 492, haceDias: 1 },
-    { huesped: "Megan Wilson", grupo: "se_cayo", llegaEnDias: 15, noches: 3, total: 615, haceDias: 6 },
+    { huesped: "Óscar Peña", grupo: "se_cayo", habitacionId: "ocean-parcial", llegaEnDias: 1, noches: 2, haceDias: 1 },
+    { huesped: "Megan Wilson", grupo: "se_cayo", habitacionId: "bungalow-mar", llegaEnDias: 15, noches: 3, haceDias: 6 },
   ],
   tickets: [
     {

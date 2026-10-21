@@ -5,9 +5,11 @@
 
 import type { HotelMuestra } from "./tipos";
 import { NAWI } from "./nawi";
+import { TESORO } from "./tesoro";
 
 const HOTELES: Record<string, HotelMuestra> = {
   nawi: NAWI,
+  tesoro: TESORO,
 };
 
 export function hotelMuestraDe(tenant: string): HotelMuestra | null {

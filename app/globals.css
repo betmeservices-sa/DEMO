@@ -5,6 +5,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
@@ -563,6 +564,39 @@
 /* La barra de scroll clara de NAWI. */
 [data-tenant="nawi"] ::-webkit-scrollbar-thumb:hover {
   background: #d9cbb8;
+}
+
+/* Hotel Tesoro Beach va en CLARO, con los colores de su sitio
+   (hoteltesorobeach.com): el turquesa #02C7D9 de sus botones y titulares, y
+   el verde azulado casi negro #0F2C30 de su logo (el velero). El turquesa da
+   1.9:1 sobre blanco, así que es relleno y nunca texto: lo que manda en
+   botones y pestañas es #0B7285, de la misma familia y con 5.6:1 contra el
+   blanco. Los grises son los slate de su sitio.
+   Tipografía: Raleway, la de su sitio.
+   Lo cubre tesoro-tema.test.ts, que mide cada par sobre el fondo y la tarjeta. */
+[data-tenant="tesoro"] {
+  --brand-blue: #0b7285;
+  --brand-blue-dark: #0f2c30;
+  --brand-green: #067a5b;
+  --brand-red: #b42318;
+  --brand-accent: #475569;
+  --brand-accent-soft: #eef2f6;
+
+  --surface: #f4f9fa;
+  --surface-2: #e6f0f2;
+  --card: #ffffff;
+  --border: #dce8eb;
+  --border-2: #bfd3d8;
+  --text: #0f172a;
+  --text-2: #334155;
+  --text-3: #556274;
+
+  --font-app: 'Raleway', system-ui, sans-serif;
+}
+
+/* La barra de scroll clara de Tesoro Beach. */
+[data-tenant="tesoro"] ::-webkit-scrollbar-thumb:hover {
+  background: #bfd3d8;
 }
 
 

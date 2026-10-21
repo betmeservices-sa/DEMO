@@ -116,7 +116,25 @@ const NAWI: ConfigTickets = {
   areaPorDefecto: "reservas",
 };
 
-const POR_TENANT: Record<string, ConfigTickets> = { hospital: HOSPITAL, yaly: YALI, nawi: NAWI };
+/**
+ * Hotel Tesoro Beach (demo con datos de muestra). El Day Pass se mide con el
+ * horario que publica (entrada a las 7 y salida a las 5); mantenimiento, a
+ * reloj corrido, porque el huésped está adentro de noche también.
+ */
+const TESORO: ConfigTickets = {
+  tipos: ["reserva", "pago", "checkin_especial", "cotizacion", "queja", "objeto_perdido", "mantenimiento", "informacion", "otro"],
+  areas: [
+    { id: "reservas", label: "Reservas", horario: horarioDiario(8, 18) },
+    { id: "daypass", label: "Day Pass", horario: horarioDiario(7, 17) },
+    { id: "eventos", label: "Eventos", horario: horarioDiario(8, 17) },
+    { id: "mantenimiento", label: "Mantenimiento" },
+    { id: "gerencia", label: "Gerencia", horario: horarioDiario(8, 17) },
+  ],
+  horario: HORARIO_CONTINUO,
+  areaPorDefecto: "reservas",
+};
+
+const POR_TENANT: Record<string, ConfigTickets> = { hospital: HOSPITAL, yaly: YALI, nawi: NAWI, tesoro: TESORO };
 
 /**
  * Quién recibe TODOS los casos que abre Claudia en el hospital.

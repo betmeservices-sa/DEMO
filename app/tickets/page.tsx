@@ -59,7 +59,7 @@ const TENANT = activeTenantId();
 // resto): el tablero habla de quien de verdad abre los casos.
 const AGENTE = activeTenant().ai.nombre ?? "Sofía";
 const CFG = configTickets(TENANT);
-// Los hoteles de muestra (NAWI) leen y escriben sus tickets en el navegador:
+// Los hoteles de muestra (NAWI, Tesoro Beach) leen y escriben sus tickets en el navegador:
 // es el mismo tablero, sin tocar la base de nadie.
 const MUESTRA = esHotelMuestra(TENANT);
 const AREAS = CFG.areas;

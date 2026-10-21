@@ -107,7 +107,7 @@ export default function DashboardPage() {
   if (activeTenantId() === "chalatenango") return <CajaDashboard />;
   // ShopUSA mira la línea de paquetes: etapas, urgencias y cargas.
   if (activeTenantId() === "shopusa") return <ShopusaDashboard />;
-  // Los hoteles de muestra (NAWI) llevan el tablero de Porta Stays con su libro
+  // Los hoteles de muestra (NAWI, Tesoro Beach) llevan el tablero de Porta Stays con su libro
   // de muestra: ocupación por zona, apartados y llegadas.
   if (esHotelMuestra(activeTenantId())) return <HotelMuestraDashboard />;
   // El hospital atiende pacientes reales desde su propio numero: su tablero

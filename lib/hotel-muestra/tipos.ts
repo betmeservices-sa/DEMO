@@ -98,9 +98,10 @@ export type GrupoPausa = "se_cayo";
 export interface PausaSemilla {
   huesped: string;
   grupo: GrupoPausa;
+  /** El monto sale de su tarifa, igual que en el resto del tablero. */
+  habitacionId: string;
   llegaEnDias: number;
   noches: number;
-  total: number;
   /** Hace cuántos días quedó así. 0 = hoy. */
   haceDias: number;
 }

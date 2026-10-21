@@ -160,7 +160,9 @@ export function armarVista(hotel: HotelMuestra, movimientos: Movimiento[], ahora
   const pausa: VistaHotel["pausa"] = { esperando_pago: [], se_cayo: [] };
   for (const p of hotel.pausa) {
     const desde = sumarDias(hoy, p.llegaEnDias);
-    pausa[p.grupo].push({ huesped: p.huesped, desde, hasta: sumarDias(desde, p.noches), total: p.total, haceDias: p.haceDias });
+    const ref = habitacionDe(hotel, p.habitacionId);
+    const total = ref ? totalEstadia(ref.hab, desde, p.noches) : 0;
+    pausa[p.grupo].push({ huesped: p.huesped, desde, hasta: sumarDias(desde, p.noches), total, haceDias: p.haceDias });
   }
 
   let tickets = ticketsDeMuestra(hotel, ahora);

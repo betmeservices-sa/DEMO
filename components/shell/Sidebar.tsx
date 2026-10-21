@@ -166,7 +166,7 @@ export function Sidebar({
   const veComercial = tenant === "comercial";
   // ShopUSA tambien: su panel es la linea de paquetes y los clientes.
   const veShopusa = tenant === "shopusa";
-  // Los hoteles de muestra (NAWI) llevan el menu de Porta Stays, en su orden.
+  // Los hoteles de muestra (NAWI, Tesoro Beach) llevan el menu de Porta Stays, en su orden.
   const veHotelMuestra = esHotelMuestra(tenant);
   const listaCerrada = vePizza
     ? MODULOS_PIZZAHUT

@@ -148,7 +148,7 @@ export const MODULOS_CAJA: readonly ModuleId[] = [
 // interruptores que mueven a todo el demo, y este panel no tiene numero propio.
 export const MODULOS_SHOPUSA: readonly ModuleId[] = ["dashboard", "bandeja", "paquetes", "clientes", "interno"];
 
-// El menu de los hoteles de muestra (NAWI), EN ESTE ORDEN: el de Porta Stays.
+// El menu de los hoteles de muestra (NAWI, Tesoro Beach), EN ESTE ORDEN: el de Porta Stays.
 // Sin redes, comentarios, promociones ni perfil del agente: esas pantallas leen
 // Meta y la base en vivo, y en un demo sin cuentas conectadas saldrian vacias.
 export const MODULOS_HOTEL_MUESTRA: readonly ModuleId[] = ["bandeja", "mis-chats", "tickets", "contactos", "interno", "dashboard", "ia"];
