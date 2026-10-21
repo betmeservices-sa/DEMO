@@ -1,16 +1,16 @@
 // Lo puro del motor: armar piezas, sus variantes por red, repartir un lote en
-// el calendario, el avance de un video y las cuentas de costo. Sin red ni
+// el calendario, el avance de un video y las cuentas de créditos. Sin red ni
 // navegador, para probarlo con vitest.
 
 import { BANCO, type Angulo } from "./banco";
 import { diaSemana, instanteDe, sumarDias } from "./fechas";
 import type {
+  DatosAnuncio,
   EstadoPieza,
   EtapaRender,
   Idioma,
   Marca,
   Pieza,
-  Plantilla,
   Red,
   RegistroUso,
   Servicio,
@@ -19,12 +19,21 @@ import type {
   Variante,
 } from "./tipos";
 
-export const CUANTAS: Record<Plantilla, number> = { pieza: 1, semana: 5, mes: 12, guion: 1 };
+/** Cuántas piezas se pueden pedir de cada formato. El video es más caro: lotes chicos. */
+export const CANTIDADES: Record<TipoPieza, number[]> = {
+  imagen: [1, 5, 12],
+  carrusel: [1, 5, 12],
+  video: [1, 2, 4],
+  anuncio: [1, 3, 6],
+  texto: [1, 5, 12],
+};
 
 const REDES_POR_TIPO: Record<TipoPieza, Red[]> = {
   video: ["instagram", "tiktok", "youtube", "facebook"],
   imagen: ["instagram", "facebook", "linkedin", "google"],
   carrusel: ["instagram", "facebook", "linkedin"],
+  // El anuncio corre en la cuenta publicitaria de Meta: sale en las dos.
+  anuncio: ["facebook", "instagram"],
   texto: ["facebook", "linkedin", "google"],
 };
 
@@ -34,8 +43,15 @@ export function redesPara(tipo: TipoPieza, marca: Marca, pedidas?: Red[]): Red[]
   return REDES_POR_TIPO[tipo].filter((r) => tiene.has(r) && (!pedidas || pedidas.length === 0 || pedidas.includes(r)));
 }
 
+/** Las redes posibles de un formato, para el selector de Crear. */
+export function redesDelFormato(tipo: TipoPieza): Red[] {
+  return REDES_POR_TIPO[tipo];
+}
+
 /** El texto de cada red: hashtags donde se usan, sin ellos donde estorban. */
-export function textoParaRed(red: Red, texto: string, hashtags: string[]): string {
+export function textoParaRed(red: Red, texto: string, hashtags: string[], tipo?: TipoPieza): string {
+  // El texto de un anuncio es el mismo en las dos redes y no lleva hashtags.
+  if (tipo === "anuncio") return texto;
   switch (red) {
     case "instagram":
     case "tiktok":
@@ -51,8 +67,14 @@ export function textoParaRed(red: Red, texto: string, hashtags: string[]): strin
   }
 }
 
-export function variantesDe(texto: string, hashtags: string[], redes: Red[], estado: EstadoPieza): Variante[] {
-  return redes.map((red) => ({ red, texto: textoParaRed(red, texto, hashtags), estado }));
+export function variantesDe(
+  texto: string,
+  hashtags: string[],
+  redes: Red[],
+  estado: EstadoPieza,
+  tipo?: TipoPieza,
+): Variante[] {
+  return redes.map((red) => ({ red, texto: textoParaRed(red, texto, hashtags, tipo), estado }));
 }
 
 /** El estado de la pieza sale de sus redes: una que falla la marca entera para revisar. */
@@ -69,11 +91,15 @@ function sinTildes(s: string): string {
     .toLowerCase();
 }
 
-/** Los ángulos de la marca, primero los que más se parecen a lo que pidió. */
-export function angulosPara(marcaId: string, prompt: string, soloVideo = false): Angulo[] {
-  const todos = (BANCO[marcaId] ?? []).filter((a) => !soloVideo || a.tipo === "video");
+/**
+ * Los ángulos de la marca que sirven para el formato, primero los que más se
+ * parecen a lo que pidió y los que nacieron en ese formato. El video necesita
+ * guion; cualquier otro ángulo puede salir como imagen, carrusel, texto o anuncio.
+ */
+export function angulosPara(marcaId: string, prompt: string, formato?: TipoPieza): Angulo[] {
+  const todos = (BANCO[marcaId] ?? []).filter((a) => (formato === "video" ? a.tipo === "video" : a.tipo !== "video" || !formato));
   const p = sinTildes(prompt);
-  const puntos = (a: Angulo) => a.claves.filter((c) => p.includes(sinTildes(c))).length;
+  const puntos = (a: Angulo) => a.claves.filter((c) => p.includes(sinTildes(c))).length * 2 + (a.tipo === formato ? 1 : 0);
   return todos
     .map((a, i) => ({ a, i, s: puntos(a) }))
     .sort((x, y) => y.s - x.s || x.i - y.i)
@@ -91,10 +117,36 @@ export function idiomaDe(i: number, es: number): Idioma {
   return despues > antes ? "es" : "en";
 }
 
+/** Las fotos de la marca que no son retratos, para completar un carrusel. */
+function fotosDeMarca(marcaId: string): string[] {
+  const vistas = new Set<string>();
+  for (const a of BANCO[marcaId] ?? []) for (const f of a.fotos) if (!f.includes("retrato-")) vistas.add(f);
+  return [...vistas];
+}
+
+function mediosPara(formato: TipoPieza, a: Angulo, marcaId: string, fotos?: string[]): string[] {
+  if (formato === "video") return [];
+  const base = fotos?.length ? fotos : a.fotos.filter((f) => !f.includes("retrato-"));
+  const propias = base.length ? base : fotosDeMarca(marcaId).slice(0, 1);
+  if (formato !== "carrusel") return propias.slice(0, 1);
+  const extra = fotosDeMarca(marcaId).filter((f) => !propias.includes(f));
+  return [...propias, ...extra].slice(0, 3);
+}
+
+/**
+ * El titular, la línea corta y el botón de un anuncio. La línea corta va
+ * debajo del titular, donde Meta muestra quién anuncia: la marca y su ciudad,
+ * no otra vez el texto principal.
+ */
+export function anuncioDe(titulo: string, marca: Marca, idioma: Idioma): DatosAnuncio {
+  return { titular: titulo, descripcion: `${marca.nombre} · ${marca.ciudad}`, cta: marca.cta[idioma] };
+}
+
 export interface PedidoGeneracion {
   marca: Marca;
   texto: string;
-  plantilla: Plantilla;
+  formato: TipoPieza;
+  cantidad: number;
   idiomas: Record<Idioma, number>;
   redes?: Red[];
   /** Fotos de la biblioteca sobre las que escribir. */
@@ -104,12 +156,11 @@ export interface PedidoGeneracion {
   ahoraIso: string;
 }
 
-/** Arma las piezas de un encargo. Sin ángulos que repitan idioma mientras alcancen. */
+/** Arma las piezas de un encargo, todas del formato pedido y sin repetir ángulo e idioma mientras alcancen. */
 export function generarPiezas(p: PedidoGeneracion): Pieza[] {
-  const soloVideo = p.plantilla === "guion";
-  const angulos = angulosPara(p.marca.id, p.texto, soloVideo);
+  const angulos = angulosPara(p.marca.id, p.texto, p.formato);
   if (!angulos.length) return [];
-  const n = CUANTAS[p.plantilla];
+  const n = Math.max(1, Math.min(p.cantidad, 12));
   const piezas: Pieza[] = [];
   for (let i = 0; i < n; i++) {
     const j = i % angulos.length;
@@ -120,9 +171,8 @@ export function generarPiezas(p: PedidoGeneracion): Pieza[] {
     let idioma = idiomaDe(j, p.idiomas.es);
     if (vuelta % 2 === 1) idioma = idioma === "es" ? "en" : "es";
     const t = a[idioma];
-    const tipo = a.tipo;
+    const tipo = p.formato;
     const redes = redesPara(tipo, p.marca, p.redes);
-    const medios = tipo === "video" ? [] : p.fotos?.length ? p.fotos.slice(0, tipo === "carrusel" ? 3 : 1) : a.fotos;
     piezas.push({
       id: `${p.encargoId}-${i + 1}`,
       marcaId: p.marca.id,
@@ -131,13 +181,14 @@ export function generarPiezas(p: PedidoGeneracion): Pieza[] {
       idioma,
       titulo: t.titulo,
       texto: t.texto,
-      hashtags: t.hashtags,
-      guion: t.guion,
+      hashtags: tipo === "anuncio" ? [] : t.hashtags,
+      guion: tipo === "video" ? t.guion : undefined,
       ideaImagen: a.idea,
-      medios,
-      duracion: a.duracion,
+      medios: mediosPara(tipo, a, p.marca.id, p.fotos),
+      duracion: tipo === "video" ? a.duracion : undefined,
+      anuncio: tipo === "anuncio" ? anuncioDe(t.titulo, p.marca, idioma) : undefined,
       redes,
-      variantes: variantesDe(t.texto, t.hashtags, redes, "por_aprobar"),
+      variantes: variantesDe(t.texto, t.hashtags, redes, "por_aprobar", tipo),
       estado: "por_aprobar",
       fase: tipo === "video" ? "guion" : undefined,
       creada: p.ahoraIso,
@@ -147,23 +198,25 @@ export function generarPiezas(p: PedidoGeneracion): Pieza[] {
   return piezas;
 }
 
-/** Otra versión de la misma pieza: el mismo ángulo en otro registro, o el siguiente ángulo. */
+/** Otra versión de la misma pieza, en el mismo formato: el siguiente ángulo que sirva. */
 export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso: string): Pieza {
-  const angulos = BANCO[marca.id] ?? [];
-  const mismos = angulos.filter((a) => a.tipo === pieza.tipo);
-  const actual = mismos.findIndex((a) => a[pieza.idioma].titulo === pieza.titulo);
-  const otro = mismos[(actual + 1) % Math.max(1, mismos.length)] ?? mismos[0];
-  const t = otro ? otro[pieza.idioma] : { titulo: pieza.titulo, texto: pieza.texto, hashtags: pieza.hashtags };
+  const sirven = angulosPara(marca.id, "", pieza.tipo);
+  const actual = sirven.findIndex((a) => a[pieza.idioma].titulo === pieza.titulo);
+  const otro = sirven[(actual + 1) % Math.max(1, sirven.length)] ?? sirven[0];
+  if (!otro) return pieza;
+  const t = otro[pieza.idioma];
+  const hashtags = pieza.tipo === "anuncio" ? [] : t.hashtags;
   return {
     ...pieza,
     titulo: t.titulo,
     texto: t.texto,
-    hashtags: t.hashtags,
-    guion: "guion" in t ? t.guion : pieza.guion,
-    ideaImagen: otro?.idea ?? pieza.ideaImagen,
-    medios: pieza.tipo === "video" ? pieza.medios : (otro?.fotos ?? pieza.medios),
-    duracion: otro?.duracion ?? pieza.duracion,
-    variantes: variantesDe(t.texto, t.hashtags, pieza.redes, "por_aprobar"),
+    hashtags,
+    guion: pieza.tipo === "video" ? t.guion : pieza.guion,
+    ideaImagen: otro.idea,
+    medios: pieza.tipo === "video" ? pieza.medios : mediosPara(pieza.tipo, otro, marca.id),
+    duracion: pieza.tipo === "video" ? otro.duracion : pieza.duracion,
+    anuncio: pieza.tipo === "anuncio" ? anuncioDe(t.titulo, marca, pieza.idioma) : pieza.anuncio,
+    variantes: variantesDe(t.texto, t.hashtags, pieza.redes, "por_aprobar", pieza.tipo),
     estado: "por_aprobar",
     historial: [...pieza.historial, { ts: ahoraIso, accion: "regenerada", actor: "Motor", nota: motivo || undefined }],
   };
@@ -222,8 +275,72 @@ export function avanceRender(t: TrabajoRender, ahora: number): { etapa: EtapaRen
   return { etapa: "listo", progreso: 100, total: 1 };
 }
 
-// Tarifas de la MUESTRA, para que el tablero de costos tenga forma. Antes de
-// ponerle precio a la reventa se reemplazan por lo que diga cada factura.
+// Lo que cuesta cada cosa en créditos. Es lo que ve la marca: el precio del
+// crédito se fija aparte, con lo que facturan los proveedores (costoUsd).
+export const CREDITOS = {
+  /** Escribir o reescribir una pieza. */
+  texto: 1,
+  /** Titular, texto y botón de un anuncio. */
+  textoAnuncio: 2,
+  /** Una imagen generada desde cero. */
+  imagen: 4,
+  /** Poner la marca (logo, colores, titular) sobre una foto, por lámina. */
+  grafico: 1,
+  /** La voz, por cada 100 caracteres del guion. */
+  vozPor100: 1,
+  /** El avatar, por minuto de video. */
+  avatarPorMinuto: 20,
+  /** Subtítulos, logo y música sobre el video. */
+  edicionVideo: 3,
+  publicacion: 0,
+};
+
+/** Créditos de armar un video con su guion: voz + avatar + edición. */
+export function creditosVideo(guion: string, duracionSeg: number): { voz: number; avatar: number; edicion: number; total: number } {
+  const voz = Math.max(1, Math.ceil(guion.length / 100)) * CREDITOS.vozPor100;
+  const avatar = Math.ceil((duracionSeg / 60) * CREDITOS.avatarPorMinuto);
+  const edicion = CREDITOS.edicionVideo;
+  return { voz, avatar, edicion, total: voz + avatar + edicion };
+}
+
+/** Lo que gasta generar una pieza del formato (sin el video, que se cobra al aprobar el guion). */
+export function creditosPieza(formato: TipoPieza, laminas = 1): number {
+  switch (formato) {
+    case "texto":
+      return CREDITOS.texto;
+    case "imagen":
+      return CREDITOS.texto + CREDITOS.grafico;
+    case "carrusel":
+      return CREDITOS.texto + CREDITOS.grafico * laminas;
+    case "anuncio":
+      return CREDITOS.textoAnuncio + CREDITOS.imagen;
+    case "video":
+      return CREDITOS.texto;
+  }
+}
+
+/**
+ * Lo que va a gastar un encargo, para mostrarlo antes de generar. En video se
+ * suma lo que costará armar cada uno si se aprueba el guion (30 s de promedio).
+ */
+export function estimarCreditos(formato: TipoPieza, cantidad: number): { ahora: number; alAprobar: number } {
+  const ahora = creditosPieza(formato, 3) * cantidad;
+  const alAprobar = formato === "video" ? creditosVideo("x".repeat(420), 30).total * cantidad : 0;
+  return { ahora, alAprobar };
+}
+
+export function creditosTotal(uso: RegistroUso[]): number {
+  return uso.reduce((s, u) => s + u.creditos, 0);
+}
+
+export function creditosPorServicio(uso: RegistroUso[]): Record<Servicio, number> {
+  const fuera: Record<Servicio, number> = { texto: 0, imagen: 0, voz: 0, avatar: 0, edicion: 0, publicacion: 0 };
+  for (const u of uso) fuera[u.servicio] += u.creditos;
+  return fuera;
+}
+
+// Lo que factura cada proveedor en la MUESTRA (interno). Sirve para ver el
+// margen del crédito; las pantallas solo muestran créditos.
 export const TARIFA = {
   textoPorPieza: 0.006,
   imagenPorGrafico: 0.04,
@@ -233,22 +350,44 @@ export const TARIFA = {
   edicionPorGrafico: 0.02,
 };
 
-export function costoTotal(uso: RegistroUso[]): number {
-  return Math.round(uso.reduce((s, u) => s + u.costoUsd, 0) * 100) / 100;
-}
-
-export function costoPorServicio(uso: RegistroUso[]): Record<Servicio, number> {
-  const fuera: Record<Servicio, number> = { texto: 0, imagen: 0, voz: 0, avatar: 0, edicion: 0, publicacion: 0 };
-  for (const u of uso) fuera[u.servicio] += u.costoUsd;
-  return fuera;
-}
-
-/** Costo por pieza de una marca: lo gastado entre las piezas que se generaron. */
-export function costoPorPieza(uso: RegistroUso[], piezas: number): number {
-  return piezas ? costoTotal(uso) / piezas : 0;
-}
-
 /** Ordena por hora: las de hoy arriba en el tablero. */
 export function porHora(a: Pieza, b: Pieza): number {
   return (a.programadaPara ? instanteDe(a.programadaPara) : Infinity) - (b.programadaPara ? instanteDe(b.programadaPara) : Infinity);
+}
+
+type UsoSinId = Omit<RegistroUso, "id">;
+
+/** Lo que se descuenta al generar una pieza, por servicio. */
+export function usoDeGeneracion(p: Pieza, fecha: string): UsoSinId[] {
+  const base = { marcaId: p.marcaId, fecha, piezaId: p.id };
+  const fuera: UsoSinId[] = [
+    {
+      ...base,
+      servicio: "texto",
+      proveedor: "Claude",
+      unidades: 1,
+      unidad: "pieza",
+      creditos: p.tipo === "anuncio" ? CREDITOS.textoAnuncio : CREDITOS.texto,
+      costoUsd: TARIFA.textoPorPieza,
+    },
+  ];
+  if (p.tipo === "anuncio") {
+    fuera.push({ ...base, servicio: "imagen", proveedor: "Ideogram", unidades: 1, unidad: "imagen", creditos: CREDITOS.imagen, costoUsd: TARIFA.imagenPorGrafico });
+  } else if (p.tipo === "imagen" || p.tipo === "carrusel") {
+    const n = Math.max(1, p.medios.length);
+    fuera.push({ ...base, servicio: "edicion", proveedor: "Creatomate", unidades: n, unidad: n === 1 ? "lámina" : "láminas", creditos: CREDITOS.grafico * n, costoUsd: TARIFA.edicionPorGrafico * n });
+  }
+  return fuera;
+}
+
+/** Lo que se descuenta al armar un video: voz, avatar y edición. */
+export function usoDeVideo(p: Pieza, minutos: number, fecha: string): UsoSinId[] {
+  const base = { marcaId: p.marcaId, fecha, piezaId: p.id };
+  const caracteres = p.guion?.length ?? 0;
+  const c = creditosVideo(p.guion ?? "", p.duracion ?? Math.round(minutos * 60));
+  return [
+    { ...base, servicio: "voz", proveedor: "ElevenLabs", unidades: caracteres, unidad: "caracteres", creditos: c.voz, costoUsd: (caracteres / 1000) * TARIFA.vozPorMilCaracteres },
+    { ...base, servicio: "avatar", proveedor: "HeyGen", unidades: minutos, unidad: "min", creditos: c.avatar, costoUsd: minutos * TARIFA.avatarPorMinuto },
+    { ...base, servicio: "edicion", proveedor: "Creatomate", unidades: 1, unidad: "video", creditos: c.edicion, costoUsd: TARIFA.edicionPorVideo },
+  ];
 }

@@ -16,11 +16,11 @@ export type Red = "instagram" | "facebook" | "tiktok" | "linkedin" | "google" | 
 
 export type Idioma = "es" | "en";
 
-export type TipoPieza = "texto" | "imagen" | "carrusel" | "video";
+/** El formato de la pieza: lo que se elige al crear. "anuncio" es la pieza para pauta (titular, texto y botón). */
+export type TipoPieza = "imagen" | "carrusel" | "video" | "anuncio" | "texto";
 
 export type EstadoPieza = "por_aprobar" | "aprobada" | "programada" | "publicada" | "fallida" | "rechazada";
 
-export type Plantilla = "pieza" | "semana" | "mes" | "guion";
 
 export type EstadoConexion = "conectada" | "vencida" | "sin_conectar";
 
@@ -66,8 +66,10 @@ export interface Marca {
   colores: string[];
   iniciales: string;
   plan: "Esencial" | "Crecimiento" | "Total";
-  /** Piezas al mes que incluye su plan. */
-  piezasPlan: number;
+  /** Créditos al mes que incluye su plan. Todo lo que el motor hace se paga en créditos. */
+  creditosPlan: number;
+  /** El botón de sus anuncios, en cada idioma. */
+  cta: Record<Idioma, string>;
   /** Subcuenta del CRM donde vive su planificador. */
   ubicacionId: string;
   redes: CuentaRed[];
@@ -95,6 +97,20 @@ export type AccionHistorial =
   | "publicada"
   | "fallo";
 
+export interface DatosAnuncio {
+  titular: string;
+  /** La línea corta debajo del titular. */
+  descripcion: string;
+  cta: string;
+}
+
+export interface DatosAnuncio {
+  titular: string;
+  /** La línea corta debajo del titular. */
+  descripcion: string;
+  cta: string;
+}
+
 export interface EventoPieza {
   ts: string;
   accion: AccionHistorial;
@@ -119,6 +135,8 @@ export interface Pieza {
   medios: string[];
   /** Segundos, solo video. */
   duracion?: number;
+  /** Solo anuncio. */
+  anuncio?: DatosAnuncio;
   redes: Red[];
   variantes: Variante[];
   estado: EstadoPieza;
@@ -137,7 +155,8 @@ export interface Encargo {
   id: string;
   marcaId: string;
   texto: string;
-  plantilla: Plantilla;
+  formato: TipoPieza;
+  cantidad: number;
   idiomas: Record<Idioma, number>;
   redes: Red[];
   creado: string;
@@ -185,6 +204,9 @@ export interface RegistroUso {
   proveedor: string;
   unidades: number;
   unidad: string;
+  /** Lo que se le descuenta a la marca. */
+  creditos: number;
+  /** Lo que factura el proveedor (interno, para fijar el precio del crédito). */
   costoUsd: number;
   fecha: string;
   piezaId?: string;

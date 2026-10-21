@@ -75,11 +75,11 @@ function Tarjeta({
   const esVideo = medio.tipo === "video";
   const esGrafico = medio.tipo === "generada";
   const recorte = esVideo ? "aspect-[9/16]" : esGrafico ? "aspect-[4/5]" : RECORTES[indice % RECORTES.length];
-  const color = marca?.colores[0] ?? "#ff7a1a";
+  const color = marca?.colores[0] ?? "#5bbcd6";
 
   return (
     <article
-      className={cn("group relative overflow-hidden rounded-[18px] bg-[#1d1814]", recorte)}
+      className={cn("group relative overflow-hidden rounded-[18px] bg-[#1a2843]", recorte)}
       onClick={onTocar}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -189,7 +189,7 @@ function Subir({ marcas, activa, avisar }: { marcas: Marca[]; activa: string; av
       onDrop={soltar}
       className={cn(
         "flex flex-wrap items-center gap-3 rounded-[20px] border border-dashed px-4 py-3 transition",
-        encima ? "border-[var(--es-naranja)] bg-[rgba(255,122,26,0.08)]" : "border-[var(--border-2)] bg-white/[0.02]",
+        encima ? "border-[var(--es-acento)] bg-[rgba(91,188,214,0.08)]" : "border-[var(--border-2)] bg-white/[0.02]",
       )}
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[var(--text-2)]">
@@ -264,11 +264,11 @@ export function BibliotecaEstudio() {
               aria-pressed={on}
               className={cn(
                 "inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition",
-                on ? "bg-[var(--text)] text-[#16120f]" : "es-vidrio text-[var(--text-2)] hover:text-[var(--text)]",
+                on ? "bg-[var(--text)] text-[#13203a]" : "es-vidrio text-[var(--text-2)] hover:text-[var(--text)]",
               )}
             >
               {f.texto}
-              <span className={cn("es-rotulo text-[14px]", on ? "text-[#16120f]/60" : "text-[var(--text-3)]")}>{cuenta(f.id)}</span>
+              <span className={cn("es-rotulo text-[14px]", on ? "text-[#13203a]/60" : "text-[var(--text-3)]")}>{cuenta(f.id)}</span>
             </button>
           );
         })}

@@ -1,17 +1,20 @@
 "use client";
 
 // Las marcas: el perfil que el motor lee antes de escribir (tono, servicios,
-// ofertas, palabras que no se usan, colores), las cuentas donde publica, el
-// avatar y la voz con su consentimiento, y cómo va el plan del mes.
+// ofertas, palabras que no se usan, colores, el botón de sus anuncios), las
+// cuentas donde publica, el avatar y la voz con su consentimiento, y cuántos
+// créditos de su plan del mes lleva usados.
 
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 import { AlertTriangle, Copy, Plus, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { actualizarMarca, conectarRed, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
-import { diaDe, fechaCorta, localSV } from "@/lib/estudio/fechas";
+import { fechaCorta } from "@/lib/estudio/fechas";
+import { creditosTotal } from "@/lib/estudio/generador";
 import type { Marca, Red } from "@/lib/estudio/tipos";
 import { Desplegable } from "@/components/ui/Desplegable";
-import { Boton, Cabecera, IconoRed, MarcaSello, NOMBRE_RED, Vidrio, useAviso } from "./ui";
+import { Boton, Cabecera, IconoRed, MarcaSello, NOMBRE_RED, Vidrio, creditos, useAviso } from "./ui";
+import { BarraPlan, usoDelMes } from "./CreditosEstudio";
 
 const REDES: Red[] = ["instagram", "facebook", "tiktok", "linkedin", "google", "youtube"];
 
@@ -26,7 +29,7 @@ const ZONAS = [
 // en el momento, porque no dependen de "Guardar".
 type Borrador = Pick<
   Marca,
-  "rubro" | "ciudad" | "zonaHoraria" | "idiomas" | "tono" | "servicios" | "ofertas" | "palabrasProhibidas" | "colores"
+  "rubro" | "ciudad" | "zonaHoraria" | "idiomas" | "tono" | "servicios" | "ofertas" | "palabrasProhibidas" | "colores" | "cta"
 >;
 
 function borradorDe(m: Marca): Borrador {
@@ -40,11 +43,12 @@ function borradorDe(m: Marca): Borrador {
     ofertas: [...m.ofertas],
     palabrasProhibidas: [...m.palabrasProhibidas],
     colores: [...m.colores],
+    cta: { ...m.cta },
   };
 }
 
 const campo =
-  "w-full rounded-[12px] border border-[var(--border)] bg-black/25 px-3 py-2 text-[13.5px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-3)] focus:border-[var(--es-naranja)]";
+  "w-full rounded-[12px] border border-[var(--border)] bg-black/25 px-3 py-2 text-[13.5px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-3)] focus:border-[var(--es-acento)]";
 
 function Etiqueta({ texto, children }: { texto: string; children: ReactNode }) {
   return (
@@ -122,7 +126,7 @@ function Chips({
   );
 }
 
-function TarjetaMarca({ marca, piezasMes, elegida, onElegir }: { marca: Marca; piezasMes: number; elegida: boolean; onElegir: () => void }) {
+function TarjetaMarca({ marca, usados, elegida, onElegir }: { marca: Marca; usados: number; elegida: boolean; onElegir: () => void }) {
   return (
     <button
       type="button"
@@ -130,13 +134,13 @@ function TarjetaMarca({ marca, piezasMes, elegida, onElegir }: { marca: Marca; p
       aria-pressed={elegida}
       className={cn(
         "es-vidrio group w-[250px] shrink-0 overflow-hidden rounded-[22px] text-left transition lg:w-full",
-        elegida ? "ring-2 ring-[var(--es-naranja)]" : "hover:-translate-y-0.5",
+        elegida ? "ring-2 ring-[var(--es-acento)]" : "hover:-translate-y-0.5",
       )}
     >
       <div className="relative h-[92px] overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={marca.portada} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-        <span className="absolute inset-0 bg-gradient-to-t from-[#17130f] via-[#17130f]/30 to-transparent" />
+        <span className="absolute inset-0 bg-gradient-to-t from-[#14223c] via-[#14223c]/30 to-transparent" />
         <MarcaSello marca={marca} size={34} className="absolute bottom-2 left-3" />
       </div>
       <div className="px-3.5 pb-3.5 pt-2">
@@ -146,9 +150,9 @@ function TarjetaMarca({ marca, piezasMes, elegida, onElegir }: { marca: Marca; p
         </p>
         <div className="mt-2.5 flex items-center justify-between text-[12px]">
           <span className="rounded-full bg-white/[0.07] px-2 py-0.5 font-semibold text-[var(--text-2)]">{marca.plan}</span>
-          <span className="es-rotulo text-[15px] font-semibold">
-            {piezasMes}
-            <span className="text-[var(--text-3)]">/{marca.piezasPlan}</span>
+          <span className="es-rotulo text-[15px] font-semibold" title="Créditos usados este mes">
+            {creditos(usados)}
+            <span className="text-[var(--text-3)]">/{creditos(marca.creditosPlan)}</span>
           </span>
         </div>
       </div>
@@ -232,13 +236,12 @@ function AvatarVoz({ marca }: { marca: Marca }) {
   );
 }
 
-function Perfil({ marca, piezasMes, avisar }: { marca: Marca; piezasMes: number; avisar: (t: string) => void }) {
+function Perfil({ marca, usados, avisar }: { marca: Marca; usados: number; avisar: (t: string) => void }) {
   // El borrador vive mientras se ve esta marca (el padre lo monta con key).
   // Conectar una cuenta cambia la marca pero no toca lo que se está editando.
   const [b, setB] = useState<Borrador>(() => borradorDe(marca));
   const cambiado = JSON.stringify(b) !== JSON.stringify(borradorDe(marca));
   const set = <K extends keyof Borrador>(k: K, v: Borrador[K]) => setB((x) => ({ ...x, [k]: v }));
-  const pct = Math.min(100, Math.round((piezasMes / marca.piezasPlan) * 100));
 
   function guardar() {
     actualizarMarca({ ...marca, ...b });
@@ -259,9 +262,9 @@ function Perfil({ marca, piezasMes, avisar }: { marca: Marca; piezasMes: number;
       <Vidrio className="relative overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={marca.portada} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <span className="absolute inset-0 bg-gradient-to-t from-[#18140f] via-[#18140f]/80 to-[#18140f]/10" />
+        <span className="absolute inset-0 bg-gradient-to-t from-[#162440] via-[#162440]/80 to-[#162440]/10" />
         <div className="relative flex flex-wrap items-end gap-x-4 gap-y-3 px-5 pb-5 pt-20">
-          <MarcaSello marca={{ ...marca, colores: b.colores }} size={56} className="relative ring-4 ring-[#18140f]" />
+          <MarcaSello marca={{ ...marca, colores: b.colores }} size={56} className="relative ring-4 ring-[#162440]" />
           <div className="min-w-0 flex-1">
             <p className="es-rotulo text-[26px] font-semibold leading-none sm:text-[30px]">{marca.nombre}</p>
             <button
@@ -324,7 +327,7 @@ function Perfil({ marca, piezasMes, avisar }: { marca: Marca; piezasMes: number;
                   const es = Number(e.target.value);
                   set("idiomas", { es, en: 100 - es });
                 }}
-                className="w-full accent-[var(--es-naranja)]"
+                className="w-full accent-[var(--es-acento)]"
               />
             </div>
           </div>
@@ -339,7 +342,7 @@ function Perfil({ marca, piezasMes, avisar }: { marca: Marca; piezasMes: number;
               {b.colores.map((c, i) => (
                 <label
                   key={i}
-                  className="relative h-10 w-10 cursor-pointer overflow-hidden rounded-[12px] ring-1 ring-white/15 focus-within:ring-2 focus-within:ring-[var(--es-naranja)]"
+                  className="relative h-10 w-10 cursor-pointer overflow-hidden rounded-[12px] ring-1 ring-white/15 focus-within:ring-2 focus-within:ring-[var(--es-acento)]"
                   style={{ background: c }}
                   title={c}
                 >
@@ -372,6 +375,23 @@ function Perfil({ marca, piezasMes, avisar }: { marca: Marca; piezasMes: number;
               <span className="mb-1.5 block text-[12px] font-medium text-[var(--text-3)]">Nunca escribir</span>
               <Chips valores={b.palabrasProhibidas} onCambio={(v) => set("palabrasProhibidas", v)} agregar="Agregar frase" rojo />
             </div>
+            <div>
+              <span className="mb-1.5 block text-[12px] font-medium text-[var(--text-3)]">Botón de sus anuncios</span>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {(["es", "en"] as const).map((idioma) => (
+                  <label key={idioma} className="flex items-center gap-2">
+                    <span className="w-6 shrink-0 text-[11px] font-semibold uppercase text-[var(--text-3)]">{idioma}</span>
+                    <input
+                      className={campo}
+                      value={b.cta[idioma]}
+                      maxLength={28}
+                      aria-label={`Botón de anuncios en ${idioma === "es" ? "español" : "inglés"}`}
+                      onChange={(e) => set("cta", { ...b.cta, [idioma]: e.target.value })}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         </Vidrio>
 
@@ -386,18 +406,16 @@ function Perfil({ marca, piezasMes, avisar }: { marca: Marca; piezasMes: number;
             <AvatarVoz marca={marca} />
           </Vidrio>
           <Vidrio className="p-4 lg:p-5">
-            <Cabecera titulo="Plan del mes" detalle={`${marca.plan}: ${marca.piezasPlan} piezas`} />
+            <Cabecera titulo="Créditos del mes" detalle={`Plan ${marca.plan}: ${creditos(marca.creditosPlan)} al mes`} />
             <p className="es-rotulo text-[40px] font-semibold leading-none">
-              {piezasMes}
-              <span className="text-[24px] text-[var(--text-3)]"> / {marca.piezasPlan}</span>
+              {creditos(usados)}
+              <span className="text-[24px] text-[var(--text-3)]"> / {creditos(marca.creditosPlan)}</span>
             </p>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.06]">
-              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: b.colores[0] }} />
-            </div>
+            <BarraPlan usados={usados} plan={marca.creditosPlan} className="mt-3" />
             <p className="mt-2 text-[12px] text-[var(--text-3)]">
-              {piezasMes >= marca.piezasPlan
-                ? "El plan del mes ya está completo."
-                : `Faltan ${marca.piezasPlan - piezasMes} para completar el mes.`}
+              {usados >= marca.creditosPlan
+                ? `Se pasó del plan por ${creditos(usados - marca.creditosPlan)} créditos.`
+                : `Le quedan ${creditos(marca.creditosPlan - usados)} créditos este mes.`}
             </p>
           </Vidrio>
         </div>
@@ -407,7 +425,7 @@ function Perfil({ marca, piezasMes, avisar }: { marca: Marca; piezasMes: number;
 }
 
 export function MarcasEstudio() {
-  const { marcas, piezas } = useEstudio();
+  const { marcas, uso } = useEstudio();
   const activa = useMarcaActiva();
   const [elegida, setElegida] = useState(activa !== "todas" ? activa : marcas[0]?.id);
   const [aviso, avisar] = useAviso();
@@ -417,14 +435,12 @@ export function MarcasEstudio() {
     if (activa !== "todas") setElegida(activa);
   }, [activa]);
 
-  const mes = diaDe(localSV()).slice(0, 7);
-  const piezasMes = useMemo(() => {
+  const usados = useMemo(() => {
+    const delMes = usoDelMes(uso);
     const n: Record<string, number> = {};
-    for (const p of piezas) {
-      if (p.programadaPara?.startsWith(mes) && p.estado !== "rechazada") n[p.marcaId] = (n[p.marcaId] ?? 0) + 1;
-    }
+    for (const m of marcas) n[m.id] = creditosTotal(delMes.filter((u) => u.marcaId === m.id));
     return n;
-  }, [piezas, mes]);
+  }, [uso, marcas]);
 
   const marca = marcas.find((m) => m.id === elegida) ?? marcas[0];
   if (!marca) return null;
@@ -433,10 +449,10 @@ export function MarcasEstudio() {
     <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
       <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
         {marcas.map((m) => (
-          <TarjetaMarca key={m.id} marca={m} piezasMes={piezasMes[m.id] ?? 0} elegida={m.id === marca.id} onElegir={() => setElegida(m.id)} />
+          <TarjetaMarca key={m.id} marca={m} usados={usados[m.id] ?? 0} elegida={m.id === marca.id} onElegir={() => setElegida(m.id)} />
         ))}
       </div>
-      <Perfil key={marca.id} marca={marca} piezasMes={piezasMes[marca.id] ?? 0} avisar={avisar} />
+      <Perfil key={marca.id} marca={marca} usados={usados[marca.id] ?? 0} avisar={avisar} />
       {aviso}
     </div>
   );

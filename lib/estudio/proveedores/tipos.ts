@@ -5,12 +5,13 @@
 // de HeyGen o de Synthesia, y el render de Creatomate o de Remotion. Cada
 // adaptador devuelve también lo que costó, que va a `usage_log`.
 
-import type { Idioma, Marca, Pieza, Plantilla, Red, RegistroUso } from "../tipos";
+import type { Idioma, Marca, Pieza, Red, RegistroUso, TipoPieza } from "../tipos";
 
 export interface PedidoTexto {
   marca: Marca;
   texto: string;
-  plantilla: Plantilla;
+  formato: TipoPieza;
+  cantidad: number;
   idiomas: Record<Idioma, number>;
   redes?: Red[];
   fotos?: string[];

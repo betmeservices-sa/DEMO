@@ -14,9 +14,10 @@
 
 import { useSyncExternalStore } from "react";
 import { diaDe, localSV, lunesDe } from "./fechas";
-import { TARIFA, avanceRender, estadoDeVariantes, variantesDe } from "./generador";
+import { avanceRender, estadoDeVariantes, usoDeVideo, variantesDe } from "./generador";
 import { semillaEstudio } from "./semilla";
 import type {
+  DatosAnuncio,
   Encargo,
   EstadoEstudio,
   EventoPieza,
@@ -180,7 +181,7 @@ export function aprobar(id: string, video?: { trabajoId: string; minutos: number
       return {
         ...e,
         trabajos: [trabajo, ...e.trabajos],
-        uso: [...usoDeVideo(p, trabajo), ...e.uso],
+        uso: [...usoDeVideo(p, trabajo.minutos, trabajo.iniciado).map((u) => ({ ...u, id: nuevoId("uso") })), ...e.uso],
         piezas: e.piezas.map((x) =>
           x.id === id ? { ...x, estado: "aprobada", historial: [...x.historial, evento("aprobada", "Guion")] } : x,
         ),
@@ -202,16 +203,6 @@ export function aprobar(id: string, video?: { trabajoId: string; minutos: number
   });
 }
 
-function usoDeVideo(p: Pieza, t: TrabajoRender): RegistroUso[] {
-  const fecha = t.iniciado;
-  const caracteres = p.guion?.length ?? 0;
-  return [
-    { id: nuevoId("uso"), marcaId: p.marcaId, servicio: "voz", proveedor: "ElevenLabs", unidades: caracteres, unidad: "caracteres", costoUsd: (caracteres / 1000) * TARIFA.vozPorMilCaracteres, fecha, piezaId: p.id },
-    { id: nuevoId("uso"), marcaId: p.marcaId, servicio: "avatar", proveedor: "HeyGen", unidades: t.minutos, unidad: "min", costoUsd: t.minutos * TARIFA.avatarPorMinuto, fecha, piezaId: p.id },
-    { id: nuevoId("uso"), marcaId: p.marcaId, servicio: "edicion", proveedor: "Creatomate", unidades: 1, unidad: "video", costoUsd: TARIFA.edicionPorVideo, fecha, piezaId: p.id },
-  ];
-}
-
 export function rechazar(id: string, nota: string) {
   conPieza(id, (p) => ({
     ...p,
@@ -222,11 +213,14 @@ export function rechazar(id: string, nota: string) {
   }));
 }
 
-export function editar(id: string, cambios: { texto?: string; hashtags?: string[]; guion?: string; titulo?: string }) {
+export function editar(
+  id: string,
+  cambios: { texto?: string; hashtags?: string[]; guion?: string; titulo?: string; anuncio?: DatosAnuncio },
+) {
   conPieza(id, (p) => {
     const texto = cambios.texto ?? p.texto;
     const hashtags = cambios.hashtags ?? p.hashtags;
-    const variantes = variantesDe(texto, hashtags, p.redes, p.estado).map((v) => ({
+    const variantes = variantesDe(texto, hashtags, p.redes, p.estado, p.tipo).map((v) => ({
       ...v,
       postId: p.variantes.find((x) => x.red === v.red)?.postId,
     }));

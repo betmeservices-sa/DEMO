@@ -94,7 +94,8 @@ export function CalendarioEstudio() {
   const bandeja = useMemo(
     () =>
       piezas
-        .filter((p) => p.estado === "aprobada" && !p.programadaPara && !(p.tipo === "video" && p.fase === "guion"))
+        // Los anuncios aprobados van a la campaña, no al calendario de publicaciones.
+        .filter((p) => p.estado === "aprobada" && !p.programadaPara && p.tipo !== "anuncio" && !(p.tipo === "video" && p.fase === "guion"))
         .sort((a, b) => a.marcaId.localeCompare(b.marcaId) || b.creada.localeCompare(a.creada)),
     [piezas],
   );
@@ -249,8 +250,8 @@ export function CalendarioEstudio() {
       </Vidrio>
 
       {piezaEnMano && (
-        <div className="flex items-center gap-3 rounded-full border border-[rgba(255,122,26,0.35)] bg-[rgba(255,122,26,0.1)] py-1.5 pl-4 pr-1.5 text-[13px]">
-          <Hand size={15} className="shrink-0 text-[var(--es-naranja)]" />
+        <div className="flex items-center gap-3 rounded-full border border-[rgba(91,188,214,0.35)] bg-[rgba(91,188,214,0.1)] py-1.5 pl-4 pr-1.5 text-[13px]">
+          <Hand size={15} className="shrink-0 text-[var(--es-acento)]" />
           <span className="min-w-0 flex-1 truncate">
             Toca un día para programar <span className="font-semibold">{piezaEnMano.titulo}</span>
           </span>
@@ -363,13 +364,13 @@ interface PropsVista {
  */
 function Mini({ p, marca, className }: { p: Pieza; marca?: Marca; className?: string }) {
   const foto = p.medios[0];
-  const color = marca?.colores[0] ?? "#ff7a1a";
+  const color = marca?.colores[0] ?? "#5bbcd6";
   if (!foto) {
     return (
       <span
         aria-hidden
         className={cn("block aspect-square", className)}
-        style={{ background: `linear-gradient(150deg, ${color}, color-mix(in srgb, ${color} 45%, #120e0b))` }}
+        style={{ background: `linear-gradient(150deg, ${color}, color-mix(in srgb, ${color} 45%, #0f1a30))` }}
       />
     );
   }
@@ -394,7 +395,7 @@ function Chip({ p, marca, arrastrable, abrir }: { p: Pieza; marca?: Marca; arras
         movible(p) && "cursor-grab active:cursor-grabbing",
         p.estado === "fallida" && "ring-1 ring-[var(--es-rojo)]",
       )}
-      style={{ background: `color-mix(in srgb, ${est.color} 11%, rgba(255,250,244,0.03))` }}
+      style={{ background: `color-mix(in srgb, ${est.color} 11%, rgba(225,238,255,0.03))` }}
     >
       <Mini p={p} marca={marca} className="w-7 shrink-0 rounded-[7px]" />
       <span className="es-rotulo text-[14px] font-semibold leading-none">{horaDe(p.programadaPara!)}</span>
@@ -437,16 +438,16 @@ function Mes({ cursor, verSemana, ...v }: PropsVista & { cursor: string; verSema
                 onClick={() => v.tocarDia(dia)}
                 className={cn(
                   "flex min-h-[124px] flex-col gap-1 rounded-[14px] p-1.5 transition",
-                  esHoy ? "bg-[rgba(255,122,26,0.09)] ring-1 ring-[rgba(255,122,26,0.35)]" : "es-hueco",
+                  esHoy ? "bg-[rgba(91,188,214,0.09)] ring-1 ring-[rgba(91,188,214,0.35)]" : "es-hueco",
                   !delMes && "opacity-45",
-                  v.sobre === clave && "ring-2 ring-[var(--es-naranja)]",
-                  v.enMano && !pasado && "cursor-copy hover:ring-1 hover:ring-[var(--es-naranja)]",
+                  v.sobre === clave && "ring-2 ring-[var(--es-acento)]",
+                  v.enMano && !pasado && "cursor-copy hover:ring-1 hover:ring-[var(--es-acento)]",
                 )}
               >
                 <span
                   className={cn(
                     "es-rotulo px-1 text-[18px] font-semibold leading-none",
-                    esHoy ? "text-[var(--es-naranja)]" : pasado ? "text-[var(--text-3)]" : "text-[var(--text)]",
+                    esHoy ? "text-[var(--es-acento)]" : pasado ? "text-[var(--text-3)]" : "text-[var(--text)]",
                   )}
                 >
                   {numeroDia(dia)}
@@ -480,7 +481,7 @@ function Mes({ cursor, verSemana, ...v }: PropsVista & { cursor: string; verSema
             <button
               type="button"
               onClick={() => v.tocarDia(dia)}
-              className={cn("mb-2 flex w-full items-baseline gap-2 text-left", dia === v.hoy && "text-[var(--es-naranja)]")}
+              className={cn("mb-2 flex w-full items-baseline gap-2 text-left", dia === v.hoy && "text-[var(--es-acento)]")}
             >
               <span className="es-rotulo text-[22px] font-semibold leading-none">{numeroDia(dia)}</span>
               <span className="text-[12.5px] capitalize text-[var(--text-3)]">{dia === v.hoy ? "hoy" : nombreDia(dia, true)}</span>
@@ -534,7 +535,7 @@ function Semana({ lunes, ...v }: PropsVista & { lunes: string }) {
           <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] gap-1.5 pb-2">
             <span />
             {dias.map((d) => (
-              <div key={d} className={cn("flex items-baseline justify-between px-1.5", d === v.hoy && "text-[var(--es-naranja)]")}>
+              <div key={d} className={cn("flex items-baseline justify-between px-1.5", d === v.hoy && "text-[var(--es-acento)]")}>
                 <span className="text-[12px] font-medium capitalize text-[inherit] opacity-80">{d === v.hoy ? "Hoy" : nombreDia(d)}</span>
                 <span className="es-rotulo text-[22px] font-semibold leading-none">{numeroDia(d)}</span>
               </div>
@@ -555,10 +556,10 @@ function Semana({ lunes, ...v }: PropsVista & { lunes: string }) {
                       onClick={() => v.tocarDia(d, h)}
                       className={cn(
                         "flex min-h-[44px] flex-col gap-1 rounded-[12px] p-1 transition",
-                        d === v.hoy ? "bg-[rgba(255,122,26,0.06)]" : "bg-[rgba(10,8,7,0.28)]",
+                        d === v.hoy ? "bg-[rgba(91,188,214,0.06)]" : "bg-[rgba(6,12,26,0.28)]",
                         pasado && "opacity-70",
-                        v.sobre === clave && "ring-2 ring-[var(--es-naranja)]",
-                        v.enMano && !pasado && "cursor-copy hover:ring-1 hover:ring-[var(--es-naranja)]",
+                        v.sobre === clave && "ring-2 ring-[var(--es-acento)]",
+                        v.enMano && !pasado && "cursor-copy hover:ring-1 hover:ring-[var(--es-acento)]",
                       )}
                     >
                       {lista.map((p) => {
@@ -657,7 +658,7 @@ function Bandeja({
                   data-bandeja={p.id}
                   className={cn(
                     "es-hueco flex cursor-grab items-center gap-2.5 rounded-[14px] p-1.5 pr-2 transition active:cursor-grabbing",
-                    tomada && "ring-2 ring-[var(--es-naranja)]",
+                    tomada && "ring-2 ring-[var(--es-acento)]",
                   )}
                 >
                   <button type="button" onClick={() => abrir(p.id)} className="w-12 shrink-0" aria-label={`Ver ${p.titulo}`}>
@@ -678,7 +679,7 @@ function Bandeja({
                     aria-label={tomada ? "Soltar" : "Elegir día"}
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition",
-                      tomada ? "bg-[var(--es-naranja)] text-[#1a0d03]" : "text-[var(--text-3)] hover:bg-white/[0.08] hover:text-[var(--text)]",
+                      tomada ? "bg-[var(--es-acento)] text-[#0b1830]" : "text-[var(--text-3)] hover:bg-white/[0.08] hover:text-[var(--text)]",
                     )}
                   >
                     <CalendarDays size={15} />
@@ -721,7 +722,7 @@ function Panel({ children, cerrar, titulo, ancho = "md" }: { children: React.Rea
           "es-vidrio fixed inset-y-2 right-2 z-[61] flex w-[calc(100vw-16px)] flex-col overflow-hidden rounded-[26px]",
           ancho === "md" ? "sm:w-[440px]" : "sm:w-[520px]",
         )}
-        style={{ background: "rgba(26,21,17,0.96)" }}
+        style={{ background: "rgba(18,30,54,0.96)" }}
       >
         <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-3.5">
           <h2 className="truncate text-[15px] font-semibold">{titulo}</h2>
@@ -1079,7 +1080,7 @@ function Repartir({
         )}
       </ul>
 
-      <div className="sticky bottom-0 -mx-5 mt-5 border-t border-[var(--border)] bg-[rgba(26,21,17,0.96)] px-5 pb-1 pt-3">
+      <div className="sticky bottom-0 -mx-5 mt-5 border-t border-[var(--border)] bg-[rgba(18,30,54,0.96)] px-5 pb-1 pt-3">
         <Boton variante="primario" className="h-10 w-full" disabled={ocupado || plan.length === 0} onClick={() => void confirmar()}>
           {ocupado ? "Programando" : `Programar ${plan.length}`}
         </Boton>

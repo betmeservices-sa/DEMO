@@ -15,11 +15,17 @@ import { ArrowUpRight, Check, Mic, Pause, Play, PenLine, ShieldAlert, ShieldChec
 import { cn } from "@/lib/cn";
 import { deMarca, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
 import { diaDe, fechaCorta, haceCuanto, horaCorta, localSV } from "@/lib/estudio/fechas";
-import { avanceRender } from "@/lib/estudio/generador";
+import { avanceRender, creditosVideo } from "@/lib/estudio/generador";
 import type { EtapaRender, Marca, Pieza, TrabajoRender } from "@/lib/estudio/tipos";
 import { Cabecera, EstadoPill, MarcaSello, RedesFila, Vidrio, useAhora } from "./ui";
 
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+/** Lo que se descontó (o se descontará) por armar el video de esta pieza. */
+function creditosDeVideo(p: Pieza | undefined, t?: TrabajoRender): number {
+  if (!p) return 0;
+  return creditosVideo(p.guion ?? "", p.duracion ?? Math.round((t?.minutos ?? 0.5) * 60)).total;
+}
 
 function fechaFirma(dia: string): string {
   const [, m, d] = dia.split("-").map(Number);
@@ -38,7 +44,7 @@ function Avatares({ marcas, videos, trabajos }: { marcas: Marca[]; videos: Pieza
           const a = m.avatar!;
           const faltaFirma = a.tipo === "clon" && !a.consentimiento;
           const suyos = trabajos.filter((t) => t.marcaId === m.id && localSV(Date.parse(t.iniciado)).startsWith(mes));
-          const minutos = suyos.reduce((s, t) => s + t.minutos, 0);
+          const gastados = suyos.reduce((s, t) => s + creditosDeVideo(videos.find((p) => p.id === t.piezaId), t), 0);
           const enCola = videos.filter((p) => p.marcaId === m.id && p.estado === "por_aprobar").length;
           return (
             <Vidrio key={m.id} className="flex gap-4 p-3" as="article">
@@ -75,8 +81,8 @@ function Avatares({ marcas, videos, trabajos }: { marcas: Marca[]; videos: Pieza
                     <dd className="es-rotulo text-[22px] font-semibold leading-tight">{suyos.length}</dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] text-[var(--text-3)]">Minutos</dt>
-                    <dd className="es-rotulo text-[22px] font-semibold leading-tight">{minutos.toFixed(1)}</dd>
+                    <dt className="text-[11px] text-[var(--text-3)]">Créditos</dt>
+                    <dd className="es-rotulo text-[22px] font-semibold leading-tight">{gastados}</dd>
                   </div>
                   <div>
                     <dt className="text-[11px] text-[var(--text-3)]">En revisión</dt>
@@ -85,7 +91,7 @@ function Avatares({ marcas, videos, trabajos }: { marcas: Marca[]; videos: Pieza
                 </dl>
                 <div className="mt-auto pt-3">
                   <Link
-                    href={`/estudio/crear?marca=${m.id}`}
+                    href={`/estudio/crear?marca=${m.id}&formato=video`}
                     className={cn(
                       "inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold",
                       faltaFirma ? "pointer-events-none border border-[var(--border)] text-[var(--text-3)]" : "es-primario",
@@ -143,7 +149,7 @@ function Linea({ trabajos, piezas, marcas }: { trabajos: TrabajoRender[]; piezas
                   </div>
                   <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[var(--text-3)]">
                     {m && <MarcaSello marca={m} size={14} />}
-                    {m?.avatar?.nombre}, {t.minutos.toFixed(2)} min facturables
+                    {m?.avatar?.nombre}, {creditosDeVideo(p, t)} créditos
                   </p>
                   <div className="mt-3 grid grid-cols-4 gap-1.5">
                     {ETAPAS.map((e, i) => {
@@ -198,7 +204,7 @@ function Guiones({ piezas, marcas }: { piezas: Pieza[]; marcas: Marca[] }) {
                 </span>
                 <Link
                   href={`/estudio/aprobacion?pieza=${p.id}`}
-                  className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--es-naranja)] hover:underline"
+                  className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--es-acento)] hover:underline"
                 >
                   Revisar
                   <ArrowUpRight size={14} />
@@ -269,7 +275,7 @@ function Reproductor({ pieza, marca }: { pieza: Pieza; marca?: Marca }) {
   const poster = pieza.medios[0] ?? marca?.avatar?.foto;
 
   return (
-    <div className="relative aspect-[9/16] overflow-hidden rounded-[18px] bg-[#1d1814]">
+    <div className="relative aspect-[9/16] overflow-hidden rounded-[18px] bg-[#1a2843]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {poster && <img src={poster} alt={pieza.titulo} className="absolute inset-0 h-full w-full object-cover" />}
       <span className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/70" />
@@ -333,12 +339,12 @@ function Terminados({ piezas, marcas, trabajos }: { piezas: Pieza[]; marcas: Mar
                     : t
                       ? `armado ${haceCuanto(t.iniciado)}`
                       : "sin fecha"}
-                  {t ? `, ${t.minutos.toFixed(2)} min` : ""}
+                  {t ? `, ${creditosDeVideo(p, t)} créditos` : ""}
                 </p>
                 {p.estado === "por_aprobar" && (
                   <Link
                     href={`/estudio/aprobacion?pieza=${p.id}`}
-                    className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--es-naranja)] hover:underline"
+                    className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--es-acento)] hover:underline"
                   >
                     Revisar el video
                     <ArrowUpRight size={14} />

@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { BANCO } from "@/lib/estudio/banco";
 import { diaSemana, horaEnZona, instanteDe, localSV, lunesDe, sumarDias } from "@/lib/estudio/fechas";
 import {
-  CUANTAS,
+  CANTIDADES,
   avanceRender,
+  creditosTotal,
+  creditosVideo,
+  estimarCreditos,
   generarPiezas,
   idiomaDe,
   redesPara,
@@ -43,26 +46,42 @@ describe("generar un encargo", () => {
     expect(idiomaDe(0, 30)).toBe("en");
   });
 
-  it("un mes son 12 piezas sin repetir ángulo e idioma", () => {
+  it("un lote sale todo en el formato pedido y sin repetir", () => {
     const piezas = generarPiezas({
       marca: marca("casanova"),
       texto: "Contenido de noviembre",
-      plantilla: "mes",
+      formato: "imagen",
+      cantidad: CANTIDADES.imagen[1],
       idiomas: { es: 60, en: 40 },
       encargoId: "enc-x",
       actor: "Mario G.",
       ahoraIso: new Date(AHORA).toISOString(),
     });
-    expect(piezas).toHaveLength(CUANTAS.mes);
-    expect(new Set(piezas.map((p) => `${p.titulo}`)).size).toBe(12);
-    expect(piezas.every((p) => p.estado === "por_aprobar")).toBe(true);
+    expect(piezas).toHaveLength(5);
+    expect(piezas.every((p) => p.tipo === "imagen" && p.medios.length === 1 && p.estado === "por_aprobar")).toBe(true);
+    expect(new Set(piezas.map((p) => p.titulo)).size).toBe(5);
+    expect(piezas.filter((p) => p.idioma === "es")).toHaveLength(3);
+  });
+
+  it("el carrusel lleva tres láminas y el anuncio su titular, su botón y Meta", () => {
+    const base = { marca: marca("solano"), texto: "oferta", idiomas: { es: 100, en: 0 }, encargoId: "e", actor: "Mario G.", ahoraIso: new Date(AHORA).toISOString() };
+    const [c] = generarPiezas({ ...base, formato: "carrusel", cantidad: 1 });
+    expect(c.medios).toHaveLength(3);
+    const [a] = generarPiezas({ ...base, formato: "anuncio", cantidad: 1 });
+    expect(a.tipo).toBe("anuncio");
+    expect(a.redes).toEqual(["facebook", "instagram"]);
+    expect(a.anuncio?.cta).toBe("Pide tu estimado");
+    expect(a.anuncio?.titular).toBe(a.titulo);
+    expect(a.hashtags).toEqual([]);
+    expect(a.variantes.every((v) => v.texto === a.texto)).toBe(true);
   });
 
   it("el guion de video sale en fase guion y sin medios", () => {
     const [p] = generarPiezas({
       marca: marca("solano"),
       texto: "video de rafael",
-      plantilla: "guion",
+      formato: "video",
+      cantidad: 1,
       idiomas: { es: 100, en: 0 },
       encargoId: "enc-v",
       actor: "Mario G.",
@@ -78,7 +97,8 @@ describe("generar un encargo", () => {
     const [p] = generarPiezas({
       marca: marca("keystone"),
       texto: "algo sobre financiamiento",
-      plantilla: "pieza",
+      formato: "texto",
+      cantidad: 1,
       idiomas: { es: 0, en: 100 },
       encargoId: "enc-f",
       actor: "Mario G.",
@@ -99,6 +119,28 @@ describe("generar un encargo", () => {
     expect(nueva.titulo).not.toBe(p.titulo);
     expect(nueva.estado).toBe("por_aprobar");
     expect(nueva.historial.at(-1)?.accion).toBe("regenerada");
+  });
+});
+
+describe("créditos", () => {
+  it("un video de 30 s cuesta voz, avatar y edición", () => {
+    const c = creditosVideo("x".repeat(300), 30);
+    expect(c).toEqual({ voz: 3, avatar: 10, edicion: 3, total: 16 });
+  });
+
+  it("el estimado de Crear separa lo de ahora y lo de aprobar el video", () => {
+    expect(estimarCreditos("imagen", 5)).toEqual({ ahora: 10, alAprobar: 0 });
+    expect(estimarCreditos("anuncio", 1)).toEqual({ ahora: 6, alAprobar: 0 });
+    expect(estimarCreditos("video", 2).alAprobar).toBeGreaterThan(0);
+  });
+
+  it("ninguna marca de la muestra pasa su plan del mes", () => {
+    const s = semillaEstudio(AHORA);
+    for (const m of s.marcas) {
+      const usado = creditosTotal(s.uso.filter((u) => u.marcaId === m.id && localSV(Date.parse(u.fecha)).startsWith("2026-10")));
+      expect(usado, m.id).toBeGreaterThan(0);
+      expect(usado, m.id).toBeLessThan(m.creditosPlan);
+    }
   });
 });
 

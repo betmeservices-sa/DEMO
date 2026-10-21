@@ -11,7 +11,8 @@ export async function POST(req: Request) {
   const cerrado = fueraDelPanel(req);
   if (cerrado) return cerrado;
   const p = await cuerpo<PedidoTexto>(req);
-  if (!p?.marca?.id || !p.texto?.trim() || !p.plantilla || !p.encargoId) return malPedido("Falta la marca o el encargo.");
+  if (!p?.marca?.id || !p.texto?.trim() || !p.formato || !p.encargoId) return malPedido("Falta la marca o el encargo.");
+  if (!Number.isInteger(p.cantidad) || p.cantidad < 1 || p.cantidad > 12) return malPedido("La cantidad va de 1 a 12.");
   const r = await proveedores().texto.generar(p);
   return NextResponse.json({ ok: true, ...r });
 }

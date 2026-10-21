@@ -4,7 +4,9 @@
 //
 // A la izquierda lo que espera revisión; a la derecha la pieza como se vería
 // en cada red, con su texto por red. Los videos pasan dos veces: primero el
-// guion (y al aprobarlo se arma el video) y después el video ya armado.
+// guion (y al aprobarlo se arma el video) y después el video ya armado. Los
+// anuncios no van al calendario: al aprobarse quedan listos para la campaña.
+// Lo que gasta créditos (regenerar, armar el video) dice cuánto en el botón.
 //
 // Atajos: A aprueba y R abre el rechazo, siempre que no se esté escribiendo.
 
@@ -20,6 +22,7 @@ import {
   Clock3,
   ImageIcon,
   Layers,
+  Megaphone,
   Mic,
   PenLine,
   Play,
@@ -33,8 +36,9 @@ import { cn } from "@/lib/cn";
 import { deMarca, editar, rechazar, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
 import { aprobarPieza, regenerar } from "@/lib/estudio/api";
 import { haceCuanto } from "@/lib/estudio/fechas";
+import { CREDITOS, creditosVideo } from "@/lib/estudio/generador";
 import type { AccionHistorial, Marca, Pieza, Red } from "@/lib/estudio/tipos";
-import { Boton, EstadoPill, IconoRed, MarcaSello, NOMBRE_RED, TIPO, Vidrio, useAviso } from "./ui";
+import { Boton, EstadoPill, IconoRed, MarcaSello, NOMBRE_RED, TIPO, Vidrio, creditosTexto, useAviso } from "./ui";
 import { VistaPrevia } from "./VistaPrevia";
 
 type Filtro = "todas" | "por_aprobar" | "guiones" | "rechazadas";
@@ -47,6 +51,17 @@ const FILTROS: { id: Filtro; texto: string }[] = [
 ];
 
 const esGuion = (p: Pieza) => p.tipo === "video" && p.fase === "guion";
+
+/** El formato como se lee en la cola: el video dice en qué paso va. */
+function formatoDe(p: Pieza): string {
+  if (p.tipo === "video") return esGuion(p) ? "Guion de video" : "Video armado";
+  return TIPO[p.tipo];
+}
+
+/** Lo que cuesta pedir otra versión. */
+function costoRegenerar(p: Pieza): number {
+  return p.tipo === "anuncio" ? CREDITOS.textoAnuncio : CREDITOS.texto;
+}
 
 function pasaFiltro(p: Pieza, f: Filtro): boolean {
   if (f === "por_aprobar") return p.estado === "por_aprobar";
@@ -93,11 +108,11 @@ function escribiendo(e: KeyboardEvent): boolean {
  */
 function MiniCola({ p, m }: { p: Pieza; m?: Marca }) {
   const foto = p.medios[0] ?? (p.tipo === "video" ? m?.avatar?.foto : undefined);
-  const color = m?.colores[0] ?? "#ff7a1a";
+  const color = m?.colores[0] ?? "#5bbcd6";
   return (
     <span
       className="relative block aspect-square overflow-hidden rounded-[10px]"
-      style={{ background: `linear-gradient(150deg, ${color}, color-mix(in srgb, ${color} 45%, #120e0b))` }}
+      style={{ background: `linear-gradient(150deg, ${color}, color-mix(in srgb, ${color} 45%, #0f1a30))` }}
     >
       {foto ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -108,6 +123,11 @@ function MiniCola({ p, m }: { p: Pieza; m?: Marca }) {
       {p.tipo === "video" && (
         <span className="absolute bottom-1 right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-black/65 text-white">
           {esGuion(p) ? <PenLine size={10} /> : <Play size={9} className="ml-px fill-white" />}
+        </span>
+      )}
+      {p.tipo === "anuncio" && (
+        <span className="absolute bottom-1 right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[var(--es-acento)] text-[#0b1830]">
+          <Megaphone size={10} />
         </span>
       )}
       {p.tipo === "carrusel" && p.medios.length > 1 && (
@@ -129,7 +149,7 @@ function ItemCola({ p, m, activa, onClick }: { p: Pieza; m?: Marca; activa: bool
         aria-current={activa ? "true" : undefined}
         className={cn(
           "flex w-full items-center gap-3 rounded-[16px] p-2 text-left transition",
-          activa ? "bg-[rgba(255,122,26,0.1)] ring-1 ring-[rgba(255,122,26,0.4)]" : "hover:bg-white/[0.04]",
+          activa ? "bg-[rgba(91,188,214,0.1)] ring-1 ring-[rgba(91,188,214,0.4)]" : "hover:bg-white/[0.04]",
         )}
       >
         <span className="w-[52px] shrink-0">
@@ -139,13 +159,14 @@ function ItemCola({ p, m, activa, onClick }: { p: Pieza; m?: Marca; activa: bool
           <span className={cn("block truncate text-[13px] font-semibold", p.estado === "rechazada" && "text-[var(--text-2)] line-through decoration-white/30")}>
             {p.titulo}
           </span>
-          <span className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-[var(--text-3)]">
+          <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11.5px] text-[var(--text-3)]">
             {m && <MarcaSello marca={m} size={14} />}
-            <span className="truncate">{esGuion(p) ? "Guion de video" : p.tipo === "video" ? "Video armado" : m?.nombre}</span>
+            <span className="truncate">{m?.nombre}</span>
           </span>
           <span className="mt-1 flex items-center gap-2 text-[11px] text-[var(--text-3)]">
+            <span className="shrink-0 font-semibold text-[var(--es-acento)]">{formatoDe(p)}</span>
             <span className="rounded-[5px] bg-white/[0.07] px-1 font-semibold uppercase text-[var(--text-2)]">{p.idioma}</span>
-            {haceCuanto(p.creada)}
+            <span className="truncate">{haceCuanto(p.creada)}</span>
             {p.estado !== "por_aprobar" && <EstadoPill estado={p.estado} className="ml-auto px-1.5 py-0 text-[10.5px]" />}
           </span>
         </span>
@@ -178,7 +199,7 @@ function Guion({ p, m, editando, borrador, setBorrador }: {
             onChange={(e) => setBorrador(e.target.value)}
             rows={8}
             aria-label="Guion"
-            className="w-full resize-y rounded-[14px] border border-[var(--border-2)] bg-black/30 p-3 text-[18px] leading-[1.55] text-[var(--text)] outline-none focus:border-[var(--es-naranja)]"
+            className="w-full resize-y rounded-[14px] border border-[var(--border-2)] bg-black/30 p-3 text-[18px] leading-[1.55] text-[var(--text)] outline-none focus:border-[var(--es-acento)]"
           />
         ) : (
           <p className="text-[19px] leading-[1.6] text-[var(--text)] [text-wrap:pretty]">{p.guion}</p>
@@ -230,6 +251,9 @@ function Detalle({
   const [texto, setTexto] = useState(p.texto);
   const [hashtags, setHashtags] = useState(p.hashtags.join(" "));
   const [guion, setGuion] = useState(p.guion ?? "");
+  const [titular, setTitular] = useState(p.anuncio?.titular ?? p.titulo);
+  const [descripcion, setDescripcion] = useState(p.anuncio?.descripcion ?? "");
+  const [cta, setCta] = useState(p.anuncio?.cta ?? m.cta[p.idioma]);
   const [motivo, setMotivo] = useState("");
   const [ocupado, setOcupado] = useState<null | "aprobar" | "regenerar">(null);
   const motivoRef = useRef<HTMLInputElement>(null);
@@ -241,8 +265,11 @@ function Detalle({
     setTexto(p.texto);
     setHashtags(p.hashtags.join(" "));
     setGuion(p.guion ?? "");
+    setTitular(p.anuncio?.titular ?? p.titulo);
+    setDescripcion(p.anuncio?.descripcion ?? "");
+    setCta(p.anuncio?.cta ?? m.cta[p.idioma]);
     setMotivo("");
-  }, [p.id, p.texto, p.hashtags, p.guion, p.redes]);
+  }, [p.id, p.texto, p.hashtags, p.guion, p.redes, p.anuncio, p.titulo, p.idioma, m.cta]);
 
   useEffect(() => {
     if (modo === "rechazar" || modo === "regenerar") motivoRef.current?.focus();
@@ -250,21 +277,29 @@ function Detalle({
 
   const puedeDecidir = p.estado === "por_aprobar";
   const guionPendiente = esGuion(p);
+  const esAnuncio = p.tipo === "anuncio";
   const prohibidas = prohibidasEn(p, m);
+  const costoVideo = guionPendiente ? creditosVideo(p.guion ?? "", p.duracion ?? 30).total : 0;
 
   const aprobarYa = useCallback(async () => {
     if (!puedeDecidir || ocupado) return;
     setOcupado("aprobar");
     try {
       await aprobarPieza(p, m);
-      avisar(guionPendiente ? "Guion aprobado. El video se está armando." : "Aprobada. Ya se puede programar.");
+      avisar(
+        guionPendiente
+          ? `Guion aprobado. El video se está armando (${creditosTexto(costoVideo)}).`
+          : esAnuncio
+            ? "Anuncio aprobado. Queda listo para la campaña."
+            : "Aprobada. Ya se puede programar.",
+      );
       siguiente(p);
     } catch (e) {
       avisar((e as Error).message, "error");
     } finally {
       setOcupado(null);
     }
-  }, [puedeDecidir, ocupado, p, m, avisar, guionPendiente, siguiente]);
+  }, [puedeDecidir, ocupado, p, m, avisar, guionPendiente, esAnuncio, costoVideo, siguiente]);
 
   async function regenerarYa() {
     setOcupado("regenerar");
@@ -289,6 +324,12 @@ function Detalle({
 
   function guardar() {
     if (guionPendiente) editar(p.id, { guion: guion.trim() });
+    else if (esAnuncio)
+      editar(p.id, {
+        texto: texto.trim(),
+        titulo: titular.trim() || p.titulo,
+        anuncio: { titular: titular.trim() || p.titulo, descripcion: descripcion.trim(), cta: cta.trim() || m.cta[p.idioma] },
+      });
     else
       editar(p.id, {
         texto: texto.trim(),
@@ -339,7 +380,10 @@ function Detalle({
             <h2 className="text-[19px] font-semibold leading-tight tracking-[-0.01em]">{p.titulo}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-[var(--text-2)]">
               <EstadoPill estado={p.estado} />
-              <span>{guionPendiente ? "Guion de video" : p.tipo === "video" ? "Video armado" : TIPO[p.tipo]}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(91,188,214,0.12)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--es-acento)]">
+                {esAnuncio && <Megaphone size={12} />}
+                {formatoDe(p)}
+              </span>
               <span className="rounded-[5px] bg-white/[0.07] px-1 font-semibold uppercase">{p.idioma}</span>
               <span className="flex items-center gap-1 text-[var(--text-3)]">
                 <Clock3 size={12} /> {haceCuanto(p.creada)}
@@ -362,7 +406,7 @@ function Detalle({
           {guionPendiente ? (
             <Guion p={p} m={m} editando={modo === "editar"} borrador={guion} setBorrador={setGuion} />
           ) : (
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
               <div>
                 <div role="tablist" aria-label="Red" className="mb-3 flex flex-wrap gap-1.5">
                   {p.redes.map((r) => (
@@ -416,21 +460,62 @@ function Detalle({
                         value={texto}
                         onChange={(e) => setTexto(e.target.value)}
                         rows={7}
-                        className="w-full resize-y rounded-[14px] border border-[var(--border-2)] bg-black/30 p-3 text-[14px] leading-[1.55] text-[var(--text)] outline-none focus:border-[var(--es-naranja)]"
+                        className="w-full resize-y rounded-[14px] border border-[var(--border-2)] bg-black/30 p-3 text-[14px] leading-[1.55] text-[var(--text)] outline-none focus:border-[var(--es-acento)]"
                       />
                     </label>
-                    <label className="block">
-                      <span className="mb-1.5 block text-[12px] text-[var(--text-3)]">Hashtags</span>
-                      <input
-                        value={hashtags}
-                        onChange={(e) => setHashtags(e.target.value)}
-                        className="w-full rounded-[12px] border border-[var(--border-2)] bg-black/30 px-3 py-2 text-[13.5px] text-[var(--text)] outline-none focus:border-[var(--es-naranja)]"
-                      />
-                    </label>
+                    {esAnuncio ? (
+                      <>
+                        <label className="block">
+                          <span className="mb-1.5 block text-[12px] text-[var(--text-3)]">Titular</span>
+                          <input
+                            value={titular}
+                            onChange={(e) => setTitular(e.target.value)}
+                            className="w-full rounded-[12px] border border-[var(--border-2)] bg-black/30 px-3 py-2 text-[13.5px] text-[var(--text)] outline-none focus:border-[var(--es-acento)]"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-[12px] text-[var(--text-3)]">Descripción</span>
+                          <input
+                            value={descripcion}
+                            onChange={(e) => setDescripcion(e.target.value)}
+                            className="w-full rounded-[12px] border border-[var(--border-2)] bg-black/30 px-3 py-2 text-[13.5px] text-[var(--text)] outline-none focus:border-[var(--es-acento)]"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-[12px] text-[var(--text-3)]">Botón</span>
+                          <input
+                            value={cta}
+                            onChange={(e) => setCta(e.target.value)}
+                            className="w-full rounded-[12px] border border-[var(--border-2)] bg-black/30 px-3 py-2 text-[13.5px] text-[var(--text)] outline-none focus:border-[var(--es-acento)]"
+                          />
+                        </label>
+                      </>
+                    ) : (
+                      <label className="block">
+                        <span className="mb-1.5 block text-[12px] text-[var(--text-3)]">Hashtags</span>
+                        <input
+                          value={hashtags}
+                          onChange={(e) => setHashtags(e.target.value)}
+                          className="w-full rounded-[12px] border border-[var(--border-2)] bg-black/30 px-3 py-2 text-[13.5px] text-[var(--text)] outline-none focus:border-[var(--es-acento)]"
+                        />
+                      </label>
+                    )}
                   </div>
                 ) : (
                   <div className="es-hueco rounded-[18px] p-4">
                     <p className="whitespace-pre-line text-[14.5px] leading-[1.6] text-[var(--text)]">{p.texto}</p>
+                    {esAnuncio && p.anuncio && (
+                      <dl className="mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 border-t border-[var(--border)] pt-3 text-[13px]">
+                        <dt className="text-[var(--text-3)]">Titular</dt>
+                        <dd className="font-semibold text-[var(--text)]">{p.anuncio.titular}</dd>
+                        <dt className="text-[var(--text-3)]">Descripción</dt>
+                        <dd className="text-[var(--text-2)]">{p.anuncio.descripcion || "Sin descripción"}</dd>
+                        <dt className="text-[var(--text-3)]">Botón</dt>
+                        <dd>
+                          <span className="rounded-[6px] bg-[var(--es-acento)] px-2 py-0.5 text-[12px] font-bold text-[#0b1830]">{p.anuncio.cta}</span>
+                        </dd>
+                      </dl>
+                    )}
                     {p.hashtags.length > 0 && (
                       <p className="mt-3 flex flex-wrap gap-1.5">
                         {p.hashtags.map((h) => (
@@ -463,7 +548,7 @@ function Detalle({
       {/* Acciones */}
       <Vidrio className="sticky bottom-24 z-10 p-3 lg:bottom-0">
         {/* Opaca: va fija encima del texto de la pieza y no se puede leer a través. */}
-        <span aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[24px] bg-[#1b1612]/95" />
+        <span aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[24px] bg-[#16233d]/95" />
         <AnimatePresence initial={false} mode="wait">
           {modo === "rechazar" || modo === "regenerar" ? (
             <motion.form
@@ -484,7 +569,7 @@ function Detalle({
                 onChange={(e) => setMotivo(e.target.value)}
                 onKeyDown={(e) => e.key === "Escape" && setModo(null)}
                 placeholder={modo === "rechazar" ? "Por qué no va (lo lee quien la generó)" : "Qué cambiar: más corto, otro ángulo, sin la oferta..."}
-                className="min-w-0 flex-1 rounded-full border border-[var(--border-2)] bg-black/30 px-4 py-2 text-[13.5px] text-[var(--text)] outline-none placeholder:text-[var(--text-3)] focus:border-[var(--es-naranja)]"
+                className="min-w-0 flex-1 rounded-full border border-[var(--border-2)] bg-black/30 px-4 py-2 text-[13.5px] text-[var(--text)] outline-none placeholder:text-[var(--text-3)] focus:border-[var(--es-acento)]"
               />
               <Boton type="button" variante="fantasma" onClick={() => setModo(null)}>
                 Cancelar
@@ -496,7 +581,7 @@ function Detalle({
               ) : (
                 <Boton type="submit" variante="primario" disabled={ocupado === "regenerar"}>
                   <RefreshCcw size={15} className={cn(ocupado === "regenerar" && "animate-spin")} />
-                  {ocupado === "regenerar" ? "Regenerando" : "Regenerar"}
+                  {ocupado === "regenerar" ? "Regenerando" : `Regenerar · ${creditosTexto(costoRegenerar(p))}`}
                 </Boton>
               )}
             </motion.form>
@@ -513,7 +598,10 @@ function Detalle({
             <motion.div key="decidir" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-wrap items-center gap-2">
               <Boton variante="primario" onClick={() => void aprobarYa()} disabled={ocupado === "aprobar"} className="px-5">
                 <Check size={16} strokeWidth={2.6} />
-                {ocupado === "aprobar" ? "Aprobando" : guionPendiente ? "Aprobar guion" : "Aprobar"}
+                {ocupado === "aprobar" ? "Aprobando" : guionPendiente ? "Aprobar guion" : esAnuncio ? "Aprobar anuncio" : "Aprobar"}
+                {guionPendiente && ocupado !== "aprobar" && (
+                  <span className="rounded-full bg-black/15 px-2 py-0.5 text-[11.5px] font-semibold">{creditosTexto(costoVideo)}</span>
+                )}
                 <kbd className="ml-1 hidden rounded-[5px] bg-black/15 px-1.5 text-[11px] font-bold sm:inline">A</kbd>
               </Boton>
               <Boton onClick={() => setModo("editar")}>
@@ -521,6 +609,7 @@ function Detalle({
               </Boton>
               <Boton onClick={() => setModo("regenerar")}>
                 <RefreshCcw size={15} /> Regenerar
+                <span className="text-[11.5px] font-medium text-[var(--text-3)]">{creditosTexto(costoRegenerar(p))}</span>
               </Boton>
               <Boton variante="peligro" onClick={() => setModo("rechazar")} className="sm:ml-auto">
                 <CircleSlash size={15} /> Rechazar
@@ -541,11 +630,13 @@ function Detalle({
               <p className="min-w-0 flex-1 text-[13px] text-[var(--text-2)]">
                 {p.estado === "aprobada" && p.tipo === "video" && p.fase === "guion"
                   ? "Guion aprobado. El video se está armando."
-                  : p.programadaPara
+                  : esAnuncio
+                    ? "Anuncio aprobado. Queda listo para la campaña."
+                    : p.programadaPara
                     ? "Ya está en el calendario."
                     : "Aprobada y lista para el calendario."}
               </p>
-              {!p.programadaPara && !(p.tipo === "video" && p.fase === "guion") && (
+              {!p.programadaPara && !esAnuncio && !(p.tipo === "video" && p.fase === "guion") && (
                 <Link href={`/estudio/calendario?pieza=${p.id}`} className="es-primario inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold">
                   <CalendarPlus size={15} /> Programar
                 </Link>
@@ -564,7 +655,7 @@ function Historial({ p }: { p: Pieza }) {
       {[...p.historial].reverse().map((h, i) => (
         <li key={`${h.ts}-${i}`} className="relative text-[12.5px]">
           <span
-            className="absolute -left-[21px] top-1 h-2 w-2 rounded-full ring-4 ring-[#17130f]"
+            className="absolute -left-[21px] top-1 h-2 w-2 rounded-full ring-4 ring-[#14223c]"
             style={{
               background:
                 h.accion === "aprobada" || h.accion === "publicada"

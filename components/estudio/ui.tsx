@@ -111,7 +111,7 @@ export function RedesFila({ redes, size = 18 }: { redes: Red[]; size?: number })
   return (
     <span className="inline-flex items-center -space-x-1">
       {redes.map((r) => (
-        <span key={r} className="rounded-full ring-2 ring-[#16120f]">
+        <span key={r} className="rounded-full ring-2 ring-[#13203a]">
           <IconoRed red={r} size={size} />
         </span>
       ))}
@@ -142,10 +142,11 @@ export function EstadoPill({ estado, className }: { estado: EstadoPieza; classNa
 }
 
 export const TIPO: Record<TipoPieza, string> = {
-  texto: "Texto",
   imagen: "Imagen",
   carrusel: "Carrusel",
   video: "Video",
+  anuncio: "Anuncio",
+  texto: "Texto",
 };
 
 /** El monograma de la marca en su color. */
@@ -192,13 +193,13 @@ export function Miniatura({
 }) {
   const aspecto = forma === "vertical" ? "aspect-[9/16]" : forma === "post" ? "aspect-[4/5]" : "aspect-square";
   const foto = pieza.medios[0];
-  const color = marca?.colores[0] ?? "#ff7a1a";
+  const color = marca?.colores[0] ?? "#5bbcd6";
 
   if (pieza.tipo === "video" && !foto) {
     return (
       <div
         className={cn("relative overflow-hidden rounded-[14px]", aspecto, className)}
-        style={{ background: `linear-gradient(160deg, color-mix(in srgb, ${color} 40%, #1b1612), #120e0b)` }}
+        style={{ background: `linear-gradient(160deg, color-mix(in srgb, ${color} 40%, #16233d), #0f1a30)` }}
       >
         {!sinTexto && <p className="absolute inset-x-3 top-3 line-clamp-6 text-[11px] leading-snug text-white/80">{pieza.guion}</p>}
         <span className="absolute bottom-2 left-2 rounded-full bg-black/45 px-2 py-0.5 text-[10.5px] font-semibold text-white/90">
@@ -212,7 +213,7 @@ export function Miniatura({
     return (
       <div
         className={cn("relative flex overflow-hidden rounded-[14px] p-3", aspecto, className)}
-        style={{ background: `linear-gradient(150deg, ${color}, color-mix(in srgb, ${color} 45%, #120e0b))` }}
+        style={{ background: `linear-gradient(150deg, ${color}, color-mix(in srgb, ${color} 45%, #0f1a30))` }}
       >
         {!sinTexto && (
           <p className="es-rotulo line-clamp-5 self-end text-[17px] font-semibold leading-[1.05] text-white">{pieza.titulo}</p>
@@ -222,7 +223,7 @@ export function Miniatura({
   }
 
   return (
-    <div className={cn("relative overflow-hidden rounded-[14px] bg-[#1d1814]", aspecto, className)}>
+    <div className={cn("relative overflow-hidden rounded-[14px] bg-[#1a2843]", aspecto, className)}>
       {foto && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={foto} alt={pieza.ideaImagen ?? pieza.titulo} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
@@ -240,6 +241,14 @@ export function Miniatura({
           </span>
           <span className="es-rotulo absolute bottom-1.5 right-2 text-[13px] font-semibold text-white">{duracionTexto(pieza.duracion)}</span>
         </>
+      )}
+      {pieza.tipo === "anuncio" && !sinTexto && (
+        <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-[#0b1830]/85 px-2 py-1.5 backdrop-blur">
+          <span className="min-w-0 truncate text-[10.5px] font-semibold text-white">{pieza.anuncio?.titular ?? pieza.titulo}</span>
+          <span className="shrink-0 rounded-[5px] bg-[var(--es-acento)] px-1.5 py-0.5 text-[9.5px] font-bold text-[#0b1830]">
+            {pieza.anuncio?.cta ?? "Ver más"}
+          </span>
+        </span>
       )}
       {pieza.tipo === "carrusel" && pieza.medios.length > 1 && (
         <span className="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-black/50 px-1.5 py-0.5 text-[10.5px] font-semibold text-white backdrop-blur">
@@ -261,8 +270,15 @@ export function useAhora(cadaMs = 1000): number {
   return ahora;
 }
 
-export function dinero(usd: number, decimales = 2): string {
-  return `$${usd.toLocaleString("en-US", { minimumFractionDigits: decimales, maximumFractionDigits: decimales })}`;
+/** "1,240" para cifras de créditos. */
+export function creditos(n: number): string {
+  return Math.round(n).toLocaleString("en-US");
+}
+
+/** "1 crédito", "16 créditos". */
+export function creditosTexto(n: number): string {
+  const r = Math.round(n);
+  return `${r.toLocaleString("en-US")} ${r === 1 ? "crédito" : "créditos"}`;
 }
 
 /** Un aviso corto que se va solo. */

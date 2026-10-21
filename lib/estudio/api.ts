@@ -4,7 +4,7 @@
 // guarda en el store; si el servidor no contesta, el error sube a la pantalla.
 
 import { agregarEncargo, aprobar, programar, reemplazar, registrarUso, ACTOR } from "./store";
-import type { Encargo, Idioma, Marca, Pieza, Plantilla, Red, RegistroUso } from "./tipos";
+import type { Encargo, Idioma, Marca, Pieza, Red, RegistroUso, TipoPieza } from "./tipos";
 
 type UsoSinId = Omit<RegistroUso, "id">;
 
@@ -26,7 +26,8 @@ function conIds(uso: UsoSinId[]): RegistroUso[] {
 export interface NuevoEncargo {
   marca: Marca;
   texto: string;
-  plantilla: Plantilla;
+  formato: TipoPieza;
+  cantidad: number;
   idiomas: Record<Idioma, number>;
   redes: Red[];
   fotos?: string[];
@@ -38,7 +39,8 @@ export async function generar(n: NuevoEncargo): Promise<Pieza[]> {
   const r = await post<{ piezas: Pieza[]; uso: UsoSinId[] }>("/api/estudio/generar", {
     marca: n.marca,
     texto: n.texto,
-    plantilla: n.plantilla,
+    formato: n.formato,
+    cantidad: n.cantidad,
     idiomas: n.idiomas,
     redes: n.redes,
     fotos: n.fotos,
@@ -49,7 +51,8 @@ export async function generar(n: NuevoEncargo): Promise<Pieza[]> {
     id: encargoId,
     marcaId: n.marca.id,
     texto: n.texto,
-    plantilla: n.plantilla,
+    formato: n.formato,
+    cantidad: n.cantidad,
     idiomas: n.idiomas,
     redes: n.redes,
     creado: new Date().toISOString(),

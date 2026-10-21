@@ -8,7 +8,7 @@
 
 import { BANCO, type Angulo } from "./banco";
 import { diaDe, instanteDe, localSV, lunesDe, sumarDias } from "./fechas";
-import { TARIFA, estadoDeVariantes, redesPara, variantesDe } from "./generador";
+import { anuncioDe, estadoDeVariantes, redesPara, usoDeGeneracion, usoDeVideo, variantesDe } from "./generador";
 import type {
   Encargo,
   EstadoEstudio,
@@ -18,6 +18,7 @@ import type {
   Medio,
   Pieza,
   RegistroUso,
+  TipoPieza,
   TrabajoRender,
 } from "./tipos";
 
@@ -38,7 +39,8 @@ export const MARCAS: Marca[] = [
     colores: ["#E4572E", "#1D3557", "#F1FAEE"],
     iniciales: "SP",
     plan: "Crecimiento",
-    piezasPlan: 30,
+    creditosPlan: 200,
+    cta: { es: "Pide tu estimado", en: "Get a free estimate" },
     ubicacionId: "loc_7Qm2SolanoPP",
     redes: [
       { red: "instagram", cuenta: "@solanopropainting", estado: "conectada" },
@@ -73,7 +75,8 @@ export const MARCAS: Marca[] = [
     colores: ["#2B4C7E", "#F2A541", "#E8EEF2"],
     iniciales: "KS",
     plan: "Total",
-    piezasPlan: 45,
+    creditosPlan: 350,
+    cta: { es: "Pide tu inspección", en: "Book an inspection" },
     ubicacionId: "loc_3Kx9Keystone",
     redes: [
       { red: "instagram", cuenta: "@keystoneshieldroofing", estado: "conectada" },
@@ -107,7 +110,8 @@ export const MARCAS: Marca[] = [
     colores: ["#2F5D50", "#C9A66B", "#F7F3EC"],
     iniciales: "CN",
     plan: "Crecimiento",
-    piezasPlan: 30,
+    creditosPlan: 200,
+    cta: { es: "Pide tu diseño 3D", en: "Get your 3D design" },
     ubicacionId: "loc_8Pd4CasaNova",
     redes: [
       { red: "instagram", cuenta: "@casanovakitchenbath", estado: "conectada" },
@@ -142,7 +146,8 @@ export const MARCAS: Marca[] = [
     colores: ["#1B2A4A", "#5BBCD6", "#F0A830"],
     iniciales: "BM",
     plan: "Total",
-    piezasPlan: 45,
+    creditosPlan: 350,
+    cta: { es: "Habla con nosotros", en: "Talk to us" },
     ubicacionId: "aStaZagxlnAITYYGtub2",
     redes: [
       { red: "linkedin", cuenta: "BetMe Services", estado: "conectada" },
@@ -170,6 +175,8 @@ interface Entrada {
   marca: string;
   angulo: string;
   idioma: Idioma;
+  /** Para sacar el ángulo en otro formato (un consejo como anuncio, por ejemplo). */
+  formato?: TipoPieza;
   /** Días desde el lunes de esta semana (negativo = semana pasada). */
   dia?: number;
   hora?: string;
@@ -205,6 +212,8 @@ const ENTRADAS: Entrada[] = [
   { marca: "solano", angulo: "solano-oferta", idioma: "en", dia: 7, hora: "07:00" },
   { marca: "solano", angulo: "solano-color", idioma: "es", dia: 9, hora: "10:30" },
   { marca: "solano", angulo: "solano-manos", idioma: "es", estado: "por_aprobar", encargo: "enc-solano-video", creadaHaceMin: 38 },
+  { marca: "solano", angulo: "solano-oferta", idioma: "es", formato: "anuncio", estado: "por_aprobar", encargo: "enc-solano-anuncios", creadaHaceMin: 15 },
+  { marca: "solano", angulo: "solano-pelado", idioma: "en", formato: "anuncio", estado: "por_aprobar", encargo: "enc-solano-anuncios", creadaHaceMin: 15 },
 
   // Keystone Shield Roofing
   { marca: "keystone", angulo: "keystone-metal", idioma: "en", dia: -5, hora: "08:00" },
@@ -216,8 +225,8 @@ const ENTRADAS: Entrada[] = [
   { marca: "keystone", angulo: "keystone-metal", idioma: "es", dia: 3, hora: "17:30" },
   { marca: "keystone", angulo: "keystone-financiamiento", idioma: "es", dia: 5, hora: "08:00" },
   { marca: "keystone", angulo: "keystone-aislante", idioma: "es", dia: 8, hora: "11:00" },
-  { marca: "keystone", angulo: "keystone-informe", idioma: "en", estado: "aprobada", encargo: "enc-keystone-semana", creadaHaceMin: 26 * 60 },
-  { marca: "keystone", angulo: "keystone-materiales", idioma: "es", estado: "por_aprobar", encargo: "enc-keystone-semana", creadaHaceMin: 26 * 60 },
+  { marca: "keystone", angulo: "keystone-informe", idioma: "en", estado: "aprobada", encargo: "enc-keystone-video", creadaHaceMin: 26 * 60 },
+  { marca: "keystone", angulo: "keystone-materiales", idioma: "es", estado: "por_aprobar", encargo: "enc-keystone-carrusel", creadaHaceMin: 26 * 60 },
 
   // Casa Nova Kitchen & Bath
   { marca: "casanova", angulo: "casanova-comedor", idioma: "es", dia: -6, hora: "16:00" },
@@ -227,10 +236,11 @@ const ENTRADAS: Entrada[] = [
   { marca: "casanova", angulo: "casanova-3d", idioma: "en", dia: 2, hora: "16:00" },
   { marca: "casanova", angulo: "casanova-comedor", idioma: "en", dia: 4, hora: "07:30" },
   { marca: "casanova", angulo: "casanova-cocina", idioma: "en", dia: 6, hora: "10:00" },
-  { marca: "casanova", angulo: "casanova-cuarzo", idioma: "en", estado: "por_aprobar", encargo: "enc-casanova-mes", creadaHaceMin: 125 },
-  { marca: "casanova", angulo: "casanova-bano", idioma: "en", estado: "por_aprobar", encargo: "enc-casanova-mes", creadaHaceMin: 125 },
-  { marca: "casanova", angulo: "casanova-3d", idioma: "es", estado: "por_aprobar", encargo: "enc-casanova-mes", creadaHaceMin: 125 },
-  { marca: "casanova", angulo: "casanova-tiempos", idioma: "es", estado: "aprobada", encargo: "enc-casanova-mes", creadaHaceMin: 125 },
+  { marca: "casanova", angulo: "casanova-cuarzo", idioma: "en", estado: "por_aprobar", encargo: "enc-casanova-imagenes", creadaHaceMin: 125 },
+  { marca: "casanova", angulo: "casanova-bano", idioma: "en", estado: "por_aprobar", encargo: "enc-casanova-carrusel", creadaHaceMin: 125 },
+  { marca: "casanova", angulo: "casanova-3d", idioma: "es", formato: "imagen", estado: "por_aprobar", encargo: "enc-casanova-imagenes", creadaHaceMin: 125 },
+  { marca: "casanova", angulo: "casanova-tiempos", idioma: "es", estado: "aprobada", encargo: "enc-casanova-video", creadaHaceMin: 123 },
+  { marca: "casanova", angulo: "casanova-cuarzo", idioma: "es", formato: "anuncio", estado: "aprobada", encargo: "enc-casanova-anuncio", creadaHaceMin: 122 },
 
   // BetMe Services
   { marca: "betme", angulo: "betme-contabilidad", idioma: "en", dia: -5, hora: "09:00" },
@@ -238,14 +248,15 @@ const ENTRADAS: Entrada[] = [
   { marca: "betme", angulo: "betme-delegar", idioma: "en", dia: 1, hora: "09:00" },
   { marca: "betme", angulo: "betme-agentes", idioma: "en", dia: 3, hora: "09:00" },
   { marca: "betme", angulo: "betme-legal", idioma: "en", dia: 5, hora: "09:00" },
-  { marca: "betme", angulo: "betme-prueba", idioma: "en", estado: "por_aprobar", encargo: "enc-betme-linkedin", creadaHaceMin: 3 * 24 * 60 },
-  { marca: "betme", angulo: "betme-asistente", idioma: "es", estado: "por_aprobar", encargo: "enc-betme-linkedin", creadaHaceMin: 3 * 24 * 60 },
+  { marca: "betme", angulo: "betme-prueba", idioma: "en", formato: "texto", estado: "por_aprobar", encargo: "enc-betme-linkedin", creadaHaceMin: 3 * 24 * 60 },
+  { marca: "betme", angulo: "betme-asistente", idioma: "es", formato: "texto", estado: "por_aprobar", encargo: "enc-betme-linkedin", creadaHaceMin: 3 * 24 * 60 },
   { marca: "betme", angulo: "betme-contabilidad", idioma: "es", estado: "aprobada", encargo: "enc-betme-linkedin", creadaHaceMin: 3 * 24 * 60 },
   { marca: "betme", angulo: "betme-agentes", idioma: "es", estado: "aprobada", encargo: "enc-betme-linkedin", creadaHaceMin: 3 * 24 * 60 },
   {
     marca: "betme",
     angulo: "betme-delegar",
     idioma: "es",
+    formato: "texto",
     estado: "rechazada",
     encargo: "enc-betme-linkedin",
     creadaHaceMin: 3 * 24 * 60,
@@ -283,7 +294,8 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
     const a = angulo(e.angulo);
     const t = a[e.idioma];
     const marca = marcaDe(e.marca);
-    const redes = redesPara(a.tipo, marca);
+    const tipo = e.formato ?? a.tipo;
+    const redes = redesPara(tipo, marca);
     const programadaPara = e.dia !== undefined && e.hora ? `${sumarDias(base, e.dia)}T${e.hora}` : undefined;
     const enPasado = programadaPara ? instanteDe(programadaPara) <= ahora : false;
     const estado: EstadoPieza = e.estado ?? (enPasado ? "publicada" : "programada");
@@ -293,11 +305,11 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
       ? Math.min(instanteDe(programadaPara) - 4 * DIA_MS, ahora - 6 * 3_600_000)
       : ahora - (e.creadaHaceMin ?? 60) * 60_000;
     const creada = new Date(creadaMs).toISOString();
-    const id = `pz-${e.angulo}-${e.idioma}`;
-    const esVideo = a.tipo === "video";
+    const id = `pz-${e.angulo}-${e.idioma}${tipo !== a.tipo ? `-${tipo}` : ""}`;
+    const esVideo = tipo === "video";
     // Los videos que ya salieron o que van en el calendario tienen el video armado.
     const videoListo = esVideo && (estado === "publicada" || estado === "programada");
-    const variantes = variantesDe(t.texto, t.hashtags, redes, estado === "rechazada" ? "rechazada" : estado).map((v) => {
+    const variantes = variantesDe(t.texto, t.hashtags, redes, estado === "rechazada" ? "rechazada" : estado, tipo).map((v) => {
       const conId = estado === "programada" || estado === "publicada" ? { ...v, postId: idPostDe(id, v.red) } : v;
       if (e.falla && v.red === e.falla.red) return { ...conId, estado: "fallida" as const, error: e.falla.error, postId: undefined };
       return conId;
@@ -327,15 +339,16 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
       id,
       marcaId: marca.id,
       encargoId: e.encargo,
-      tipo: a.tipo,
+      tipo,
       idioma: e.idioma,
       titulo: t.titulo,
       texto: t.texto,
-      hashtags: t.hashtags,
-      guion: t.guion,
+      hashtags: tipo === "anuncio" ? [] : t.hashtags,
+      guion: esVideo ? t.guion : undefined,
       ideaImagen: a.idea,
-      medios: esVideo ? (videoListo ? [a.fotos[0]] : []) : a.fotos,
-      duracion: a.duracion,
+      medios: esVideo ? (videoListo ? [a.fotos[0]] : []) : tipo === "carrusel" ? a.fotos : a.fotos.slice(0, 1),
+      duracion: esVideo ? a.duracion : undefined,
+      anuncio: tipo === "anuncio" ? anuncioDe(t.titulo, marca, e.idioma) : undefined,
       redes,
       variantes,
       estado: estadoDeVariantes(variantes, estado),
@@ -348,22 +361,23 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
 
   const encargos: Encargo[] = [
     {
-      id: "enc-casanova-mes",
-      marcaId: "casanova",
-      texto:
-        "Contenido de noviembre: la cocina de Doral, el baño antes y después, la oferta de cuarzo y el diseño 3D. Un video de Daniela sobre cuánto tarda una cocina.",
-      plantilla: "mes",
-      idiomas: { es: 60, en: 40 },
+      id: "enc-solano-anuncios",
+      marcaId: "solano",
+      texto: "Anuncios para la oferta de 10% en exteriores: uno en español con la oferta y uno en inglés sobre la pintura que se pela.",
+      formato: "anuncio",
+      cantidad: 2,
+      idiomas: { es: 50, en: 50 },
       redes: [],
-      creado: isoHace(ahora, 125),
+      creado: isoHace(ahora, 15),
       actor: APRUEBA,
-      piezas: piezas.filter((p) => p.encargoId === "enc-casanova-mes").map((p) => p.id),
+      piezas: piezas.filter((p) => p.encargoId === "enc-solano-anuncios").map((p) => p.id),
     },
     {
       id: "enc-solano-video",
       marcaId: "solano",
       texto: "Video corto de Rafael explicando cuántas manos de pintura lleva una pared, en español.",
-      plantilla: "guion",
+      formato: "video",
+      cantidad: 1,
       idiomas: { es: 100, en: 0 },
       redes: [],
       creado: isoHace(ahora, 38),
@@ -371,24 +385,86 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
       piezas: piezas.filter((p) => p.encargoId === "enc-solano-video").map((p) => p.id),
     },
     {
-      id: "enc-keystone-semana",
-      marcaId: "keystone",
-      texto: "Semana después de la tormenta: inspección gratis, cómo leer el informe y el financiamiento.",
-      plantilla: "semana",
-      idiomas: { es: 30, en: 70 },
+      id: "enc-casanova-imagenes",
+      marcaId: "casanova",
+      texto: "Imágenes de noviembre: la oferta de cuarzo y el diseño 3D antes de empezar.",
+      formato: "imagen",
+      cantidad: 2,
+      idiomas: { es: 60, en: 40 },
       redes: [],
-      creado: isoHace(ahora, 26 * 60),
+      creado: isoHace(ahora, 125),
       actor: APRUEBA,
-      piezas: piezas.filter((p) => p.encargoId === "enc-keystone-semana").map((p) => p.id),
+      piezas: piezas.filter((p) => p.encargoId === "enc-casanova-imagenes").map((p) => p.id),
+    },
+    {
+      id: "enc-casanova-carrusel",
+      marcaId: "casanova",
+      texto: "Carrusel del baño antes y después, en inglés.",
+      formato: "carrusel",
+      cantidad: 1,
+      idiomas: { es: 0, en: 100 },
+      redes: [],
+      creado: isoHace(ahora, 124),
+      actor: APRUEBA,
+      piezas: piezas.filter((p) => p.encargoId === "enc-casanova-carrusel").map((p) => p.id),
+    },
+    {
+      id: "enc-casanova-video",
+      marcaId: "casanova",
+      texto: "Video de Daniela sobre cuánto tarda una cocina completa.",
+      formato: "video",
+      cantidad: 1,
+      idiomas: { es: 100, en: 0 },
+      redes: [],
+      creado: isoHace(ahora, 123),
+      actor: APRUEBA,
+      piezas: piezas.filter((p) => p.encargoId === "enc-casanova-video").map((p) => p.id),
+    },
+    {
+      id: "enc-casanova-anuncio",
+      marcaId: "casanova",
+      texto: "Anuncio de la oferta de cuarzo para la campaña de noviembre.",
+      formato: "anuncio",
+      cantidad: 1,
+      idiomas: { es: 100, en: 0 },
+      redes: [],
+      creado: isoHace(ahora, 122),
+      actor: APRUEBA,
+      piezas: piezas.filter((p) => p.encargoId === "enc-casanova-anuncio").map((p) => p.id),
+    },
+    {
+      id: "enc-keystone-video",
+      marcaId: "keystone",
+      texto: "Video sin cara explicando cómo leer el informe de inspección.",
+      formato: "video",
+      cantidad: 1,
+      idiomas: { es: 0, en: 100 },
+      redes: [],
+      creado: isoHace(ahora, 1560),
+      actor: APRUEBA,
+      piezas: piezas.filter((p) => p.encargoId === "enc-keystone-video").map((p) => p.id),
+    },
+    {
+      id: "enc-keystone-carrusel",
+      marcaId: "keystone",
+      texto: "Carrusel comparando teja, shingle y metal, en español.",
+      formato: "carrusel",
+      cantidad: 1,
+      idiomas: { es: 100, en: 0 },
+      redes: [],
+      creado: isoHace(ahora, 1555),
+      actor: APRUEBA,
+      piezas: piezas.filter((p) => p.encargoId === "enc-keystone-carrusel").map((p) => p.id),
     },
     {
       id: "enc-betme-linkedin",
       marcaId: "betme",
-      texto: "Posts para LinkedIn e Instagram sobre asistentes virtuales, contabilidad y la semana de prueba.",
-      plantilla: "semana",
+      texto: "Posts de texto para LinkedIn sobre asistentes virtuales, contabilidad, agentes de IA y la semana de prueba.",
+      formato: "texto",
+      cantidad: 5,
       idiomas: { es: 20, en: 80 },
       redes: ["linkedin", "instagram"],
-      creado: isoHace(ahora, 3 * 24 * 60),
+      creado: isoHace(ahora, 4320),
       actor: APRUEBA,
       piezas: piezas.filter((p) => p.encargoId === "enc-betme-linkedin").map((p) => p.id),
     },
@@ -489,24 +565,35 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
   const uso: RegistroUso[] = [];
   let n = 0;
   const reg = (r: Omit<RegistroUso, "id">) => uso.push({ ...r, id: `uso-${++n}`, costoUsd: Math.round(r.costoUsd * 10000) / 10000 });
-  for (const p of piezas) {
-    reg({ marcaId: p.marcaId, servicio: "texto", proveedor: "Claude", unidades: 1, unidad: "pieza", costoUsd: TARIFA.textoPorPieza, fecha: p.creada, piezaId: p.id });
-    if (p.tipo === "imagen" || p.tipo === "carrusel") {
-      reg({ marcaId: p.marcaId, servicio: "edicion", proveedor: "Creatomate", unidades: p.medios.length, unidad: "gráfico", costoUsd: TARIFA.edicionPorGrafico * p.medios.length, fecha: p.creada, piezaId: p.id });
-    }
-    if (p.estado !== "por_aprobar" && p.estado !== "rechazada" && p.tipo !== "video") {
-      reg({ marcaId: p.marcaId, servicio: "publicacion", proveedor: "Planificador", unidades: p.redes.length, unidad: "post", costoUsd: 0, fecha: p.creada, piezaId: p.id });
-    }
-  }
+  for (const p of piezas) for (const r of usoDeGeneracion(p, p.creada)) reg(r);
   for (const m of medios.filter((x) => x.tipo === "generada")) {
-    reg({ marcaId: m.marcaId, servicio: "imagen", proveedor: "Ideogram", unidades: 1, unidad: "imagen", costoUsd: TARIFA.imagenPorGrafico, fecha: m.fecha });
+    reg({ marcaId: m.marcaId, servicio: "imagen", proveedor: "Ideogram", unidades: 1, unidad: "imagen", creditos: 4, costoUsd: 0.04, fecha: m.fecha });
   }
   for (const t of trabajos) {
     const p = piezas.find((x) => x.id === t.piezaId)!;
-    const caracteres = p.guion?.length ?? 0;
-    reg({ marcaId: t.marcaId, servicio: "voz", proveedor: "ElevenLabs", unidades: caracteres, unidad: "caracteres", costoUsd: (caracteres / 1000) * TARIFA.vozPorMilCaracteres, fecha: t.iniciado, piezaId: p.id });
-    reg({ marcaId: t.marcaId, servicio: "avatar", proveedor: "HeyGen", unidades: t.minutos, unidad: "min", costoUsd: t.minutos * TARIFA.avatarPorMinuto, fecha: t.iniciado, piezaId: p.id });
-    reg({ marcaId: t.marcaId, servicio: "edicion", proveedor: "Creatomate", unidades: 1, unidad: "video", costoUsd: TARIFA.edicionPorVideo, fecha: t.iniciado, piezaId: p.id });
+    for (const r of usoDeVideo(p, t.minutos, t.iniciado)) reg(r);
+  }
+
+  // Lo que cada marca gastó en el mes antes de la semana de la muestra: piezas
+  // que ya no salen en el calendario pero sí se descontaron de su plan.
+  const inicioMes = `${hoy.slice(0, 8)}01`;
+  const PREVIO: Record<string, number> = { solano: 1, keystone: 2, casanova: 1, betme: 1 };
+  for (const marca of MARCAS) {
+    for (let d = inicioMes; d < base; d = sumarDias(d, 1)) {
+      const k = Number(d.slice(8, 10));
+      const fecha = new Date(instanteDe(`${d}T09:00`)).toISOString();
+      if ((k + marca.iniciales.charCodeAt(0)) % 2 === 0) {
+        for (let v = 0; v < PREVIO[marca.id]; v++) {
+          reg({ marcaId: marca.id, servicio: "texto", proveedor: "Claude", unidades: 1, unidad: "pieza", creditos: 1, costoUsd: 0.006, fecha });
+          reg({ marcaId: marca.id, servicio: "edicion", proveedor: "Creatomate", unidades: 2, unidad: "láminas", creditos: 2, costoUsd: 0.04, fecha });
+        }
+      }
+      if ((k + marca.iniciales.charCodeAt(1)) % 6 === 0) {
+        reg({ marcaId: marca.id, servicio: "voz", proveedor: "ElevenLabs", unidades: 380, unidad: "caracteres", creditos: 4, costoUsd: 0.068, fecha });
+        reg({ marcaId: marca.id, servicio: "avatar", proveedor: "HeyGen", unidades: 0.5, unidad: "min", creditos: 10, costoUsd: 0.5, fecha });
+        reg({ marcaId: marca.id, servicio: "edicion", proveedor: "Creatomate", unidades: 1, unidad: "video", creditos: 3, costoUsd: 0.1, fecha });
+      }
+    }
   }
 
   return { base, marcas: MARCAS, piezas, encargos, medios, trabajos, uso };

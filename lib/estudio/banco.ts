@@ -149,6 +149,28 @@ export const BANCO: Record<string, Angulo[]> = {
         hashtags: ["#ColorTips", "#InteriorPainting", "#Miami"],
       },
     },
+    {
+      id: "solano-tiempo",
+      tipo: "video",
+      claves: ["video","tarda","días","tiempo"],
+      idea: "Rafael frente a una casa recién pintada",
+      fotos: [F("retrato-rafael")],
+      duracion: 34,
+      es: {
+        titulo: "Rafael: cuánto tarda pintar una casa",
+        texto: "Si alguien te promete un día, pregúntale qué se está saltando.",
+        hashtags: ["#PinturaMiami","#Reels"],
+        guion:
+          "¿Cuánto tarda pintar una casa por fuera? Una casa de una planta, entre tres y cuatro días. El primer día lavamos a presión y dejamos secar. El segundo reparamos grietas y sellamos. Los últimos dos van las manos de pintura. Si alguien te promete un día, pregúntale qué se está saltando.",
+      },
+      en: {
+        titulo: "Rafael: how long a paint job takes",
+        texto: "If someone promises one day, ask what they are skipping.",
+        hashtags: ["#MiamiPainters","#Reels"],
+        guion:
+          "How long does it take to paint a house outside? A one-story home, three to four days. Day one we pressure wash and let it dry. Day two we fix cracks and seal. The last two are the coats of paint. If someone promises one day, ask what they are skipping.",
+      },
+    },
   ],
   keystone: [
     {
@@ -265,6 +287,28 @@ export const BANCO: Record<string, Angulo[]> = {
         texto:
           "Before the new roof goes on, we check the decking and the insulation so your attic stays cooler.",
         hashtags: ["#FloridaRoofing", "#Insulation"],
+      },
+    },
+    {
+      id: "keystone-senales",
+      tipo: "video",
+      claves: ["video","señales","revisión","signs"],
+      idea: "Tomas de canaletas, tejas y techo interior, voz en off",
+      fotos: [F("techo-trabajo")],
+      duracion: 31,
+      es: {
+        titulo: "3 señales de que tu techo pide revisión",
+        texto: "Una mancha chica en el techo de adentro ya es una señal.",
+        hashtags: ["#TechosFlorida","#Inspeccion"],
+        guion:
+          "Tres señales de que tu techo necesita revisión. Una: gránulos en las canaletas. Dos: tejas que se doblan en las orillas. Tres: una mancha en el techo después de llover, aunque sea chica. ¿Ves alguna? La inspección no te cuesta nada y te dice si puede esperar.",
+      },
+      en: {
+        titulo: "3 signs your roof needs a look",
+        texto: "Even a small ceiling stain is a sign.",
+        hashtags: ["#FloridaRoofing","#RoofInspection"],
+        guion:
+          "Three signs your roof needs a look. One: granules in your gutters. Two: shingles curling at the edges. Three: a ceiling stain after rain, even a small one. Spot one of these? An inspection costs you nothing and tells you if it can wait.",
       },
     },
   ],
@@ -385,6 +429,28 @@ export const BANCO: Record<string, Angulo[]> = {
         hashtags: ["#HomeRemodel", "#Doral"],
       },
     },
+    {
+      id: "casanova-error",
+      tipo: "video",
+      claves: ["video","error","plomería","caro"],
+      idea: "Daniela junto al fregadero de una cocina terminada",
+      fotos: [F("retrato-daniela")],
+      duracion: 28,
+      es: {
+        titulo: "Daniela: el error más caro en una cocina",
+        texto: "No es el material. Es mover la plomería sin planearlo.",
+        hashtags: ["#RemodelacionDeCocinas","#Reels"],
+        guion:
+          "El error más caro al remodelar una cocina no es el material: es mover la plomería sin planearlo. Cambiar el fregadero de lugar puede sumar dos semanas. Por eso, antes de elegir colores, definimos dónde va cada cosa.",
+      },
+      en: {
+        titulo: "Daniela: the most expensive kitchen mistake",
+        texto: "It is not the material. It is moving plumbing without a plan.",
+        hashtags: ["#KitchenRemodel","#Reels"],
+        guion:
+          "The most expensive kitchen remodel mistake is not the material, it is moving the plumbing without a plan. Moving the sink can add two weeks. That is why we decide where everything goes before we pick a single color.",
+      },
+    },
   ],
   betme: [
     {
@@ -500,6 +566,28 @@ export const BANCO: Record<string, Angulo[]> = {
         texto:
           "A missed call is a missed job. Our AI agents answer, qualify the lead and send it to your CRM, day or night.",
         hashtags: ["#AIAgents", "#Sales"],
+      },
+    },
+    {
+      id: "betme-dia",
+      tipo: "video",
+      claves: ["video","día","rutina","day"],
+      idea: "Tomas de una persona del equipo trabajando, voz en off",
+      fotos: [F("equipo-remoto")],
+      duracion: 30,
+      es: {
+        titulo: "Un día con tu asistente remoto",
+        texto: "Empiezas mañana con el escritorio limpio.",
+        hashtags: ["#AsistenteVirtual","#EquipoRemoto"],
+        guion:
+          "Así es un día con un asistente remoto. En la mañana, la bandeja limpia y las citas de hoy confirmadas. Al mediodía, facturas cobradas y datos al día. En la tarde, pedidos de reseña a los clientes de ayer. Empiezas mañana con el escritorio limpio.",
+      },
+      en: {
+        titulo: "A day with your remote assistant",
+        texto: "You start tomorrow with a clean desk.",
+        hashtags: ["#VirtualAssistant","#RemoteTeam"],
+        guion:
+          "Here is a day with a remote assistant. Morning: inbox cleared and today’s appointments confirmed. Midday: invoices followed up and data entered. Afternoon: review requests sent to yesterday’s customers. You start tomorrow with a clean desk.",
       },
     },
   ],

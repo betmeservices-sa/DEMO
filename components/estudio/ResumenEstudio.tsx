@@ -11,8 +11,8 @@ import { cn } from "@/lib/cn";
 import { conectarRed, deMarca, reintentar, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
 import { aprobarPieza } from "@/lib/estudio/api";
 import { diaDe, fechaCorta, horaDe, localSV, lunesDe, nombreDia, numeroDia, sumarDias } from "@/lib/estudio/fechas";
-import { avanceRender, costoPorServicio, costoTotal, porHora } from "@/lib/estudio/generador";
-import type { EtapaRender, Marca, Pieza, Red, Servicio } from "@/lib/estudio/tipos";
+import { avanceRender, creditosPorServicio, creditosTotal, porHora } from "@/lib/estudio/generador";
+import type { EtapaRender, Marca, Pieza, Red, RegistroUso, Servicio } from "@/lib/estudio/tipos";
 import {
   Boton,
   Cabecera,
@@ -21,7 +21,7 @@ import {
   Miniatura,
   NOMBRE_RED,
   Vidrio,
-  dinero,
+  creditos,
   useAhora,
   useAviso,
 } from "./ui";
@@ -47,7 +47,7 @@ function Semana({ piezas, marcas, hoy }: { piezas: Pieza[]; marcas: Marca[]; hoy
         }
       />
       <div className="-mx-1 overflow-x-auto px-1 pb-1">
-        <div className="grid min-w-[760px] grid-cols-7 gap-2">
+        <div className="grid min-w-[640px] grid-cols-7 gap-2">
           {dias.map((dia) => {
             const esHoy = dia === hoy;
             const pasado = dia < hoy;
@@ -57,11 +57,11 @@ function Semana({ piezas, marcas, hoy }: { piezas: Pieza[]; marcas: Marca[]; hoy
                 key={dia}
                 className={cn(
                   "flex min-h-[260px] flex-col gap-2 rounded-[18px] p-1.5",
-                  esHoy ? "bg-[rgba(255,122,26,0.09)] ring-1 ring-[rgba(255,122,26,0.35)]" : "es-hueco",
+                  esHoy ? "bg-[rgba(91,188,214,0.09)] ring-1 ring-[rgba(91,188,214,0.35)]" : "es-hueco",
                 )}
               >
                 <div className="flex items-baseline justify-between px-1.5 pt-1">
-                  <span className={cn("text-[12px] font-medium capitalize", esHoy ? "text-[var(--es-naranja)]" : "text-[var(--text-3)]")}>
+                  <span className={cn("text-[12px] font-medium capitalize", esHoy ? "text-[var(--es-acento)]" : "text-[var(--text-3)]")}>
                     {esHoy ? "Hoy" : nombreDia(dia)}
                   </span>
                   <span className={cn("es-rotulo text-[22px] font-semibold leading-none", pasado ? "text-[var(--text-3)]" : "text-[var(--text)]")}>
@@ -195,7 +195,7 @@ function PorAprobar({ piezas, marcas, avisar }: { piezas: Pieza[]; marcas: Marca
   );
 }
 
-function Cifras({ piezas, gasto, generadasMes }: { piezas: Pieza[]; gasto: number; generadasMes: number }) {
+function Cifras({ piezas, uso }: { piezas: Pieza[]; uso: RegistroUso[] }) {
   const ahora = localSV();
   const hoy = diaDe(ahora);
   const mes = hoy.slice(0, 7);
@@ -204,12 +204,16 @@ function Cifras({ piezas, gasto, generadasMes }: { piezas: Pieza[]; gasto: numbe
   const proximas = piezas.filter(
     (p) => p.estado === "programada" && p.programadaPara && p.programadaPara >= ahora && diaDe(p.programadaPara) < en7,
   ).length;
-  const sinFecha = piezas.filter((p) => p.estado === "aprobada" && !(p.tipo === "video" && p.fase === "guion")).length;
+  // Los anuncios aprobados van a la campaña, no al calendario.
+  const sinFecha = piezas.filter((p) => p.estado === "aprobada" && p.tipo !== "anuncio" && !(p.tipo === "video" && p.fase === "guion")).length;
+  // Por pieza: solo lo que se cobró a una pieza (generarla, armar su video).
+  const dePiezas = uso.filter((u) => u.piezaId);
+  const porPieza = creditosTotal(dePiezas) / Math.max(1, new Set(dePiezas.map((u) => u.piezaId)).size);
   const items = [
     { cifra: String(publicadas), texto: "publicadas este mes" },
     { cifra: String(proximas), texto: "programadas en 7 días" },
     { cifra: String(sinFecha), texto: "aprobadas sin fecha" },
-    { cifra: dinero(generadasMes ? gasto / generadasMes : 0), texto: "por pieza este mes" },
+    { cifra: porPieza.toFixed(1), texto: "créditos por pieza este mes" },
   ];
   return (
     <Vidrio className="grid grid-cols-2 lg:grid-cols-4">
@@ -231,29 +235,27 @@ function Cifras({ piezas, gasto, generadasMes }: { piezas: Pieza[]; gasto: numbe
   );
 }
 
-function RitmoPlan({ piezas, marcas }: { piezas: Pieza[]; marcas: Marca[] }) {
-  const mes = diaDe(localSV()).slice(0, 7);
+function RitmoPlan({ uso, marcas }: { uso: RegistroUso[]; marcas: Marca[] }) {
   return (
     <Vidrio className="p-4 lg:p-5">
-      <Cabecera titulo="Plan del mes" detalle="Piezas en el calendario contra lo contratado" />
+      <Cabecera titulo="Créditos por marca" detalle="Lo usado este mes contra su plan" />
       <ul className="space-y-3.5">
         {marcas.map((m) => {
-          const n = piezas.filter(
-            (p) => p.marcaId === m.id && p.programadaPara?.startsWith(mes) && p.estado !== "rechazada",
-          ).length;
-          const pct = Math.min(100, Math.round((n / m.piezasPlan) * 100));
+          const n = creditosTotal(uso.filter((u) => u.marcaId === m.id));
+          const pct = Math.min(100, Math.round((n / m.creditosPlan) * 100));
+          const color = pct >= 100 ? "var(--es-rojo)" : pct >= 80 ? "var(--es-ambar)" : "var(--es-acento)";
           return (
             <li key={m.id}>
               <div className="mb-1.5 flex items-center gap-2">
                 <MarcaSello marca={m} size={20} />
                 <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{m.nombre}</span>
                 <span className="es-rotulo text-[16px] font-semibold">
-                  {n}
-                  <span className="text-[var(--text-3)]">/{m.piezasPlan}</span>
+                  {creditos(n)}
+                  <span className="text-[var(--text-3)]">/{creditos(m.creditosPlan)}</span>
                 </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: m.colores[0] }} />
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
               </div>
             </li>
           );
@@ -333,7 +335,7 @@ const SERVICIO: Record<Servicio, { texto: string; color: string }> = {
   voz: { texto: "Voz", color: "var(--es-cian)" },
   edicion: { texto: "Edición", color: "var(--es-ambar)" },
   imagen: { texto: "Imágenes", color: "#f28fb1" },
-  texto: { texto: "Texto", color: "var(--es-naranja)" },
+  texto: { texto: "Texto", color: "var(--es-acento)" },
   publicacion: { texto: "Publicación", color: "var(--es-verde)" },
 };
 
@@ -346,15 +348,18 @@ function Gasto({ total, porServicio }: { total: number; porServicio: Record<Serv
   return (
     <Vidrio className="p-4 lg:p-5">
       <Cabecera
-        titulo="Gasto del mes"
+        titulo="Créditos del mes"
         accion={
-          <Link href="/estudio/costos" className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--text-2)] hover:text-[var(--text)]">
-            Costos
+          <Link href="/estudio/creditos" className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--text-2)] hover:text-[var(--text)]">
+            Créditos
             <ArrowUpRight size={14} />
           </Link>
         }
       />
-      <p className="es-rotulo mb-4 text-[44px] font-semibold leading-none">{dinero(total)}</p>
+      <p className="es-rotulo mb-4 text-[44px] font-semibold leading-none">
+        {creditos(total)}
+        <span className="ml-2 font-[family-name:var(--font-app)] text-[13px] font-medium text-[var(--text-3)]">usados</span>
+      </p>
       <ul className="space-y-2.5">
         {filas.map(({ s, v }) => (
           <li key={s} className="grid grid-cols-[84px_1fr_56px] items-center gap-3 text-[12.5px]">
@@ -362,7 +367,7 @@ function Gasto({ total, porServicio }: { total: number; porServicio: Record<Serv
             <span className="h-2 overflow-hidden rounded-full bg-white/[0.05]">
               <span className="block h-full rounded-full" style={{ width: `${(v / max) * 100}%`, background: SERVICIO[s].color }} />
             </span>
-            <span className="es-rotulo text-right text-[15px] font-semibold">{dinero(v)}</span>
+            <span className="es-rotulo text-right text-[15px] font-semibold">{creditos(v)}</span>
           </li>
         ))}
       </ul>
@@ -494,7 +499,6 @@ export function ResumenEstudio() {
   const piezas = useMemo(() => deMarca(e.piezas, activa), [e.piezas, activa]);
   const marcas = useMemo(() => (activa === "todas" ? e.marcas : e.marcas.filter((m) => m.id === activa)), [e.marcas, activa]);
   const usoMes = useMemo(() => deMarca(e.uso, activa).filter((u) => localSV(Date.parse(u.fecha)).startsWith(mes)), [e.uso, activa, mes]);
-  const generadasMes = piezas.filter((p) => localSV(Date.parse(p.creada)).startsWith(mes)).length;
 
   return (
     <div className="mx-auto flex max-w-[1500px] flex-col gap-4">
@@ -503,11 +507,11 @@ export function ResumenEstudio() {
         <Semana piezas={piezas} marcas={e.marcas} hoy={hoy} />
         <PorAprobar piezas={piezas} marcas={e.marcas} avisar={avisar} />
       </div>
-      <Cifras piezas={piezas} gasto={costoTotal(usoMes)} generadasMes={generadasMes} />
+      <Cifras piezas={piezas} uso={usoMes} />
       <div className="grid gap-4 lg:grid-cols-3">
-        <RitmoPlan piezas={piezas} marcas={marcas} />
+        <RitmoPlan uso={usoMes} marcas={marcas} />
         <VideosEnCurso marcas={e.marcas} />
-        <Gasto total={costoTotal(usoMes)} porServicio={costoPorServicio(usoMes)} />
+        <Gasto total={creditosTotal(usoMes)} porServicio={creditosPorServicio(usoMes)} />
       </div>
       <Cuentas marcas={marcas} avisar={avisar} />
       {aviso}

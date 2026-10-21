@@ -2,7 +2,7 @@
 // misma forma y una espera parecida, pero sin salir a la red ni gastar saldo.
 // El texto sale del banco de cada marca (banco.ts).
 
-import { TARIFA, generarPiezas, reescribir } from "../generador";
+import { CREDITOS, TARIFA, generarPiezas, reescribir, usoDeGeneracion } from "../generador";
 import type { Proveedores } from "./tipos";
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -18,19 +18,7 @@ export const simulados: Proveedores = {
       await esperar(900 + Math.random() * 600);
       const ahoraIso = new Date().toISOString();
       const piezas = generarPiezas({ ...pedido, ahoraIso });
-      return {
-        piezas,
-        uso: piezas.map((p) => ({
-          marcaId: p.marcaId,
-          servicio: "texto" as const,
-          proveedor: "Claude",
-          unidades: 1,
-          unidad: "pieza",
-          costoUsd: TARIFA.textoPorPieza,
-          fecha: ahoraIso,
-          piezaId: p.id,
-        })),
-      };
+      return { piezas, uso: piezas.flatMap((p) => usoDeGeneracion(p, ahoraIso)) };
     },
     async reescribir(pieza, marca, motivo) {
       await esperar(700 + Math.random() * 500);
@@ -44,6 +32,7 @@ export const simulados: Proveedores = {
             proveedor: "Claude",
             unidades: 1,
             unidad: "pieza",
+            creditos: CREDITOS.texto,
             costoUsd: TARIFA.textoPorPieza,
             fecha: ahoraIso,
             piezaId: pieza.id,

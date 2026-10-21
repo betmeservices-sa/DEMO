@@ -7,12 +7,16 @@
 // Video: Reels, TikTok y Shorts van en 9:16 con subtítulos que corren al
 // darle play. El guion (antes de armar el video) no pasa por aquí: lo pinta
 // la pantalla de aprobación.
+//
+// Anuncio: como lo pinta Meta en el feed, con "Publicidad", la barra del
+// titular y el botón. Es el mismo anuncio en Facebook y en Instagram.
 
 import { useEffect, useMemo, useState } from "react";
 import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
+  Earth,
   Globe,
   Heart,
   MessageCircle,
@@ -47,7 +51,7 @@ function handle(marca: Marca, red: Red): string {
 }
 
 function Foto({ src, alt, className }: { src?: string; alt: string; className?: string }) {
-  if (!src) return <div className={cn("bg-[#1d1814]", className)} />;
+  if (!src) return <div className={cn("bg-[#1a2843]", className)} />;
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt={alt} className={cn("h-full w-full object-cover", className)} />;
 }
@@ -59,7 +63,7 @@ function Carrusel({ pieza, aspecto }: { pieza: Pieza; aspecto: string }) {
   const n = fotos.length;
   useEffect(() => setI(0), [pieza.id]);
   return (
-    <div className={cn("relative overflow-hidden bg-[#1d1814]", aspecto)}>
+    <div className={cn("relative overflow-hidden bg-[#1a2843]", aspecto)}>
       <Foto src={fotos[Math.min(i, n - 1)]} alt={pieza.ideaImagen ?? pieza.titulo} className="absolute inset-0" />
       {pieza.tipo === "texto" && (
         <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/75 via-black/15 to-transparent p-4">
@@ -237,6 +241,83 @@ function Google({ pieza, marca }: { pieza: Pieza; marca: Marca }) {
   );
 }
 
+/** El anuncio de Meta: mismo texto, imagen, titular y botón en las dos redes. */
+function Anuncio({ pieza, marca, red }: { pieza: Pieza; marca: Marca; red: "facebook" | "instagram" }) {
+  const ad = pieza.anuncio ?? { titular: pieza.titulo, descripcion: "", cta: "Ver más" };
+  const foto = pieza.medios[0];
+
+  if (red === "instagram") {
+    const h = handle(marca, "instagram");
+    return (
+      <div className="w-full max-w-[400px] overflow-hidden rounded-[22px] border border-white/10 bg-black">
+        <div className="flex items-center gap-2.5 px-3 py-2.5">
+          <MarcaSello marca={marca} size={32} className="rounded-full" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-semibold text-white">{h}</span>
+            <span className="block text-[11px] text-white/60">Publicidad</span>
+          </span>
+          <MoreHorizontal size={18} className="text-white/80" />
+        </div>
+        <div className="relative aspect-[4/5] bg-[#1a2843]">
+          <Foto src={foto} alt={pieza.ideaImagen ?? ad.titular} className="absolute inset-0" />
+        </div>
+        <div className="flex items-center justify-between bg-[#1d2a44] px-3 py-2.5 text-[13.5px] font-semibold text-white">
+          {ad.cta}
+          <ChevronRight size={17} />
+        </div>
+        <div className="flex items-center gap-4 px-3 pt-3 text-white">
+          <Heart size={22} />
+          <MessageCircle size={22} />
+          <Send size={21} />
+          <Bookmark size={21} className="ml-auto" />
+        </div>
+        <div className="px-3 pb-4 pt-2">
+          <TextoCorto texto={textoDeRed(pieza, "instagram")} prefijo={h} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-[420px] overflow-hidden rounded-[22px] border border-white/10 bg-[#242526]">
+      <div className="flex items-center gap-2.5 px-3.5 pt-3">
+        <MarcaSello marca={marca} size={38} className="rounded-full" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] font-semibold text-[#e4e6eb]">{cuentaDeRed(marca, "facebook")}</p>
+          <p className="flex items-center gap-1 text-[12px] text-[#b0b3b8]">
+            Publicidad · <Earth size={11} />
+          </p>
+        </div>
+        <MoreHorizontal size={18} className="text-[#b0b3b8]" />
+      </div>
+      <div className="px-3.5 py-3">
+        <TextoCorto texto={textoDeRed(pieza, "facebook")} />
+      </div>
+      <div className="relative aspect-square bg-[#1a2843]">
+        <Foto src={foto} alt={pieza.ideaImagen ?? ad.titular} className="absolute inset-0" />
+      </div>
+      <div className="flex items-center gap-3 bg-[#3a3b3c] px-3.5 py-3">
+        <div className="min-w-0 flex-1">
+          {ad.descripcion && <p className="line-clamp-1 text-[12px] text-[#b0b3b8]">{ad.descripcion}</p>}
+          <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-[#e4e6eb]">{ad.titular}</p>
+        </div>
+        <span className="shrink-0 rounded-[6px] bg-[#4e4f50] px-3 py-2 text-[13px] font-semibold text-[#e4e6eb]">{ad.cta}</span>
+      </div>
+      <div className="mx-3.5 grid grid-cols-3 py-1.5 text-[13px] font-semibold text-[#b0b3b8]">
+        <span className="flex items-center justify-center gap-1.5 py-1.5">
+          <ThumbsUp size={16} /> Me gusta
+        </span>
+        <span className="flex items-center justify-center gap-1.5 py-1.5">
+          <MessageCircle size={16} /> Comentar
+        </span>
+        <span className="flex items-center justify-center gap-1.5 py-1.5">
+          <Share2 size={16} /> Compartir
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** Los subtítulos: el guion partido en grupos cortos, como en los videos verticales. */
 function trozos(texto: string, porTrozo = 5): string[] {
   const palabras = texto.split(/\s+/).filter(Boolean);
@@ -336,6 +417,9 @@ function Vertical({ pieza, marca, red }: { pieza: Pieza; marca: Marca; red: "ins
 }
 
 export function VistaPrevia({ pieza, marca, red }: { pieza: Pieza; marca: Marca; red: Red }) {
+  if (pieza.tipo === "anuncio") {
+    return <Anuncio pieza={pieza} marca={marca} red={red === "instagram" ? "instagram" : "facebook"} />;
+  }
   if (pieza.tipo === "video" && red !== "linkedin" && red !== "google") {
     return <Vertical pieza={pieza} marca={marca} red={red} />;
   }
