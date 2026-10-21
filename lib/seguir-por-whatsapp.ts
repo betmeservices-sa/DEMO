@@ -5,7 +5,8 @@
 // se habló por teléfono pasa al chat (lib/llamada-contexto.ts).
 //
 //   - Sofía, de la llamada demo de la conferencia (Vapi "Sofia - MiAgentIA
-//     (Conferencia)"), en el panel comercial (+503 7560 5872). De tú.
+//     (Conferencia)"), en el panel comercial (+503 2505 4610, su número de
+//     WhatsApp y de voz). De tú.
 //   - Elena, de la demo de la Caja de Crédito de Chalatenango (Vapi "Elena -
 //     Caja Chalatenango (Demo)"), en su panel (+503 6452 4233). De usted.
 //

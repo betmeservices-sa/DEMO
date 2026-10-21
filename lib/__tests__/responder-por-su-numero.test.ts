@@ -60,3 +60,28 @@ describe("con que numero contesta un cliente que tiene varios", () => {
     expect([VIEJO.phoneNumberId, RECIEN_DADO_DE_ALTA.phoneNumberId]).toContain(c?.phoneId);
   });
 });
+
+// El 2026-10-21 el 2505 4610 paso a ser EL numero de MiAgentIA (WhatsApp y
+// voz). Lo que no sale como respuesta a un mensaje (la plantilla de "seguimos
+// por WhatsApp" despues de una llamada, un chat que abre el panel) tiene que
+// salir de ese, no del primero que devuelva la base.
+describe("lo que el panel manda por su cuenta sale del numero principal", () => {
+  const PRINCIPAL = { ...VIEJO, phoneNumberId: "1370050652861744", displayPhone: "+503 2505 4610" };
+
+  beforeEach(async () => {
+    olvidarConexionesWa();
+    await guardarConexionWa(VIEJO);
+    await guardarConexionWa(RECIEN_DADO_DE_ALTA);
+    await guardarConexionWa(PRINCIPAL);
+  });
+
+  it("aunque no sea el primero de la lista", async () => {
+    const c = await credencialesWa(COMERCIAL);
+    expect(c?.phoneId).toBe(PRINCIPAL.phoneNumberId);
+  });
+
+  it("sin saber a cual llego un mensaje, tambien contesta por el principal", async () => {
+    const c = await credencialesParaResponder(COMERCIAL, null);
+    expect(c?.phoneId).toBe(PRINCIPAL.phoneNumberId);
+  });
+});

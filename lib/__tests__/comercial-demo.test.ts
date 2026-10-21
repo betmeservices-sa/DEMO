@@ -1,6 +1,7 @@
-// MiAgentIA Comercial: el WhatsApp donde Sofía hace la demo a quien viene de la
-// conferencia. Lo que no puede pasar: que agende en una agenda real, que dé
-// precios, o que arranque como una venta general en vez de la demostración.
+// MiAgentIA Comercial: el WhatsApp de MiAgentIA (2505 4610), donde Sofía atiende
+// a quien llegue (anuncios, la página, redes, recomendados) y ofrece la demo en
+// vivo. Lo que no puede pasar: que agende en una agenda real, que dé precios, o
+// que dé por hecho de dónde viene la persona.
 import { describe, expect, it } from "vitest";
 import { TENANTS, resolveTenantByLogin } from "@/lib/tenants";
 import { MODULOS_AGENCIA, MODULOS_COMERCIAL } from "@/lib/modulos";
@@ -24,8 +25,9 @@ describe("el panel comercial", () => {
     expect(MODULOS_AGENCIA).not.toContain("alta-numero");
   });
 
-  it("habla por su propio número", () => {
-    expect(TENANTS.comercial.whatsapp?.phoneNumberId).toBe("1344094815455988");
+  it("su número es el 2505 4610, el mismo de voz", () => {
+    expect(TENANTS.comercial.whatsapp?.phoneNumberId).toBe("1370050652861744");
+    expect(TENANTS.comercial.whatsapp?.numeroPublico).toBe("50325054610");
   });
 });
 
@@ -38,10 +40,20 @@ describe("Sofía en modo demo", () => {
     expect(guion.replace(/MiAgentIA/g, "")).not.toMatch(/Mia/);
   });
 
-  it("sabe que quien escribe viene a probar la demo y la ofrece de entrada", () => {
-    expect(guion).toMatch(/Esta conversación ES la demostración/);
+  it("atiende a quien llegue, sin dar por hecho de dónde viene, y ofrece la demo", () => {
+    expect(guion).toMatch(/un anuncio en Facebook o Instagram, nuestra página web/);
+    expect(guion).toMatch(/No des por hecho de dónde viene cada persona ni se lo preguntes/);
+    expect(guion).not.toMatch(/conferencia/i);
     expect(guion).toMatch(/PRIMER MENSAJE/);
     expect(guion).toMatch(/¿Qué te gustaría ver\?/);
+  });
+
+  it("si pregunta algo concreto de entrada, primero le responde", () => {
+    expect(guion).toMatch(/respóndele eso primero, en corto, y después ofrécele la demostración/);
+  });
+
+  it("sabe que su número también recibe llamadas", () => {
+    expect(guion).toMatch(/puede llamar al 2505-4610 y contestas tú/);
   });
 
   it("si el chat lo abrió la plantilla, no se vuelve a presentar", () => {
@@ -72,7 +84,7 @@ describe("Sofía en modo demo", () => {
 
 describe("Sofía también llama", () => {
   it("sabe que si le piden 'llámame' el sistema marca, y no dice que no puede", () => {
-    expect(guion).toMatch(/SI TE PIDE QUE LA LLAMES/);
+    expect(guion).toMatch(/si la persona escribe que la llames, el sistema le marca/);
     expect(guion).toMatch(/te estoy marcando ahora mismo/);
     expect(guion).toMatch(/Nunca digas que no puedes hacer llamadas/);
   });

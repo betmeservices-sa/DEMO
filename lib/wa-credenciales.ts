@@ -12,6 +12,8 @@
 
 import { conexionesWaDe, conexionPorPhoneNumberId } from "./wa-conexiones-store";
 import { getWaTenant } from "./wa-routing";
+import { TENANTS } from "./tenants";
+import type { TenantId } from "./tenants/types";
 
 export interface CredencialesWa {
   token: string;
@@ -37,7 +39,11 @@ export async function credencialesWa(tenant?: string): Promise<CredencialesWa | 
 
   const propias = await conexionesWaDe(tenant);
   if (propias.length > 0) {
-    const c = propias[0];
+    // Con varios números, el principal del panel (whatsapp.phoneNumberId de su
+    // config). La lista viene sin orden: sin esto, la plantilla de "seguimos
+    // por WhatsApp" de MiAgentIA salía de cualquiera de sus seis números.
+    const principal = TENANTS[tenant as TenantId]?.whatsapp?.phoneNumberId;
+    const c = propias.find((p) => p.phoneNumberId === principal) ?? propias[0];
     return { token: c.accessToken, phoneId: c.phoneNumberId, wabaId: c.wabaId, origen: "cliente" };
   }
 

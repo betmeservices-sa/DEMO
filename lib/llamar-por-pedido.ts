@@ -36,6 +36,10 @@ import { addOutbound, mensajesAnteriores } from "./wa-store";
 /** Cuántos mensajes del hilo se le llevan al agente. */
 const HILO = 20;
 
+function soloDigitos(n: string | null | undefined): string {
+  return String(n ?? "").replace(/\D/g, "");
+}
+
 /** La hora de El Salvador, que es la que importa para no despertar a nadie. */
 function horaSV(d: Date): number {
   return Number(
@@ -119,17 +123,22 @@ export async function atenderPedidoDeLlamada(opts: {
   }
 
   const agentes = await fetchVapiAgentes();
-  const linea = (
+  const numeros =
     agentes.find((a) => a.id === assistantId)?.numeros ??
-    agentes.filter((a) => esDelTenant(a.id, tenant)).flatMap((a) => a.numeros)
-  )[0];
+    agentes.filter((a) => esDelTenant(a.id, tenant)).flatMap((a) => a.numeros);
+  const mismaAgente = TENANTS[tenant].voz?.mismaAgente;
+  // Donde la de voz y la de WhatsApp son la misma agente y el número de
+  // WhatsApp también es línea de voz (MiAgentIA: el 2505 4610), se marca desde
+  // ese: la llamada entra del mismo número del chat. Con varias líneas
+  // colgadas del agente, la primera es la que diga Vapi, o sea cualquiera.
+  const delChat = soloDigitos(TENANTS[tenant].whatsapp?.numeroPublico);
+  const linea = (mismaAgente && delChat && numeros.find((n) => soloDigitos(n.numero) === delChat)) || numeros[0];
   const phoneNumberId = linea?.id;
   if (!phoneNumberId) return "no se llamó: no hay ninguna línea para marcar";
 
   // Donde la de voz y la de WhatsApp son la misma Sofía, el aviso dice además
-  // de qué número le va a entrar ("del 2505-4607"), para que conteste un número
+  // de qué número le va a entrar ("del 2505-4610"), para que conteste un número
   // que no tiene guardado. Los demás paneles, con el aviso de siempre.
-  const mismaAgente = TENANTS[tenant].voz?.mismaAgente;
   const aviso = mismaAgente ? avisoConLinea(decision.aviso, linea?.numero, mismaAgente.tuteo) : decision.aviso;
 
   // 1. El aviso por escrito. Va primero, y si falla no se marca: una llamada
