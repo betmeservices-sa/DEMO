@@ -18,6 +18,7 @@ import { comercialTenant } from "./comercial";
 import { chalatenangoTenant } from "./chalatenango";
 import { shopusaTenant } from "./shopusa";
 import { nawiTenant } from "./nawi";
+import { estudioTenant } from "./estudio";
 
 export type { TenantConfig, TenantId } from "./types";
 export { EN_HUB, esDelDemo } from "./types";
@@ -39,6 +40,7 @@ export const TENANTS: Record<TenantId, TenantConfig> = {
   chalatenango: chalatenangoTenant,
   shopusa: shopusaTenant,
   nawi: nawiTenant,
+  estudio: estudioTenant,
 };
 
 // Tenant por defecto (SSR / antes de login). No es visible: la UI se pinta tras
@@ -62,7 +64,8 @@ export function isTenantId(v: string | null | undefined): v is TenantId {
     v === "comercial" ||
     v === "chalatenango" ||
     v === "shopusa" ||
-    v === "nawi"
+    v === "nawi" ||
+    v === "estudio"
   );
 }
 
@@ -116,6 +119,9 @@ export const DEMO_LOGINS: DemoLogin[] = [
   // NAWI Beach House: el panel de hotel de Porta Stays con todo de muestra
   // (bandeja, tickets, ocupación y reservas por zona, IA Performance).
   { usuario: "demoagentia", password: "demonawi", tenant: "nawi" },
+  // Content Engine: el motor de contenido de BetMe (prompt, aprobacion,
+  // calendario y videos con avatar) para las marcas a las que se lo revende.
+  { usuario: "demoagentia", password: "demoestudio", tenant: "estudio" },
   // Acceso directo al dashboard de llamadas (tenant miagentia).
   // OJO: esta clave queda visible mientras el repo sea publico. Para cerrarla,
   // hacer el repo privado o mover las credenciales a la env LOGIN_PASSWORDS.

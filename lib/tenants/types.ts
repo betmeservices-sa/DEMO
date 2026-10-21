@@ -36,7 +36,8 @@ export type TenantId =
   | "comercial"
   | "chalatenango"
   | "shopusa"
-  | "nawi";
+  | "nawi"
+  | "estudio";
 
 // Clientes EN VIVO: su panel está en hub.miagentia.com, con sus datos reales.
 // El demo los conoce (comparten código y tipos) pero NO los abre: ni con clave
@@ -307,7 +308,7 @@ export interface TenantConfig {
    * flotando sobre el fondo (components/shell/flotante). Se elige por cliente
    * y no con ifs en cada componente: cambiarle la cara a uno no mueve a otro.
    */
-  shell?: "flotante";
+  shell?: "flotante" | "estudio";
   /**
    * Las areas en las que se parte el trabajo del cliente, en el orden de las
    * pestanas de arriba. Cada una es un departamento de su semilla: elegir una

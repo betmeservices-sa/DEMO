@@ -294,6 +294,8 @@ describe("configuración del agente", () => {
   it("los clientes sin visión mantienen el aviso de que no abren archivos", () => {
     for (const t of Object.values(TENANTS)) {
       if (t.ai.imagenes === true) continue;
+      // El motor de contenido no conversa: no tiene guion de chat.
+      if (t.shell === "estudio") continue;
       expect(t.ai.systemPrompt, t.id).toMatch(/\[imagen\]|\[documento|archivo/i);
     }
   });

@@ -5,6 +5,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ── Tema por cliente (tenant) ──
@@ -1021,6 +1022,94 @@ select:-webkit-autofill {
     border: 0;
     box-shadow: none;
   }
+}
+
+/* ── Content Engine (tenant "estudio") ──
+   Grafito cálido con el resplandor naranja de las piezas, como un estudio de
+   noche. El vidrio va en los contenedores, nunca vidrio sobre vidrio. La
+   tipografía de rótulo (Barlow Condensed) es la de los letreros de obra de
+   sus clientes: cifras, títulos y horas. Va al final para ganarle a la marca
+   unificada, que tiene la misma especificidad. */
+[data-tenant="estudio"] {
+  --brand-blue: #ff7a1a;
+  --brand-blue-dark: #e8650c;
+  --brand-green: #3dd68c;
+  --brand-red: #ff6b6b;
+  --brand-accent: #5bbcd6;
+  --brand-accent-soft: rgba(91, 188, 214, 0.12);
+
+  --surface: #120f0d;
+  --surface-2: #1c1814;
+  --card: #18140f;
+  --border: rgba(255, 240, 225, 0.09);
+  --border-2: rgba(255, 240, 225, 0.16);
+  --text: #f6f0ea;
+  --text-2: #b9aea4;
+  --text-3: #8c8178;
+
+  --es-naranja: #ff7a1a;
+  --es-ambar: #f0a830;
+  --es-cian: #5bbcd6;
+  --es-violeta: #a99cff;
+  --es-verde: #3dd68c;
+  --es-rojo: #ff6b6b;
+
+  --font-app: 'Instrument Sans', system-ui, sans-serif;
+  --font-rotulo: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+}
+
+[data-shell="estudio"] {
+  background:
+    radial-gradient(1100px 680px at 6% -12%, rgba(255, 122, 26, 0.2), transparent 62%),
+    radial-gradient(900px 620px at 108% 112%, rgba(140, 118, 255, 0.13), transparent 60%),
+    radial-gradient(760px 520px at 62% 38%, rgba(255, 168, 92, 0.045), transparent 70%),
+    #110e0c;
+  color: var(--text);
+}
+
+[data-shell="estudio"] .es-vidrio {
+  background: linear-gradient(180deg, rgba(255, 250, 244, 0.062), rgba(255, 250, 244, 0.026));
+  border: 1px solid rgba(255, 240, 225, 0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 24px 48px -28px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+[data-shell="estudio"] .es-hueco {
+  background: rgba(10, 8, 7, 0.38);
+  border: 1px solid rgba(255, 240, 225, 0.06);
+}
+
+[data-shell="estudio"] .es-rotulo {
+  font-family: var(--font-rotulo);
+  font-feature-settings: "tnum" 1;
+}
+
+[data-shell="estudio"] .es-primario {
+  background: linear-gradient(180deg, #ff8a33, #f06a0c);
+  color: #1a0d03;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 10px 26px -10px rgba(255, 122, 26, 0.75);
+}
+
+[data-shell="estudio"] .es-primario:hover {
+  background: linear-gradient(180deg, #ff9646, #f2741a);
+}
+
+[data-shell="estudio"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 240, 225, 0.12);
+}
+
+[data-shell="estudio"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 240, 225, 0.22);
+}
+
+[data-shell="estudio"] :focus-visible {
+  outline: 2px solid var(--es-naranja);
+  outline-offset: 2px;
 }
 
 /* ── Shell "flotante" (components/shell/flotante) ──

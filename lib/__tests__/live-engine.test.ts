@@ -104,7 +104,8 @@ describe("ritmo de la simulación", () => {
 });
 
 describe("guion por tenant", () => {
-  const ids = Object.keys(TENANTS) as TenantId[];
+  // El motor de contenido (shell "estudio") no tiene bandeja ni chats que simular.
+  const ids = (Object.keys(TENANTS) as TenantId[]).filter((id) => TENANTS[id].shell !== "estudio");
 
   it("todos los clientes traen turnos y contactos propios", () => {
     for (const id of ids) {

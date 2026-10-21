@@ -99,6 +99,10 @@ export type ModuleId =
   // cada canal, de que hablan y que fechas piden. Es la pantalla /ia de Porta
   // Stays, con cifras de muestra.
   | "ia"
+  // El motor de contenido de BetMe: todo vive bajo /estudio (resumen, crear,
+  // aprobacion, calendario, videos, biblioteca, marcas y costos) con su propia
+  // navegacion dentro del shell "estudio".
+  | "estudio"
   | "settings";
 
 // Los modulos que solo existen en la clinica (tenant "consultorio"). Es UNA
@@ -190,7 +194,7 @@ export interface RoleDef {
 // marketing no gestiona casos, asi que no lo ve.
 // "mis-chats" lo ve todo el mundo: es donde caen los chats que el agente pasa a
 // una persona, y quien atiende tiene que verlos sin depender de su rol.
-const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "auditoria", "costos", "llamadas", "leads", "alta-numero", "qa", "agentes", "ia", "settings"];
+const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "auditoria", "costos", "llamadas", "leads", "alta-numero", "qa", "agentes", "ia", "estudio", "settings"];
 export const VE: Record<RoleId, ModuleId[]> = {
   // Recepcion del consultorio es quien recibe al paciente y quien mueve la
   // fila del laboratorio: los dos modulos del modulo clinico son suyos.
@@ -203,12 +207,12 @@ export const VE: Record<RoleId, ModuleId[]> = {
   // Lo que sigue cerrado: ajustes, promociones y el perfil del agente, que
   // cambian como se comporta Sofia.
   atencion: ["bandeja", "mis-chats", "tickets", "interno", "comentarios", "redes", "sofia", "dashboard"],
-  marketing: ["bandeja", "mis-chats", "contactos", "cartera", "publicacion", "cobros", "redes", "comentarios", "promociones"],
+  marketing: ["bandeja", "mis-chats", "contactos", "cartera", "publicacion", "cobros", "redes", "comentarios", "promociones", "estudio"],
   gerente_marketing: TODO,
   // El medico ve su consultorio (sus pacientes, sus recetas), pero no el
   // mostrador del laboratorio: esa fila no es suya.
   medico: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "imagenologia", "mensajes", "valeria", "interno"],
-  jefe: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "ia"],
+  jefe: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "ia", "estudio"],
   admin: TODO,
 };
 
@@ -260,6 +264,7 @@ export const MODULO_RUTA: Record<ModuleId, string> = {
   qa: "/qa",
   agentes: "/agentes",
   ia: "/ia",
+  estudio: "/estudio",
   settings: "/settings",
 };
 
@@ -311,6 +316,7 @@ export function moduloDeRuta(pathname: string): ModuleId | null {
   if (pathname.startsWith("/agentes")) return "agentes";
   if (pathname === "/ia" || pathname.startsWith("/ia/")) return "ia";
   if (pathname.startsWith("/settings")) return "settings";
+  if (pathname.startsWith("/estudio")) return "estudio";
   return null;
 }
 

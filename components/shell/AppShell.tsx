@@ -13,6 +13,7 @@ import { Sidebar } from "./Sidebar";
 import { LiveMount } from "./LiveMount";
 import { LoginPage } from "./LoginPage";
 import { ShellFlotante } from "./flotante/ShellFlotante";
+import { ShellEstudio } from "@/components/estudio/ShellEstudio";
 
 // Rutas públicas que NO llevan el chrome del dashboard (sidebar, store, etc.).
 // "/portal" es el portal del paciente de la clínica: entra con su correo, sin
@@ -103,6 +104,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         <LiveProvider>
           <LiveMount />
           <ShellFlotante onLogout={logout}>{permitido ? children : <SinAcceso />}</ShellFlotante>
+        </LiveProvider>
+      </StoreProvider>
+    );
+  }
+
+  // El motor de contenido de BetMe tiene su propia cara y no tiene bandeja:
+  // va sin LiveMount, que existe para traer los mensajes nuevos.
+  if (activeTenant().shell === "estudio") {
+    return (
+      <StoreProvider>
+        <LiveProvider>
+          <ShellEstudio onLogout={logout}>{permitido ? children : <SinAcceso />}</ShellEstudio>
         </LiveProvider>
       </StoreProvider>
     );
