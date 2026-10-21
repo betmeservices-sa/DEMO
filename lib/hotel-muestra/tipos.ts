@@ -89,8 +89,11 @@ export interface CerradaSemilla {
   nota?: string;
 }
 
-/** Las tres columnas de "Reservas en pausa". */
-export type GrupoPausa = "dijo_si" | "se_cayo";
+/**
+ * Las columnas de "Reservas en pausa" que se siembran. "Esperando el pago" no
+ * va acá: sale de los apartados que siguen abiertos.
+ */
+export type GrupoPausa = "se_cayo";
 
 export interface PausaSemilla {
   huesped: string;

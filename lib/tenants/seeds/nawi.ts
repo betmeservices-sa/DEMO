@@ -152,7 +152,7 @@ agente("n12", "Hi Emily! Early check in depends on availability, so I'm passing 
 equipo("n12", "s2", "Hi Emily, Andrea from Reservations. Your Jungle Bungalow will be ready at 9:00 a.m. See you soon!", 1700);
 cliente("n12", "Amazing, thank you!!", 1690);
 
-// ── n13 · Fernanda: dijo que sí y no apartó ──
+// ── n13 · Fernanda: le interesó y quedó de confirmar ──
 {
   const desde = sumarDias(HOY, 23);
   cliente("n13", "Hola, ¿cuánto sale un bungalow en la selva para 2?", 5800);

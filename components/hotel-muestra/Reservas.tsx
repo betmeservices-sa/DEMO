@@ -3,7 +3,7 @@
 // Lo que el agente dejó apartado y espera que Reservas confirme, y lo que
 // quedó a medias. Es la misma lectura que el tablero de Yali (apartados con su
 // hora para pagar, el comprobante que hay que verificar, las últimas cerradas
-// y las tres pausas), pero sobre la muestra del hotel.
+// y lo que quedó en pausa), pero sobre la muestra del hotel.
 
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Clock, MessageSquare, XCircle } from "lucide-react";
@@ -176,7 +176,6 @@ function CerradaCard({ c }: { c: Cerrada }) {
 
 const GRUPOS: { id: keyof VistaHotel["pausa"]; titulo: string; ayuda: string }[] = [
   { id: "esperando_pago", titulo: "Esperando el pago", ayuda: "Ya apartó, falta que pague" },
-  { id: "dijo_si", titulo: "Dijo que sí y no apartó", ayuda: "Aceptó el precio y la reserva nunca se armó" },
   { id: "se_cayo", titulo: "Se cayó por no pagar", ayuda: "Venció el apartado. Todavía se puede recuperar" },
 ];
 
@@ -189,7 +188,7 @@ export function ReservasEnPausa({ vista }: { vista: VistaHotel }) {
     <section className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       <h3 className="text-[15px] font-bold text-[var(--text)]">Reservas en pausa</h3>
       <p className="text-[12.5px] text-[var(--text-3)]">Ingresos que están por entrar y se pueden perder si nadie les da seguimiento.</p>
-      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
         {GRUPOS.map((g) => {
           const xs: EnPausa[] = vista.pausa[g.id];
           const total = xs.reduce((s, x) => s + x.total, 0);

@@ -140,9 +140,6 @@ export const NAWI: HotelMuestra = {
     },
   ],
   pausa: [
-    { huesped: "Daniela Rivas", grupo: "dijo_si", llegaEnDias: 9, noches: 2, total: 490, haceDias: 0 },
-    { huesped: "Tyler Brooks", grupo: "dijo_si", llegaEnDias: 16, noches: 3, total: 735, haceDias: 2 },
-    { huesped: "Fernanda Castillo", grupo: "dijo_si", llegaEnDias: 23, noches: 2, total: 420, haceDias: 4 },
     { huesped: "Óscar Peña", grupo: "se_cayo", llegaEnDias: 1, noches: 2, total: 492, haceDias: 1 },
     { huesped: "Megan Wilson", grupo: "se_cayo", llegaEnDias: 15, noches: 3, total: 615, haceDias: 6 },
   ],

@@ -157,7 +157,7 @@ export function armarVista(hotel: HotelMuestra, movimientos: Movimiento[], ahora
     };
   });
 
-  const pausa: VistaHotel["pausa"] = { esperando_pago: [], dijo_si: [], se_cayo: [] };
+  const pausa: VistaHotel["pausa"] = { esperando_pago: [], se_cayo: [] };
   for (const p of hotel.pausa) {
     const desde = sumarDias(hoy, p.llegaEnDias);
     pausa[p.grupo].push({ huesped: p.huesped, desde, hasta: sumarDias(desde, p.noches), total: p.total, haceDias: p.haceDias });
