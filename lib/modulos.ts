@@ -151,6 +151,8 @@ export const MODULOS_SHOPUSA: readonly ModuleId[] = ["dashboard", "bandeja", "pa
 // El menu de los hoteles de muestra (NAWI, Tesoro Beach), EN ESTE ORDEN: el de Porta Stays.
 // Sin redes, comentarios, promociones ni perfil del agente: esas pantallas leen
 // Meta y la base en vivo, y en un demo sin cuentas conectadas saldrian vacias.
+// El hotel que trae sus propias redes y promociones de muestra (NAWI) las suma
+// despues del chat interno: ver modulosDeHotelMuestra.
 export const MODULOS_HOTEL_MUESTRA: readonly ModuleId[] = ["bandeja", "mis-chats", "tickets", "contactos", "interno", "dashboard", "ia"];
 
 // El menu de Pizza Hut, EN ESTE ORDEN. Es una lista cerrada como la de la

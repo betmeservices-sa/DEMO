@@ -30,6 +30,10 @@ import { cn } from "@/lib/cn";
 import { PaginaToggle, nombreCortoDePagina } from "@/components/inbox/PaginaToggle";
 import { usePaginasConectadas } from "@/lib/paginas-conectadas";
 import type { Comentario } from "@/lib/meta-comentarios";
+import { activeTenantId } from "@/lib/tenants/active";
+import { hotelMuestraDe } from "@/lib/hotel-muestra/registro";
+import { paginasDeMuestra } from "@/lib/hotel-muestra/redes";
+import { accionarComentarioMuestra, leerComentariosMuestra } from "@/lib/hotel-muestra/comentarios";
 
 type Filtro = "pendientes" | "todos" | "ocultos";
 
@@ -37,6 +41,13 @@ const ICONO = { facebook: Facebook, instagram: Instagram };
 // Se vuelve a pedir cada dos minutos: los comentarios llegan mientras la
 // pantalla está abierta, y antes había que recargar para verlos.
 const CADA_MS = 2 * 60_000;
+
+// Los hoteles de muestra con redes (NAWI) leen y contestan sus comentarios en
+// el navegador: es la misma pantalla, sin tocar Meta.
+const TENANT = activeTenantId();
+const HOTEL = hotelMuestraDe(TENANT);
+const MUESTRA = Boolean(HOTEL?.redes);
+const PAGINAS_MUESTRA = HOTEL ? paginasDeMuestra(HOTEL) : [];
 
 interface Hilo {
   c: Comentario;
@@ -81,10 +92,16 @@ export default function ComentariosPage() {
   const [filtro, setFiltro] = useState<Filtro>("pendientes");
   const [abierto, setAbierto] = useState<string | null>(null);
   const [pagina, setPagina] = useState<string>("todas");
-  const paginas = usePaginasConectadas();
+  const conectadas = usePaginasConectadas();
+  const paginas = MUESTRA ? PAGINAS_MUESTRA : conectadas;
   const nombreDePagina = useMemo(() => new Map(paginas.map((p) => [p.id, p.nombre])), [paginas]);
 
   const cargar = useCallback(async () => {
+    if (MUESTRA) {
+      setDatos(leerComentariosMuestra(TENANT));
+      setCargando(false);
+      return;
+    }
     setCargando(true);
     try {
       const r = await fetch("/api/meta/comentarios", { cache: "no-store" });
@@ -276,6 +293,7 @@ function Pestana({
 
 /** Manda una acción sobre un comentario y devuelve el error de Meta, si lo hubo. */
 async function accionar(c: Comentario, cuerpo: Record<string, unknown>): Promise<string | null> {
+  if (MUESTRA) return accionarComentarioMuestra(cuerpo.texto && !cuerpo.privado ? (c.padreId ?? c.id) : c.id, cuerpo, "Equipo");
   const r = await fetch("/api/meta/comentarios", {
     method: "POST",
     headers: { "content-type": "application/json" },

@@ -12,6 +12,7 @@ import { PreviewModal } from "@/components/social/PreviewModal";
 import { imagenesDe, ordenarCuentas } from "@/lib/social";
 import { activeTenant, activeTenantId } from "@/lib/tenants/active";
 import { soloMiraRedes } from "@/lib/tenants/redes";
+import { esHotelMuestra } from "@/lib/hotel-muestra/registro";
 import type { SocialPost, SocialStats as SocialStatsT } from "@/lib/data/types";
 
 export default function RedesPage() {
@@ -38,6 +39,8 @@ export default function RedesPage() {
   const [componiendo, setComponiendo] = useState(false);
 
   useEffect(() => {
+    // Los hoteles de muestra (NAWI) muestran sus cuentas de muestra, sin Meta.
+    if (esHotelMuestra(activeTenantId())) return;
     const tenant = window.localStorage.getItem("ccg.tenant") || "x";
     const cacheKey = `ccg.meta.stats.${tenant}`;
     // Mostrar al instante las últimas stats reales guardadas (si la cuenta está

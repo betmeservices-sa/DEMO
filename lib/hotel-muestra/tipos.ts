@@ -10,6 +10,8 @@
 
 import type { TipoTicket, EstadoTicket, OrigenTicket, PrioridadTicket } from "@/lib/tickets";
 import type { TenantId } from "@/lib/tenants/types";
+import type { PostEngagement, RedSocial, SocialPost, SocialStats } from "@/lib/data/types";
+import type { PromocionNueva } from "@/lib/promos";
 
 export interface HabitacionMuestra {
   id: string;
@@ -127,6 +129,61 @@ export interface TicketSemilla {
   notas?: { autor: string; texto: string; haceMin: number }[];
 }
 
+/** Una publicación de Redes. Las fechas van en días desde hoy (negativo = ya salió). */
+export interface PublicacionSemilla {
+  id: string;
+  red: RedSocial;
+  estado: SocialPost["estado"];
+  texto: string;
+  enDias: number;
+  /** "18:30", hora de El Salvador. */
+  hora: string;
+  imagenes?: string[];
+  engagement?: PostEngagement;
+}
+
+/** Una respuesta dentro del hilo de un comentario. */
+export interface RespuestaSemilla {
+  autor: string;
+  texto: string;
+  haceMin: number;
+  /** La escribió el hotel. */
+  nuestra?: boolean;
+  meGusta?: number;
+}
+
+/** Un comentario debajo de una publicación, con su hilo. */
+export interface ComentarioSemilla {
+  id: string;
+  /** La publicación de `publicaciones` sobre la que se comentó. */
+  publicacionId: string;
+  autor: string;
+  texto: string;
+  haceMin: number;
+  meGusta?: number;
+  oculto?: boolean;
+  respuestas?: RespuestaSemilla[];
+}
+
+/** Redes y comentarios de un hotel de muestra. Sin esto, el menú no los lleva. */
+export interface RedesMuestra {
+  cuentas: SocialStats[];
+  publicaciones: PublicacionSemilla[];
+  comentarios: ComentarioSemilla[];
+}
+
+/** Una promoción de la muestra. Las fechas van en días desde hoy. */
+export interface PromocionSemilla {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  precio: string;
+  restricciones: string;
+  desdeEnDias?: number;
+  hastaEnDias?: number;
+  activa: boolean;
+}
+
 /** Un tema de "Qué nos piden" con su peso en las conversaciones. */
 export interface TemaPedido {
   tema: string;
@@ -159,6 +216,10 @@ export interface HotelMuestra {
   temas: TemaPedido[];
   /** Conversaciones nuevas en un día normal (para IA Performance). */
   conversacionesDia: number;
+  /** Con esto el menú suma Redes sociales y Comentarios. */
+  redes?: RedesMuestra;
+  /** Con esto el menú suma Promociones. */
+  promociones?: PromocionSemilla[];
 }
 
 // ── Lo que se hace en el demo y queda guardado en el navegador ──
@@ -170,7 +231,12 @@ export type Movimiento =
   | { id: string; ts: string; tipo: "ticket.nuevo"; ticket: TicketNuevoMuestra; actor: string }
   | { id: string; ts: string; tipo: "ticket.asignar"; ticketId: string; staffId: string; actor: string }
   | { id: string; ts: string; tipo: "ticket.estado"; ticketId: string; estado: EstadoTicket; actor: string }
-  | { id: string; ts: string; tipo: "ticket.nota"; ticketId: string; texto: string; actor: string };
+  | { id: string; ts: string; tipo: "ticket.nota"; ticketId: string; texto: string; actor: string }
+  | { id: string; ts: string; tipo: "comentario.responder"; comentarioId: string; texto: string; privado?: boolean; actor: string }
+  | { id: string; ts: string; tipo: "comentario.ocultar"; comentarioId: string; oculto: boolean; actor: string }
+  | { id: string; ts: string; tipo: "comentario.megusta"; comentarioId: string; valor: boolean; actor: string }
+  | { id: string; ts: string; tipo: "promo.guardar"; promoId?: string; promo: Partial<PromocionNueva>; actor: string }
+  | { id: string; ts: string; tipo: "promo.borrar"; promoId: string; actor: string };
 
 export interface TicketNuevoMuestra {
   titulo: string;

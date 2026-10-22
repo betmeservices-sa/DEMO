@@ -17,6 +17,10 @@ import type {
 } from "./tipos";
 import { libroDeMuestra, habitacionDe, totalEstadia } from "./libro";
 import { sumarDias } from "./fechas";
+import type { Comentario } from "@/lib/meta-comentarios";
+import type { Promocion } from "@/lib/promos";
+import { comentariosDeMuestra } from "./redes";
+import { promocionesDeMuestra } from "./promos";
 
 export interface Apartado {
   id: string;
@@ -69,6 +73,8 @@ export interface VistaHotel {
   cerradas: Cerrada[];
   pausa: Record<"esperando_pago" | GrupoPausa, EnPausa[]>;
   tickets: Ticket[];
+  comentarios: Comentario[];
+  promociones: Promocion[];
 }
 
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -276,5 +282,15 @@ export function armarVista(hotel: HotelMuestra, movimientos: Movimiento[], ahora
   // Lo que el agente apartó y no se pagó todavía también está "en pausa".
   pausa.esperando_pago = apartados.map((a) => ({ huesped: a.huesped, desde: a.desde, hasta: a.hasta, total: a.total, haceDias: 0 }));
 
-  return { hoy, ahora, libro, apartados, cerradas, pausa, tickets: ordenarCola(tickets) };
+  return {
+    hoy,
+    ahora,
+    libro,
+    apartados,
+    cerradas,
+    pausa,
+    tickets: ordenarCola(tickets),
+    comentarios: comentariosDeMuestra(hotel, movimientos, ahora),
+    promociones: promocionesDeMuestra(hotel, movimientos, hoy),
+  };
 }

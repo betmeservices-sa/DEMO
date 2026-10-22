@@ -8,7 +8,10 @@ import { DEMO_LOGINS, TENANTS, isTenantId, resolveTenantByLogin, tenantsDelDemo 
 import { MODULOS_HOTEL_MUESTRA, MODULO_RUTA, VE, moduloDeRuta, puedeVerRuta } from "@/lib/modulos";
 import { configTickets, veTickets } from "@/lib/tickets-tenant";
 import { NAWI } from "@/lib/hotel-muestra/nawi";
-import { esHotelMuestra, hotelMuestraDe } from "@/lib/hotel-muestra/registro";
+import { esHotelMuestra, hotelMuestraDe, modulosDeHotelMuestra } from "@/lib/hotel-muestra/registro";
+import { comentariosDeMuestra, paginasDeMuestra, publicacionesDeMuestra } from "@/lib/hotel-muestra/redes";
+import { promocionesDeMuestra } from "@/lib/hotel-muestra/promos";
+import { promocionesVigentes } from "@/lib/promos";
 import { fotoHotel, hayLugar, libroDeMuestra, totalEstadia } from "@/lib/hotel-muestra/libro";
 import { armarVista, reservaDeApartado } from "@/lib/hotel-muestra/vista";
 import { cifrasIa } from "@/lib/hotel-muestra/ia";
@@ -46,8 +49,14 @@ describe("tenant nawi: acceso y menú", () => {
     }
   });
 
-  it("el menú es el de Porta Stays: bandeja, mis chats, tickets, contactos, chat interno, dashboard e IA Performance", () => {
+  it("el menú es el de Porta Stays: bandeja, mis chats, tickets, contactos, chat interno, redes, comentarios, promociones, dashboard e IA Performance", () => {
     expect([...MODULOS_HOTEL_MUESTRA]).toEqual(["bandeja", "mis-chats", "tickets", "contactos", "interno", "dashboard", "ia"]);
+    expect(modulosDeHotelMuestra("nawi")).toEqual([
+      "bandeja", "mis-chats", "tickets", "contactos", "interno", "redes", "comentarios", "promociones", "dashboard", "ia",
+    ]);
+    // Tesoro no trae redes ni promociones de muestra: su menú sigue igual.
+    expect(modulosDeHotelMuestra("tesoro")).toEqual([...MODULOS_HOTEL_MUESTRA]);
+    expect(modulosDeHotelMuestra("yaly")).toEqual([]);
     expect(MODULO_RUTA.ia).toBe("/ia");
     expect(moduloDeRuta("/ia")).toBe("ia");
     // /inmobiliaria no existe, pero si existiera no sería IA Performance.
@@ -55,7 +64,7 @@ describe("tenant nawi: acceso y menú", () => {
   });
 
   it("gerencia y dirección ven todo su menú; jefatura ve IA Performance", () => {
-    for (const m of MODULOS_HOTEL_MUESTRA) {
+    for (const m of modulosDeHotelMuestra("nawi")) {
       expect(VE.gerente_marketing, m).toContain(m);
       expect(VE.admin, m).toContain(m);
     }
@@ -77,6 +86,145 @@ describe("tenant nawi: acceso y menú", () => {
     expect(nawi.ai.modelo).toBe("luna");
     expect(nawi.ai.respondeSolo).toBe(false);
     expect(nawi.whatsapp?.plantillasDelNumeroDemo).toBe(false);
+  });
+});
+
+describe("nawi: redes, comentarios y promociones de muestra", () => {
+  const hilo = (cs: ReturnType<typeof comentariosDeMuestra>, id: string) => cs.filter((c) => c.padreId === id);
+
+  it("las publicaciones salen en hora de El Salvador, con sus fotos en public/", () => {
+    const posts = publicacionesDeMuestra(NAWI, HOY);
+    expect(posts.length).toBe(NAWI.redes!.publicaciones.length);
+    const ig1 = posts.find((p) => p.id === "ig1")!;
+    expect(ig1.fecha).toBe(`${sumarDias(HOY, -2)}T18:30:00`);
+    for (const p of posts) {
+      expect(p.fecha, p.id).not.toMatch(/Z$/);
+      for (const img of p.imagenes ?? []) expect(img, p.id).toMatch(/^\/brand\/nawi\/redes\/[a-z-]+\.jpg$/);
+      // Las publicadas traen sus números; las que faltan salir, no.
+      expect(Boolean(p.engagement), p.id).toBe(p.estado === "publicado");
+    }
+    expect(nawiSeed.socialPosts.length).toBe(posts.length);
+    expect(nawiSeed.socialStats.map((s) => s.red)).toEqual(["instagram", "facebook", "tiktok"]);
+  });
+
+  it("cada comentario cae sobre una publicación de Facebook o Instagram que ya salió, y después de que salió", () => {
+    for (const c of NAWI.redes!.comentarios) {
+      const p = NAWI.redes!.publicaciones.find((x) => x.id === c.publicacionId);
+      expect(p, c.id).toBeDefined();
+      expect(["facebook", "instagram"], c.id).toContain(p!.red);
+      expect(p!.estado, c.id).toBe("publicado");
+      // Lo menos que puede tener la publicación es si el demo se abre a medianoche.
+      const [hh, mm] = p!.hora.split(":").map(Number);
+      expect(c.haceMin, c.id).toBeLessThan(-p!.enDias * 24 * 60 - (hh * 60 + mm));
+      for (const r of c.respuestas ?? []) expect(r.haceMin, c.id).toBeLessThan(c.haceMin);
+    }
+  });
+
+  it("abre con cinco sin responder; el que contestó otra persona sigue en la cola", () => {
+    const cs = comentariosDeMuestra(NAWI, [], AHORA);
+    const pendientes = cs.filter((c) => !c.padreId && !c.respondido && !c.oculto).map((c) => c.id);
+    expect(pendientes.sort()).toEqual(["nc1", "nc2", "nc5", "nc8", "nc9"]);
+    const patricia = cs.find((c) => c.id === "nc9")!;
+    expect(patricia.respuestas).toBe(1);
+    expect(hilo(cs, "nc9")[0].nuestro).toBeUndefined();
+    expect(cs.find((c) => c.id === "nc7")!.oculto).toBe(true);
+    // Las respuestas del hotel salen con el nombre de la cuenta, no en blanco.
+    expect(hilo(cs, "nc3")[0].autor).toBe("nawibeachhouse");
+    expect(hilo(cs, "nc10")[0].autor).toBe("NAWI Beach House");
+    expect(paginasDeMuestra(NAWI).map((p) => p.id)).toEqual(["nawi-instagram", "nawi-facebook"]);
+    for (const c of cs) expect(["nawi-instagram", "nawi-facebook"]).toContain(c.pageId);
+  });
+
+  it("responder lo saca de la cola y cuelga la respuesta al final del hilo; si otra persona vuelve a escribir, no", () => {
+    const cs = comentariosDeMuestra(
+      NAWI,
+      [
+        mov({ tipo: "comentario.responder", comentarioId: "nc9", texto: "Los sábados no, Patricia: es de lunes a viernes.", actor: "Equipo" }),
+        // Responder A UNA RESPUESTA va contra el comentario de arriba.
+        mov({ tipo: "comentario.responder", comentarioId: "nc4-r1", texto: "¡Nos vemos!", actor: "Equipo" }),
+        mov({ tipo: "comentario.responder", comentarioId: "nc8", texto: "Te escribo por privado", privado: true, actor: "Equipo" }),
+      ],
+      AHORA,
+    );
+    const nc9 = cs.find((c) => c.id === "nc9")!;
+    expect(nc9.respondido).toBe(true);
+    expect(nc9.respuestas).toBe(2);
+    const h = hilo(cs, "nc9").sort((a, b) => (a.ts < b.ts ? -1 : 1));
+    expect(h[h.length - 1].nuestro).toBe(true);
+    expect(h[h.length - 1].autor).toBe("NAWI Beach House");
+    expect(hilo(cs, "nc4")).toHaveLength(3);
+    // Por privado no deja nada en el hilo público, pero ya no está en la cola.
+    expect(hilo(cs, "nc8")).toHaveLength(0);
+    expect(cs.find((c) => c.id === "nc8")!.respondido).toBe(true);
+  });
+
+  it("una respuesta guardada ayer no queda antes de lo que contesta", () => {
+    const ayer: Movimiento = { id: "viejo", ts: new Date(AHORA - 24 * 60 * 60_000).toISOString(), tipo: "comentario.responder", comentarioId: "nc1", texto: "Solo el welcome drink.", actor: "Equipo" };
+    const cs = comentariosDeMuestra(NAWI, [ayer], AHORA);
+    const raiz = cs.find((c) => c.id === "nc1")!;
+    expect(hilo(cs, "nc1")[0].ts > raiz.ts).toBe(true);
+    expect(raiz.respondido).toBe(true);
+  });
+
+  it("ocultar y dar me gusta se aplican al comentario y se pueden deshacer", () => {
+    const cs = comentariosDeMuestra(
+      NAWI,
+      [
+        mov({ tipo: "comentario.ocultar", comentarioId: "nc12", oculto: true, actor: "Equipo" }),
+        mov({ tipo: "comentario.ocultar", comentarioId: "nc7", oculto: false, actor: "Equipo" }),
+        mov({ tipo: "comentario.megusta", comentarioId: "nc11", valor: true, actor: "Equipo" }),
+        mov({ tipo: "comentario.megusta", comentarioId: "nc11", valor: true, actor: "Equipo" }),
+      ],
+      AHORA,
+    );
+    expect(cs.find((c) => c.id === "nc12")!.oculto).toBe(true);
+    expect(cs.find((c) => c.id === "nc7")!.oculto).toBe(false);
+    const nc11 = cs.find((c) => c.id === "nc11")!;
+    expect(nc11.meGustaNuestro).toBe(true);
+    // Dos clics del mismo lado no suman dos.
+    expect(nc11.meGusta).toBe(9);
+    expect(nc11.puedeMeGusta).toBe(true);
+    expect(cs.find((c) => c.id === "nc1")!.puedeMeGusta).toBe(false);
+  });
+
+  it("promociones: el agente ofrece las vigentes; la apagada y la vencida no", () => {
+    const ps = promocionesDeMuestra(NAWI, [], HOY);
+    expect(ps.map((p) => p.id)).toEqual(NAWI.promociones!.map((p) => p.id));
+    const vigentes = promocionesVigentes(ps, HOY).map((p) => p.id);
+    expect(vigentes).toEqual(["np1", "np2", "np3", "np4"]);
+    expect(ps.find((p) => p.id === "np6")!.hasta).toBe(sumarDias(HOY, -4));
+    for (const p of ps) expect(p.tenant).toBe("nawi");
+  });
+
+  it("promociones: encender, editar, crear y borrar quedan en el demo", () => {
+    const nueva = mov({ tipo: "promo.guardar", promo: { nombre: "Noche de luna llena", descripcion: "Cena en la playa", precio: "$95 por pareja", restricciones: "", desde: "", hasta: "", activa: true }, actor: "Equipo" });
+    const ps = promocionesDeMuestra(
+      NAWI,
+      [
+        mov({ tipo: "promo.guardar", promoId: "np5", promo: { activa: true }, actor: "Equipo" }),
+        mov({ tipo: "promo.guardar", promoId: "np1", promo: { precio: "3x2 en los drinks de la lista" }, actor: "Equipo" }),
+        mov({ tipo: "promo.borrar", promoId: "np6", actor: "Equipo" }),
+        nueva,
+      ],
+      HOY,
+    );
+    expect(ps[0].id).toBe(nueva.id);
+    expect(ps[0].nombre).toBe("Noche de luna llena");
+    expect(ps.find((p) => p.id === "np5")!.activa).toBe(true);
+    const np1 = ps.find((p) => p.id === "np1")!;
+    expect(np1.precio).toBe("3x2 en los drinks de la lista");
+    // Editar el precio no le borra el resto.
+    expect(np1.nombre).toBe("Happy Hour 2x1");
+    expect(ps.some((p) => p.id === "np6")).toBe(false);
+  });
+
+  it("la vista del hotel trae los comentarios y las promociones; Tesoro no tiene ninguno", () => {
+    const v = armarVista(NAWI, [], AHORA, HOY);
+    expect(v.comentarios.length).toBeGreaterThan(0);
+    expect(v.promociones.length).toBe(NAWI.promociones!.length);
+    const t = armarVista(hotelMuestraDe("tesoro")!, [], AHORA, HOY);
+    expect(t.comentarios).toEqual([]);
+    expect(t.promociones).toEqual([]);
   });
 });
 

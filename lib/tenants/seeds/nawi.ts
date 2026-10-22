@@ -14,6 +14,7 @@ import type { Contact, Conversation, ConversationStatus, DepartmentId, Message }
 import { NAWI } from "@/lib/hotel-muestra/nawi";
 import { habitacionDe, totalEstadia } from "@/lib/hotel-muestra/libro";
 import { diaSV, dinero, fechaCorta, sumarDias } from "@/lib/hotel-muestra/fechas";
+import { publicacionesDeMuestra } from "@/lib/hotel-muestra/redes";
 
 const ME = "me";
 const AHORA = Date.now();
@@ -247,7 +248,7 @@ export const nawiSeed: TenantSeed = {
     { id: "im5", channelId: "ic3", staffId: "s5", texto: "El técnico ya subió a la Jungle Tree House por el aire. Le dejamos ventilador al huésped.", ts: haceMin(108) },
     { id: "im6", channelId: "dm1", staffId: "s2", texto: "Carolina pregunta si puede pagar el depósito en dos partes. ¿Lo autorizamos?", ts: haceMin(16) },
   ],
-  socialPosts: [],
-  socialStats: [],
+  socialPosts: publicacionesDeMuestra(NAWI, HOY),
+  socialStats: NAWI.redes?.cuentas ?? [],
   metrics: [{ label: "Conversaciones hoy", valor: conversations.filter((c) => c.ultimoMensajeTs >= haceMin(24 * 60)).length }],
 };

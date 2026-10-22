@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
-import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_HOTEL_MUESTRA, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
-import { esHotelMuestra } from "@/lib/hotel-muestra/registro";
+import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
+import { esHotelMuestra, modulosDeHotelMuestra } from "@/lib/hotel-muestra/registro";
 import { useStore } from "@/lib/store";
 import { sinLeerPorCanal, useInterno } from "@/lib/interno-bridge";
 import { activeTenantId } from "@/lib/tenants/active";
@@ -175,7 +175,7 @@ export function Sidebar({
     : veShopusa
     ? MODULOS_SHOPUSA
     : veHotelMuestra
-    ? MODULOS_HOTEL_MUESTRA
+    ? modulosDeHotelMuestra(tenant)
     : null;
   const visibles = listaCerrada
     ? listaCerrada.map((id) => NAV.find((item) => item.id === id)).filter(

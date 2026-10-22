@@ -8,6 +8,7 @@
 // demo: el sitio no publica cuántas hay de cada una ni a cuánto.
 
 import type { HotelMuestra } from "./tipos";
+import { NAWI_PROMOCIONES, NAWI_REDES } from "./nawi-redes";
 
 export const NAWI: HotelMuestra = {
   tenant: "nawi",
@@ -329,4 +330,6 @@ export const NAWI: HotelMuestra = {
     { tema: "Solo adultos", peso: 0.07 },
   ],
   conversacionesDia: 26,
+  redes: NAWI_REDES,
+  promociones: NAWI_PROMOCIONES,
 };

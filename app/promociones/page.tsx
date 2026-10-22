@@ -12,6 +12,19 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { promocionesVigentes, type Promocion, type PromocionNueva } from "@/lib/promos";
+import { activeTenantId } from "@/lib/tenants/active";
+import { hotelMuestraDe } from "@/lib/hotel-muestra/registro";
+import { diaSV } from "@/lib/hotel-muestra/fechas";
+import {
+  borrarPromocionMuestra,
+  guardarPromocionMuestra,
+  leerPromocionesMuestra,
+} from "@/lib/hotel-muestra/promociones";
+
+// Los hoteles de muestra con promociones (NAWI) las guardan en el navegador:
+// es la misma pantalla, sin tocar la base ni el guion de ningún agente.
+const TENANT = activeTenantId();
+const MUESTRA = Boolean(hotelMuestraDe(TENANT)?.promociones);
 
 const VACIA: PromocionNueva = {
   nombre: "",
@@ -35,9 +48,14 @@ export default function PromocionesPage() {
   const [error, setError] = useState<string | null>(null);
   const [editando, setEditando] = useState<string | "nueva" | null>(null);
 
-  const hoy = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const hoy = useMemo(() => (MUESTRA ? diaSV() : new Date().toISOString().slice(0, 10)), []);
 
   const cargar = useCallback(async () => {
+    if (MUESTRA) {
+      setPromos(leerPromocionesMuestra(TENANT) ?? []);
+      setCargando(false);
+      return;
+    }
     try {
       const r = await fetch("/api/promos", { cache: "no-store" });
       const d = await r.json();
@@ -60,6 +78,16 @@ export default function PromocionesPage() {
   }, [cargar]);
 
   async function guardar(entrada: PromocionNueva, id?: string) {
+    if (MUESTRA) {
+      const e = guardarPromocionMuestra(entrada, "Equipo", id);
+      if (e) {
+        setError(e);
+        return false;
+      }
+      setEditando(null);
+      await cargar();
+      return true;
+    }
     const r = await fetch("/api/promos", {
       method: id ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -79,6 +107,11 @@ export default function PromocionesPage() {
     // Cambio optimista: el interruptor tiene que sentirse instantáneo, y el
     // servidor confirma en la recarga de abajo.
     setPromos((prev) => prev.map((x) => (x.id === p.id ? { ...x, activa: !x.activa } : x)));
+    if (MUESTRA) {
+      guardarPromocionMuestra({ activa: !p.activa }, "Equipo", p.id);
+      await cargar();
+      return;
+    }
     await fetch("/api/promos", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -89,6 +122,11 @@ export default function PromocionesPage() {
 
   async function borrar(p: Promocion) {
     setPromos((prev) => prev.filter((x) => x.id !== p.id));
+    if (MUESTRA) {
+      borrarPromocionMuestra(p.id, "Equipo");
+      await cargar();
+      return;
+    }
     await fetch(`/api/promos?id=${encodeURIComponent(p.id)}`, { method: "DELETE" });
     await cargar();
   }
