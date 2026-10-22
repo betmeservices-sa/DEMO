@@ -2,13 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   assistantIdDeTenant,
   esAgencia,
+  esDelTenant,
   soloDelTenant,
+  tenantDeAssistant,
   veModuloVoz,
 } from "../tenants/voz";
 
 // El agente de Excel es el que sostiene el modulo del cliente; el resto entra
 // para probar que NO se cuela nada de otro cliente.
 const EXCEL = "4f589f34-f3e0-43e2-bbeb-baf8854668e7";
+const CHEVROLET = "7bcaf1e1-3eec-432c-aa49-5868f9d2a1aa";
 const GRUPOQ = "f4e60d15-31f9-4278-b014-fb1e0ab1eaff";
 const HOSPITAL = "a934532e-a9c5-43c5-83d5-c95092bac36b";
 
@@ -18,6 +21,7 @@ const llamadas = [
   { id: "3", assistantId: HOSPITAL },
   { id: "4", assistantId: "otro-cliente-cualquiera" },
   { id: "5" },
+  { id: "6", assistantId: CHEVROLET },
 ];
 
 describe("agente por tenant", () => {
@@ -34,6 +38,12 @@ describe("agente por tenant", () => {
     expect(veModuloVoz("inmobiliaria")).toBe(false);
   });
 
+  it("Sofia Chevrolet es de Excel, que vende Toyota y Chevrolet", () => {
+    expect(tenantDeAssistant(CHEVROLET)).toBe("excel");
+    expect(esDelTenant(CHEVROLET, "excel")).toBe(true);
+    expect(esDelTenant(CHEVROLET, "grupoq")).toBe(false);
+  });
+
   it("la agencia es miagentia y ve el modulo aunque no declare agente", () => {
     expect(esAgencia("miagentia")).toBe(true);
     expect(esAgencia("excel")).toBe(false);
@@ -44,7 +54,7 @@ describe("agente por tenant", () => {
 
 describe("soloDelTenant", () => {
   it("a un cliente solo le llegan las llamadas de SU agente", () => {
-    expect(soloDelTenant(llamadas, "excel").map((c) => c.id)).toEqual(["1"]);
+    expect(soloDelTenant(llamadas, "excel").map((c) => c.id)).toEqual(["1", "6"]);
     expect(soloDelTenant(llamadas, "grupoq").map((c) => c.id)).toEqual(["2"]);
     expect(soloDelTenant(llamadas, "hospital").map((c) => c.id)).toEqual(["3"]);
   });

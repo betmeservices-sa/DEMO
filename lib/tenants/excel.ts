@@ -192,6 +192,9 @@ export const excelTenant: TenantConfig = {
     },
   ],
   whatsapp: {},
-  // Agente de voz "Sofia Toyota".
-  voz: { assistantId: "4f589f34-f3e0-43e2-bbeb-baf8854668e7" },
+  // Agentes de voz "Sofia Toyota" y "Sofia Chevrolet" (Excel vende las dos marcas).
+  voz: {
+    assistantId: "4f589f34-f3e0-43e2-bbeb-baf8854668e7",
+    assistantIdsExtra: ["7bcaf1e1-3eec-432c-aa49-5868f9d2a1aa"],
+  },
 };
