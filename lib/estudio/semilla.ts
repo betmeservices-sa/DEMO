@@ -6,9 +6,10 @@
 // de después, programado. Las marcas, las personas y las cuentas son
 // INVENTADAS.
 
-import { BANCO, type Angulo } from "./banco";
+import { BANCO, lecturaDeFoto, type Angulo } from "./banco";
 import { diaDe, instanteDe, localSV, lunesDe, sumarDias } from "./fechas";
-import { anuncioDe, estadoDeVariantes, redesPara, usoDeGeneracion, usoDeVideo, variantesDe } from "./generador";
+import { anuncioDe, estadoDeVariantes, redesPara, rotulosDeAngulo, usoDeGeneracion, usoDeVideo, variantesDe } from "./generador";
+import { llevaRotulo } from "./letras";
 import type {
   Encargo,
   EstadoEstudio,
@@ -166,6 +167,7 @@ export const MARCAS: Marca[] = [
       vozNombre: "Ana, voz en off",
     },
     portada: F("reunion"),
+    letra: "montserrat",
   },
 ];
 
@@ -314,6 +316,7 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
       if (e.falla && v.red === e.falla.red) return { ...conId, estado: "fallida" as const, error: e.falla.error, postId: undefined };
       return conId;
     });
+    const medios = esVideo ? (videoListo ? [a.fotos[0]] : []) : tipo === "carrusel" ? a.fotos : a.fotos.slice(0, 1);
     const historial: Pieza["historial"] = [{ ts: creada, accion: "generada", actor: "Motor" }];
     if (estado !== "por_aprobar" && estado !== "rechazada") {
       historial.push({ ts: new Date(creadaMs + 3 * 3_600_000).toISOString(), accion: "aprobada", actor: APRUEBA });
@@ -346,7 +349,9 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
       hashtags: tipo === "anuncio" ? [] : t.hashtags,
       guion: esVideo ? t.guion : undefined,
       ideaImagen: a.idea,
-      medios: esVideo ? (videoListo ? [a.fotos[0]] : []) : tipo === "carrusel" ? a.fotos : a.fotos.slice(0, 1),
+      medios,
+      rotulos: rotulosDeAngulo(tipo, t, medios.length),
+      lectura: llevaRotulo(tipo) ? lecturaDeFoto(medios[0]) : undefined,
       duracion: esVideo ? a.duracion : undefined,
       anuncio: tipo === "anuncio" ? anuncioDe(t.titulo, marca, e.idioma) : undefined,
       redes,
@@ -529,6 +534,7 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
           url,
           tipo: "obra",
           titulo: a.idea,
+          lectura: lecturaDeFoto(url),
           fecha: new Date(ahora - (medios.length % 9) * 2.5 * DIA_MS - 5 * DIA_MS).toISOString(),
           usos: deMarca.filter((p) => p.medios.includes(url)).length,
         });
@@ -542,6 +548,7 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
           tipo: "generada",
           titulo: a.es.titulo,
           titular: a.es.titulo,
+          lectura: lecturaDeFoto(a.fotos[0]),
           fecha: new Date(ahora - 3 * DIA_MS).toISOString(),
           usos: 1,
         });

@@ -75,6 +75,8 @@ export interface Marca {
   redes: CuentaRed[];
   avatar?: Avatar;
   portada: string;
+  /** La letra de su manual de marca (id de letras.ts). Sale siempre entre las sugeridas. */
+  letra?: string;
 }
 
 export interface Variante {
@@ -104,11 +106,17 @@ export interface DatosAnuncio {
   cta: string;
 }
 
-export interface DatosAnuncio {
-  titular: string;
-  /** La línea corta debajo del titular. */
-  descripcion: string;
-  cta: string;
+/** Lo que tiene la foto, para elegir la letra del texto que va encima. */
+export type EstiloImagen = "clasica" | "moderna" | "obra" | "calida" | "lujo";
+
+/**
+ * Lo que un modelo con visión lee de la foto: su estilo, si es clara u
+ * oscura y dónde le queda espacio libre para el texto.
+ */
+export interface LecturaImagen {
+  estilo: EstiloImagen;
+  tono: "claro" | "medio" | "oscuro";
+  zona: "arriba" | "abajo";
 }
 
 export interface EventoPieza {
@@ -133,6 +141,16 @@ export interface Pieza {
   /** Lo que la imagen debería mostrar, para generarla o elegir foto. */
   ideaImagen?: string;
   medios: string[];
+  /**
+   * El texto que va ENCIMA de cada foto, uno por lámina (vacío = la foto
+   * sola). Lo pone la plantilla con la letra elegida, nunca el modelo de
+   * imagen: así no salen letras torcidas ni tildes perdidas.
+   */
+  rotulos?: string[];
+  /** La letra de ese texto (id de letras.ts). Sin elegir, va la primera sugerida. */
+  letra?: string;
+  /** Lo que se leyó de la portada (ver LecturaImagen). */
+  lectura?: LecturaImagen;
   /** Segundos, solo video. */
   duracion?: number;
   /** Solo anuncio. */
@@ -174,6 +192,7 @@ export interface Medio {
   titulo: string;
   /** Gráfico de marca: la foto con este titular y el logo encima. */
   titular?: string;
+  lectura?: LecturaImagen;
   fecha: string;
   /** En cuántas piezas se usó. */
   usos: number;

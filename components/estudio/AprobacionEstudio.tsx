@@ -33,12 +33,14 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { deMarca, editar, rechazar, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
+import { deMarca, editar, elegirLetra, rechazar, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
 import { aprobarPieza, regenerar } from "@/lib/estudio/api";
 import { haceCuanto } from "@/lib/estudio/fechas";
 import { CREDITOS, creditosVideo } from "@/lib/estudio/generador";
+import { rotulosDe } from "@/lib/estudio/letras";
 import type { AccionHistorial, Marca, Pieza, Red } from "@/lib/estudio/tipos";
 import { Boton, EstadoPill, IconoRed, MarcaSello, NOMBRE_RED, TIPO, Vidrio, creditosTexto, useAviso } from "./ui";
+import { ElegirLetra } from "./Rotulo";
 import { VistaPrevia } from "./VistaPrevia";
 
 type Filtro = "todas" | "por_aprobar" | "guiones" | "rechazadas";
@@ -254,6 +256,7 @@ function Detalle({
   const [titular, setTitular] = useState(p.anuncio?.titular ?? p.titulo);
   const [descripcion, setDescripcion] = useState(p.anuncio?.descripcion ?? "");
   const [cta, setCta] = useState(p.anuncio?.cta ?? m.cta[p.idioma]);
+  const [rotulos, setRotulos] = useState(rotulosDe(p));
   const [motivo, setMotivo] = useState("");
   const [ocupado, setOcupado] = useState<null | "aprobar" | "regenerar">(null);
   const motivoRef = useRef<HTMLInputElement>(null);
@@ -268,8 +271,9 @@ function Detalle({
     setTitular(p.anuncio?.titular ?? p.titulo);
     setDescripcion(p.anuncio?.descripcion ?? "");
     setCta(p.anuncio?.cta ?? m.cta[p.idioma]);
+    setRotulos(rotulosDe(p));
     setMotivo("");
-  }, [p.id, p.texto, p.hashtags, p.guion, p.redes, p.anuncio, p.titulo, p.idioma, m.cta]);
+  }, [p.id, p.texto, p.hashtags, p.guion, p.redes, p.anuncio, p.titulo, p.idioma, p.rotulos, m.cta]);
 
   useEffect(() => {
     if (modo === "rechazar" || modo === "regenerar") motivoRef.current?.focus();
@@ -337,6 +341,7 @@ function Detalle({
           .split(/\s+/)
           .filter(Boolean)
           .map((h) => (h.startsWith("#") ? h : `#${h}`)),
+        ...(rotulos.length ? { rotulos: rotulos.map((r) => r.trim()) } : {}),
       });
     setModo(null);
     avisar("Cambios guardados.");
@@ -500,6 +505,19 @@ function Detalle({
                         />
                       </label>
                     )}
+                    {rotulos.map((r, i) => (
+                      <label key={i} className="block">
+                        <span className="mb-1.5 block text-[12px] text-[var(--text-3)]">
+                          {rotulos.length > 1 ? `Texto en la foto ${i + 1}` : "Texto en la foto"}
+                        </span>
+                        <input
+                          value={r}
+                          onChange={(e) => setRotulos(rotulos.map((x, k) => (k === i ? e.target.value : x)))}
+                          placeholder="Sin texto, solo la foto"
+                          className="w-full rounded-[12px] border border-[var(--border-2)] bg-black/30 px-3 py-2 text-[13.5px] text-[var(--text)] outline-none placeholder:text-[var(--text-3)] focus:border-[var(--es-acento)]"
+                        />
+                      </label>
+                    ))}
                   </div>
                 ) : (
                   <div className="es-hueco rounded-[18px] p-4">
@@ -526,6 +544,14 @@ function Detalle({
                       </p>
                     )}
                   </div>
+                )}
+                {modo !== "editar" && (
+                  <ElegirLetra
+                    pieza={p}
+                    marca={m}
+                    editable={p.estado === "por_aprobar" || p.estado === "aprobada"}
+                    onElegir={(id) => elegirLetra(p.id, id)}
+                  />
                 )}
                 {p.ideaImagen && p.tipo !== "video" && (
                   <p className="flex items-start gap-2 text-[12.5px] text-[var(--text-2)]">

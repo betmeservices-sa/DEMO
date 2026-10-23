@@ -10,6 +10,9 @@
 //
 // Anuncio: como lo pinta Meta en el feed, con "Publicidad", la barra del
 // titular y el botón. Es el mismo anuncio en Facebook y en Instagram.
+//
+// Imagen, carrusel y texto llevan encima de cada foto su rótulo, con la letra
+// elegida (Rotulo.tsx).
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -32,6 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { Marca, Pieza, Red } from "@/lib/estudio/tipos";
+import { RotuloDePieza } from "./Rotulo";
 import { MarcaSello } from "./ui";
 
 /** El texto de esa red: el de su variante, o el de la pieza si no la tiene. */
@@ -57,19 +61,15 @@ function Foto({ src, alt, className }: { src?: string; alt: string; className?: 
 }
 
 /** Las fotos de un carrusel, con flechas y puntos. */
-function Carrusel({ pieza, aspecto }: { pieza: Pieza; aspecto: string }) {
+function Carrusel({ pieza, marca, aspecto }: { pieza: Pieza; marca: Marca; aspecto: string }) {
   const [i, setI] = useState(0);
   const fotos = pieza.medios.length ? pieza.medios : [undefined];
   const n = fotos.length;
   useEffect(() => setI(0), [pieza.id]);
   return (
-    <div className={cn("relative overflow-hidden bg-[#1a2843]", aspecto)}>
+    <div className={cn("relative overflow-hidden bg-[#1a2843] [container-type:inline-size]", aspecto)}>
       <Foto src={fotos[Math.min(i, n - 1)]} alt={pieza.ideaImagen ?? pieza.titulo} className="absolute inset-0" />
-      {pieza.tipo === "texto" && (
-        <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/75 via-black/15 to-transparent p-4">
-          <p className="es-rotulo text-[24px] font-semibold leading-[1.02] text-white">{pieza.titulo}</p>
-        </div>
-      )}
+      <RotuloDePieza pieza={pieza} marca={marca} i={Math.min(i, n - 1)} />
       {n > 1 && (
         <>
           <span className="absolute right-2.5 top-2.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">
@@ -139,7 +139,7 @@ function Instagram({ pieza, marca }: { pieza: Pieza; marca: Marca }) {
         <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-white">{h}</span>
         <MoreHorizontal size={18} className="text-white/80" />
       </div>
-      <Carrusel pieza={pieza} aspecto="aspect-[4/5]" />
+      <Carrusel pieza={pieza} marca={marca} aspecto="aspect-[4/5]" />
       <div className="flex items-center gap-4 px-3 pt-3 text-white">
         <Heart size={22} />
         <MessageCircle size={22} />
@@ -169,7 +169,7 @@ function Facebook({ pieza, marca }: { pieza: Pieza; marca: Marca }) {
       <div className="px-3.5 py-3">
         <TextoCorto texto={textoDeRed(pieza, "facebook")} />
       </div>
-      <Carrusel pieza={pieza} aspecto="aspect-[4/5]" />
+      <Carrusel pieza={pieza} marca={marca} aspecto="aspect-[4/5]" />
       <div className="mx-3.5 grid grid-cols-3 border-t border-white/10 py-1.5 text-[13px] font-semibold text-[#b0b3b8]">
         <span className="flex items-center justify-center gap-1.5 py-1.5">
           <ThumbsUp size={16} /> Me gusta
@@ -201,7 +201,7 @@ function LinkedIn({ pieza, marca }: { pieza: Pieza; marca: Marca }) {
       <div className="px-3.5 py-3">
         <TextoCorto texto={textoDeRed(pieza, "linkedin")} />
       </div>
-      <Carrusel pieza={pieza} aspecto="aspect-[4/5]" />
+      <Carrusel pieza={pieza} marca={marca} aspecto="aspect-[4/5]" />
       <div className="mx-3.5 grid grid-cols-4 border-t border-white/10 py-1.5 text-[12px] font-semibold text-white/60">
         <span className="flex flex-col items-center gap-0.5 py-1">
           <ThumbsUp size={16} /> Recomendar
@@ -230,7 +230,7 @@ function Google({ pieza, marca }: { pieza: Pieza; marca: Marca }) {
           <p className="text-[12px] text-[#9aa0a6]">Novedad · Ahora</p>
         </div>
       </div>
-      <Carrusel pieza={{ ...pieza, medios: pieza.medios.slice(0, 1) }} aspecto="aspect-[4/3]" />
+      <Carrusel pieza={{ ...pieza, medios: pieza.medios.slice(0, 1) }} marca={marca} aspecto="aspect-[4/3]" />
       <div className="px-4 pb-4 pt-3">
         <TextoCorto texto={textoDeRed(pieza, "google")} lineas={3} />
         <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#5f6368] px-3.5 py-1.5 text-[13px] font-medium text-[#8ab4f8]">

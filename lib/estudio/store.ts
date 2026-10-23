@@ -29,7 +29,8 @@ import type {
   TrabajoRender,
 } from "./tipos";
 
-const CLAVE = "estudio.estado.v1";
+// v2: las piezas traen el texto encima de la foto y su lectura.
+const CLAVE = "estudio.estado.v2";
 const CLAVE_MARCA = "estudio.marca";
 
 /** Quien firma lo que se hace en el demo. */
@@ -215,7 +216,7 @@ export function rechazar(id: string, nota: string) {
 
 export function editar(
   id: string,
-  cambios: { texto?: string; hashtags?: string[]; guion?: string; titulo?: string; anuncio?: DatosAnuncio },
+  cambios: { texto?: string; hashtags?: string[]; guion?: string; titulo?: string; anuncio?: DatosAnuncio; rotulos?: string[] },
 ) {
   conPieza(id, (p) => {
     const texto = cambios.texto ?? p.texto;
@@ -233,6 +234,11 @@ export function editar(
       historial: [...p.historial, evento("editada")],
     };
   });
+}
+
+/** La letra del texto encima de la foto. No toca el texto ni las variantes. */
+export function elegirLetra(id: string, letra: string) {
+  conPieza(id, (p) => ({ ...p, letra }));
 }
 
 /** La versión nueva que devolvió el motor reemplaza a la anterior. */

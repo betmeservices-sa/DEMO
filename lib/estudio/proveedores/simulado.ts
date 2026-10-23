@@ -2,6 +2,7 @@
 // misma forma y una espera parecida, pero sin salir a la red ni gastar saldo.
 // El texto sale del banco de cada marca (banco.ts).
 
+import { lecturaDeFoto } from "../banco";
 import { CREDITOS, TARIFA, generarPiezas, reescribir, usoDeGeneracion } from "../generador";
 import type { Proveedores } from "./tipos";
 
@@ -39,6 +40,15 @@ export const simulados: Proveedores = {
           },
         ],
       };
+    },
+  },
+  vision: {
+    nombre: "Visión",
+    async leer(url) {
+      await esperar(150 + Math.random() * 150);
+      const lectura = lecturaDeFoto(url);
+      if (!lectura) throw new Error("Foto sin lectura en la muestra.");
+      return { lectura, uso: [] };
     },
   },
   avatar: {

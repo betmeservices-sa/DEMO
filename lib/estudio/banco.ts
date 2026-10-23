@@ -7,13 +7,15 @@
 // Las marcas son INVENTADAS. Lo que dicen (tiempos de obra, materiales,
 // ofertas) es de la muestra, no de un negocio real.
 
-import type { Idioma, TipoPieza } from "./tipos";
+import type { Idioma, LecturaImagen, TipoPieza } from "./tipos";
 
 export interface TextoAngulo {
   titulo: string;
   texto: string;
   hashtags: string[];
   guion?: string;
+  /** Carrusel: el texto encima de cada lámina después de la portada (la portada lleva el título). */
+  laminas?: string[];
 }
 
 export interface Angulo {
@@ -43,12 +45,14 @@ export const BANCO: Record<string, Angulo[]> = {
         texto:
           "Esta fachada llevaba 12 años sin pintura y el sol de Miami ya se le notaba. Lavado a presión, sellador y dos manos de elastomérico. Tres días de trabajo y la casa parece otra.",
         hashtags: ["#PinturaMiami", "#AntesYDespues", "#CoralGables"],
+        laminas: ["Tres días y dos manos después"],
       },
       en: {
         titulo: "Before and after, Coral Gables façade",
         texto:
           "This façade went 12 years without fresh paint, and the Miami sun showed it. Pressure wash, primer and two coats of elastomeric. Three days of work, a whole new house.",
         hashtags: ["#MiamiPainters", "#BeforeAndAfter", "#CoralGables"],
+        laminas: ["Three days and two coats later"],
       },
     },
     {
@@ -141,12 +145,14 @@ export const BANCO: Record<string, Angulo[]> = {
         texto:
           "Tres errores que vemos cada semana: elegir el color con la luz de la tienda, probarlo en un cuadrito de 5 cm y olvidarse del color del techo. Desliza para ver cómo evitarlos.",
         hashtags: ["#Color", "#PinturaInterior", "#Miami"],
+        laminas: ["Elegirlo con la luz de la tienda", "Probarlo en un cuadrito de 5 cm"],
       },
       en: {
         titulo: "3 mistakes when picking a color",
         texto:
           "Three mistakes we see every week: picking color under store lighting, testing a 2-inch swatch, and forgetting the ceiling. Swipe to see how to avoid them.",
         hashtags: ["#ColorTips", "#InteriorPainting", "#Miami"],
+        laminas: ["Picking it under store lighting", "Testing a 2-inch swatch"],
       },
     },
     {
@@ -262,12 +268,14 @@ export const BANCO: Record<string, Angulo[]> = {
         texto:
           "¿Teja, shingle o metal? Cuánto dura cada uno, cuánto cuesta y qué aguanta mejor en el sur de Florida. Desliza antes de decidir.",
         hashtags: ["#Techos", "#SurDeFlorida"],
+        laminas: ["Shingle", "Metal"],
       },
       en: {
         titulo: "Tile, shingle or metal",
         texto:
           "Tile, shingle or metal? Lifespan, cost and what each one handles best in South Florida. Swipe through before you decide.",
         hashtags: ["#Roofing", "#SouthFlorida"],
+        laminas: ["Shingle", "Metal"],
       },
     },
     {
@@ -365,12 +373,14 @@ export const BANCO: Record<string, Angulo[]> = {
         texto:
           "Del baño de los 90 a esto: ducha sin cancel, piso de porcelanato y mueble flotante. Desliza para ver el antes.",
         hashtags: ["#RemodelacionDeBanos", "#AntesYDespues", "#Doral"],
+        laminas: ["El antes"],
       },
       en: {
         titulo: "From a 90s bathroom to this",
         texto:
           "From a 90s bathroom to this: curbless shower, porcelain floors and a floating vanity. Swipe for the before.",
         hashtags: ["#BathroomRemodel", "#BeforeAndAfter", "#Doral"],
+        laminas: ["The before"],
       },
     },
     {
@@ -541,12 +551,14 @@ export const BANCO: Record<string, Angulo[]> = {
         texto:
           "Cinco tareas que casi cualquier negocio pequeño puede delegar esta semana: la bandeja de entrada, confirmar citas, cobrar facturas pendientes, captura de datos y pedir reseñas.",
         hashtags: ["#Productividad", "#PequeñosNegocios"],
+        laminas: ["La bandeja de entrada", "Confirmar citas"],
       },
       en: {
         titulo: "5 tasks to hand off this week",
         texto:
           "Five tasks most small businesses can hand off this week: inbox triage, appointment confirmations, invoice follow-ups, data entry and review requests.",
         hashtags: ["#Productivity", "#SmallBusiness"],
+        laminas: ["Inbox triage", "Appointment confirmations"],
       },
     },
     {
@@ -595,4 +607,40 @@ export const BANCO: Record<string, Angulo[]> = {
 
 export function textoDe(angulo: Angulo, idioma: Idioma): TextoAngulo {
   return angulo[idioma];
+}
+
+// Lo que el modelo con visión diría de cada foto de la muestra: con esto el
+// proveedor simulado contesta igual que el real.
+const LECTURAS: Record<string, LecturaImagen> = {
+  aislante: { estilo: "obra", tono: "medio", zona: "abajo" },
+  "bano-plantas": { estilo: "moderna", tono: "claro", zona: "arriba" },
+  "bano-tina": { estilo: "moderna", tono: "claro", zona: "arriba" },
+  "casa-blanca-moderna": { estilo: "moderna", tono: "claro", zona: "arriba" },
+  "casa-blanca": { estilo: "clasica", tono: "claro", zona: "arriba" },
+  "casa-moderna": { estilo: "moderna", tono: "medio", zona: "arriba" },
+  "casa-noche": { estilo: "lujo", tono: "oscuro", zona: "arriba" },
+  "casa-piscina": { estilo: "clasica", tono: "claro", zona: "arriba" },
+  "casa-porche": { estilo: "clasica", tono: "medio", zona: "arriba" },
+  "cocina-blanca": { estilo: "moderna", tono: "claro", zona: "arriba" },
+  "cocina-isla": { estilo: "moderna", tono: "claro", zona: "arriba" },
+  "cocina-pareja": { estilo: "calida", tono: "medio", zona: "arriba" },
+  comedor: { estilo: "lujo", tono: "claro", zona: "arriba" },
+  "cuarto-pintado": { estilo: "moderna", tono: "claro", zona: "arriba" },
+  "equipo-remoto": { estilo: "moderna", tono: "oscuro", zona: "arriba" },
+  estructura: { estilo: "obra", tono: "claro", zona: "arriba" },
+  "interior-pintado": { estilo: "calida", tono: "claro", zona: "arriba" },
+  "obra-carpintero": { estilo: "obra", tono: "medio", zona: "arriba" },
+  "pintura-rodillo": { estilo: "obra", tono: "claro", zona: "abajo" },
+  planos: { estilo: "obra", tono: "claro", zona: "abajo" },
+  reunion: { estilo: "moderna", tono: "medio", zona: "arriba" },
+  "sala-abierta": { estilo: "moderna", tono: "claro", zona: "arriba" },
+  "sala-color": { estilo: "calida", tono: "claro", zona: "arriba" },
+  "sala-cuadros": { estilo: "calida", tono: "claro", zona: "abajo" },
+  "techo-trabajo": { estilo: "obra", tono: "claro", zona: "arriba" },
+};
+
+/** La lectura de una foto de la muestra; una foto desconocida no tiene. */
+export function lecturaDeFoto(url: string | undefined): LecturaImagen | undefined {
+  const nombre = url?.split("/").pop()?.replace(/\.\w+$/, "");
+  return nombre ? LECTURAS[nombre] : undefined;
 }

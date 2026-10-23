@@ -11,6 +11,7 @@ import { ImagePlus, PenLine, Play, Upload } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { agregarMedio, deMarca, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
 import { diaDe, fechaCorta, localSV } from "@/lib/estudio/fechas";
+import { estiloLetra, sugerirLetras, tamanoRotulo } from "@/lib/estudio/letras";
 import type { Marca, Medio, TipoMedio } from "@/lib/estudio/tipos";
 import { Desplegable } from "@/components/ui/Desplegable";
 import { MarcaSello, Vidrio, useAviso } from "./ui";
@@ -76,10 +77,11 @@ function Tarjeta({
   const esGrafico = medio.tipo === "generada";
   const recorte = esVideo ? "aspect-[9/16]" : esGrafico ? "aspect-[4/5]" : RECORTES[indice % RECORTES.length];
   const color = marca?.colores[0] ?? "#5bbcd6";
+  const letra = esGrafico && medio.titular ? sugerirLetras({ lectura: medio.lectura, marca, textos: [medio.titular] })[0] : undefined;
 
   return (
     <article
-      className={cn("group relative overflow-hidden rounded-[18px] bg-[#1a2843]", recorte)}
+      className={cn("group relative overflow-hidden rounded-[18px] bg-[#1a2843] [container-type:inline-size]", recorte)}
       onClick={onTocar}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -90,7 +92,14 @@ function Tarjeta({
           className="absolute inset-0 flex flex-col justify-end p-4"
           style={{ background: `linear-gradient(180deg, transparent 25%, color-mix(in srgb, ${color} 55%, rgba(0,0,0,0.6)) 72%, ${color})` }}
         >
-          <p className="es-rotulo text-[26px] font-bold uppercase leading-[0.92] text-white drop-shadow">{medio.titular}</p>
+          {letra && medio.titular && (
+            <p
+              className="text-white drop-shadow [text-wrap:balance]"
+              style={{ ...estiloLetra(letra), fontSize: `${tamanoRotulo(letra, medio.titular)}cqw` }}
+            >
+              {medio.titular}
+            </p>
+          )}
           {marca && (
             <span className="mt-3 flex items-center gap-2 text-[11.5px] font-semibold text-white/90">
               <MarcaSello marca={marca} size={22} />

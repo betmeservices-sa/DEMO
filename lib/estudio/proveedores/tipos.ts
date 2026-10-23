@@ -5,7 +5,7 @@
 // de HeyGen o de Synthesia, y el render de Creatomate o de Remotion. Cada
 // adaptador devuelve también lo que costó, que va a `usage_log`.
 
-import type { Idioma, Marca, Pieza, Red, RegistroUso, TipoPieza } from "../tipos";
+import type { Idioma, LecturaImagen, Marca, Pieza, Red, RegistroUso, TipoPieza } from "../tipos";
 
 export interface PedidoTexto {
   marca: Marca;
@@ -27,6 +27,15 @@ export interface ProveedorTexto {
   reescribir(pieza: Pieza, marca: Marca, motivo: string): Promise<{ pieza: Pieza; uso: UsoSinId[] }>;
 }
 
+/**
+ * Un modelo con visión mira la portada y dice su estilo, su tono y dónde le
+ * queda espacio libre. Con eso se sugiere la letra del texto que va encima.
+ */
+export interface ProveedorVision {
+  nombre: string;
+  leer(url: string): Promise<{ lectura: LecturaImagen; uso: UsoSinId[] }>;
+}
+
 export interface ProveedorAvatar {
   nombre: string;
   /** Arranca el video (voz + avatar + edición) y devuelve el id del trabajo. */
@@ -41,6 +50,7 @@ export interface Publicador {
 
 export interface Proveedores {
   texto: ProveedorTexto;
+  vision: ProveedorVision;
   avatar: ProveedorAvatar;
   publicador: Publicador;
 }

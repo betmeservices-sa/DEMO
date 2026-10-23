@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { proveedores } from "@/lib/estudio/proveedores";
+import { conLectura, proveedores } from "@/lib/estudio/proveedores";
 import type { PedidoTexto } from "@/lib/estudio/proveedores/tipos";
 import { cuerpo, fueraDelPanel, malPedido } from "@/lib/estudio/servidor";
 
@@ -14,5 +14,6 @@ export async function POST(req: Request) {
   if (!p?.marca?.id || !p.texto?.trim() || !p.formato || !p.encargoId) return malPedido("Falta la marca o el encargo.");
   if (!Number.isInteger(p.cantidad) || p.cantidad < 1 || p.cantidad > 12) return malPedido("La cantidad va de 1 a 12.");
   const r = await proveedores().texto.generar(p);
-  return NextResponse.json({ ok: true, ...r });
+  const leidas = await conLectura(r.piezas);
+  return NextResponse.json({ ok: true, piezas: leidas.piezas, uso: [...r.uso, ...leidas.uso] });
 }

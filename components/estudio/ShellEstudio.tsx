@@ -41,6 +41,7 @@ import { diaDe, fechaCorta, localSV } from "@/lib/estudio/fechas";
 import { creditosTotal } from "@/lib/estudio/generador";
 import { ClienteSwitcher } from "@/components/shell/ClienteSwitcher";
 import { MarcaSello, creditos } from "./ui";
+import { FuentesRotulo } from "./Rotulo";
 
 interface Pantalla {
   href: string;
@@ -428,6 +429,7 @@ export function ShellEstudio({ children, onLogout }: { children: ReactNode; onLo
 
   return (
     <MotionConfig reducedMotion="user">
+      <FuentesRotulo />
       <div data-shell="estudio" className="flex h-[100dvh] overflow-hidden">
         <BarraLateral actual={actual} onLogout={onLogout} />
         <BarraInferior actual={actual} />

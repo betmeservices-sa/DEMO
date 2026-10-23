@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BANCO } from "@/lib/estudio/banco";
+import { BANCO, lecturaDeFoto } from "@/lib/estudio/banco";
 import { diaSemana, horaEnZona, instanteDe, localSV, lunesDe, sumarDias } from "@/lib/estudio/fechas";
 import {
   CANTIDADES,
@@ -13,6 +13,8 @@ import {
   repartir,
   reescribir,
 } from "@/lib/estudio/generador";
+import { LETRAS, letraDe, rotulosDe, sugerirLetras, urlFuentes } from "@/lib/estudio/letras";
+import { conLectura } from "@/lib/estudio/proveedores";
 import { MARCAS, semillaEstudio } from "@/lib/estudio/semilla";
 import type { TrabajoRender } from "@/lib/estudio/tipos";
 import { resolveTenantByLogin, TENANTS } from "@/lib/tenants";
@@ -218,5 +220,75 @@ describe("el panel en el demo", () => {
     expect(moduloDeRuta("/estudio/calendario")).toBe("estudio");
     expect(puedeVerRuta("gerente_marketing", "/estudio")).toBe(true);
     expect(puedeVerRuta("atencion", "/estudio")).toBe(false);
+  });
+});
+
+describe("la letra del texto en la foto", () => {
+  const encargo = (formato: "imagen" | "carrusel" | "video" | "anuncio", texto: string, id = "solano") =>
+    generarPiezas({
+      marca: marca(id),
+      texto,
+      formato,
+      cantidad: 1,
+      idiomas: { es: 100, en: 0 },
+      encargoId: "enc-letra",
+      actor: "Prueba",
+      ahoraIso: new Date(AHORA).toISOString(),
+    });
+
+  it("el catálogo no trae letras de sistema y todas salen de Google Fonts", () => {
+    for (const l of LETRAS) {
+      expect(l.familia).not.toMatch(/arial|helvetica|times|verdana|system/i);
+      expect(urlFuentes()).toContain(`family=${l.pedido}`);
+    }
+  });
+
+  it("una fachada clásica sugiere primero la clásica; una obra, la de obra", () => {
+    const clasica = sugerirLetras({ lectura: { estilo: "clasica", tono: "claro", zona: "arriba" }, textos: ["Interior terminado"] });
+    expect(clasica[0].id).toBe("fraunces");
+    const obra = sugerirLetras({ lectura: { estilo: "obra", tono: "claro", zona: "abajo" }, textos: ["Por qué se pela"] });
+    expect(obra[0].id).toBe("big-shoulders");
+    expect(clasica).toHaveLength(3);
+  });
+
+  it("la letra de la marca entra entre las sugeridas", () => {
+    const s = sugerirLetras({ lectura: { estilo: "calida", tono: "claro", zona: "arriba" }, marca: { letra: "montserrat" }, textos: ["Hola"] });
+    expect(s.map((l) => l.id)).toContain("montserrat");
+  });
+
+  it("un texto largo deja fuera la letra a brocha", () => {
+    const largo = "Antes y después de la fachada completa en Coral Gables";
+    const s = sugerirLetras({ lectura: { estilo: "obra", tono: "medio", zona: "abajo" }, textos: [largo] });
+    expect(s.map((l) => l.id)).not.toContain("caveat-brush");
+    expect(s.every((l) => largo.length <= l.maximo)).toBe(true);
+  });
+
+  it("una oferta sube las letras que aguantan un porcentaje grande", () => {
+    const s = sugerirLetras({ lectura: { estilo: "moderna", tono: "claro", zona: "arriba" }, textos: ["15% en encimeras"] });
+    expect(s[0].oferta).toBe(true);
+  });
+
+  it("el carrusel trae el texto de cada lámina; el video y el anuncio, ninguno", async () => {
+    const [carrusel] = encargo("carrusel", "3 errores al elegir color");
+    expect(carrusel.rotulos).toEqual(["3 errores al elegir color", "Elegirlo con la luz de la tienda", "Probarlo en un cuadrito de 5 cm"]);
+    expect(encargo("video", "video de Rafael")[0].rotulos).toBeUndefined();
+    expect(rotulosDe(encargo("anuncio", "oferta")[0])).toEqual([]);
+    const { piezas } = await conLectura([carrusel]);
+    expect(piezas[0].lectura).toEqual(lecturaDeFoto(carrusel.medios[0]));
+    expect(letraDe(piezas[0], marca("solano")).vaCon).toContain(piezas[0].lectura!.estilo);
+  });
+
+  it("la letra elegida manda sobre la sugerida", () => {
+    const [p] = encargo("imagen", "pintura que se pela");
+    expect(letraDe({ ...p, letra: "bodoni-moda" }).id).toBe("bodoni-moda");
+    expect(letraDe({ ...p, letra: "arial" }).id).not.toBe("arial");
+  });
+
+  it("toda foto de la muestra tiene su lectura", () => {
+    const fotos = new Set(Object.values(BANCO).flatMap((as) => as.flatMap((a) => a.fotos)).filter((f) => !f.includes("retrato-")));
+    for (const f of fotos) expect(lecturaDeFoto(f), f).toBeDefined();
+    const conTexto = semillaEstudio(AHORA).piezas.filter((p) => rotulosDe(p).length);
+    expect(conTexto.length).toBeGreaterThan(0);
+    for (const p of conTexto) expect(p.lectura, p.id).toBeDefined();
   });
 });

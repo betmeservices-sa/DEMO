@@ -2,8 +2,9 @@
 // el calendario, el avance de un video y las cuentas de créditos. Sin red ni
 // navegador, para probarlo con vitest.
 
-import { BANCO, type Angulo } from "./banco";
+import { BANCO, type Angulo, type TextoAngulo } from "./banco";
 import { diaSemana, instanteDe, sumarDias } from "./fechas";
+import { llevaRotulo } from "./letras";
 import type {
   DatosAnuncio,
   EstadoPieza,
@@ -134,6 +135,17 @@ function mediosPara(formato: TipoPieza, a: Angulo, marcaId: string, fotos?: stri
 }
 
 /**
+ * El texto encima de cada foto: el título en la portada y, en un carrusel,
+ * el de cada lámina que trae el ángulo. Las láminas de más van sin texto.
+ */
+export function rotulosDeAngulo(tipo: TipoPieza, t: TextoAngulo, laminas: number): string[] | undefined {
+  if (!llevaRotulo(tipo)) return undefined;
+  if (tipo !== "carrusel") return [t.titulo];
+  const textos = [t.titulo, ...(t.laminas ?? [])];
+  return Array.from({ length: Math.max(1, laminas) }, (_, i) => textos[i] ?? "");
+}
+
+/**
  * El titular, la línea corta y el botón de un anuncio. La línea corta va
  * debajo del titular, donde Meta muestra quién anuncia: la marca y su ciudad,
  * no otra vez el texto principal.
@@ -173,6 +185,7 @@ export function generarPiezas(p: PedidoGeneracion): Pieza[] {
     const t = a[idioma];
     const tipo = p.formato;
     const redes = redesPara(tipo, p.marca, p.redes);
+    const medios = mediosPara(tipo, a, p.marca.id, p.fotos);
     piezas.push({
       id: `${p.encargoId}-${i + 1}`,
       marcaId: p.marca.id,
@@ -184,7 +197,8 @@ export function generarPiezas(p: PedidoGeneracion): Pieza[] {
       hashtags: tipo === "anuncio" ? [] : t.hashtags,
       guion: tipo === "video" ? t.guion : undefined,
       ideaImagen: a.idea,
-      medios: mediosPara(tipo, a, p.marca.id, p.fotos),
+      medios,
+      rotulos: rotulosDeAngulo(tipo, t, medios.length),
       duracion: tipo === "video" ? a.duracion : undefined,
       anuncio: tipo === "anuncio" ? anuncioDe(t.titulo, p.marca, idioma) : undefined,
       redes,
@@ -206,6 +220,7 @@ export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso:
   if (!otro) return pieza;
   const t = otro[pieza.idioma];
   const hashtags = pieza.tipo === "anuncio" ? [] : t.hashtags;
+  const medios = pieza.tipo === "video" ? pieza.medios : mediosPara(pieza.tipo, otro, marca.id);
   return {
     ...pieza,
     titulo: t.titulo,
@@ -213,7 +228,11 @@ export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso:
     hashtags,
     guion: pieza.tipo === "video" ? t.guion : pieza.guion,
     ideaImagen: otro.idea,
-    medios: pieza.tipo === "video" ? pieza.medios : mediosPara(pieza.tipo, otro, marca.id),
+    medios,
+    // Fotos nuevas: la letra se vuelve a sugerir con lo que se lea de ellas.
+    rotulos: rotulosDeAngulo(pieza.tipo, t, medios.length),
+    letra: undefined,
+    lectura: undefined,
     duracion: pieza.tipo === "video" ? otro.duracion : pieza.duracion,
     anuncio: pieza.tipo === "anuncio" ? anuncioDe(t.titulo, marca, pieza.idioma) : pieza.anuncio,
     variantes: variantesDe(t.texto, t.hashtags, pieza.redes, "por_aprobar", pieza.tipo),
