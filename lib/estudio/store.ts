@@ -29,8 +29,9 @@ import type {
   TrabajoRender,
 } from "./tipos";
 
-// v2: las piezas traen el texto encima de la foto y su lectura.
-const CLAVE = "estudio.estado.v2";
+// v3: las piezas traen el texto encima de la foto, su lectura y, si la
+// imagen se generó, lo que se le pidió al modelo.
+const CLAVE = "estudio.estado.v3";
 const CLAVE_MARCA = "estudio.marca";
 
 /** Quien firma lo que se hace en el demo. */
