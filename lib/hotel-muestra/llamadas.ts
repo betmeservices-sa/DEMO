@@ -157,7 +157,9 @@ function turnosDe(call: VapiCall): TurnoLlamada[] {
 }
 
 export function llamadaDeVapi(call: VapiCall): LlamadaHotel | null {
-  if (!call?.id) return null;
+  // Una llamada borrada en Vapi queda como rastro de facturación, sin número
+  // ni conversación: no es una llamada que mostrar.
+  if (!call?.id || call.endedReason === "call-deleted") return null;
   const inicio = call.startedAt ?? call.createdAt;
   if (!inicio) return null;
   const fin = call.endedAt ? Date.parse(call.endedAt) : NaN;

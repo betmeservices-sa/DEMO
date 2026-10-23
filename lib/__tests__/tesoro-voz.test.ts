@@ -180,6 +180,10 @@ describe("tesoro: de Vapi al panel", () => {
     ]);
   });
 
+  it("una llamada borrada en Vapi no aparece", () => {
+    expect(llamadaDeVapi(vapi("c0", 5, undefined, { endedReason: "call-deleted", customer: undefined, analysis: undefined }))).toBeNull();
+  });
+
   it("una llamada que sigue en curso no deja ticket todavía", () => {
     const l = llamadaDeVapi(vapi("c2", 0, undefined, { status: "in-progress", endedAt: undefined, analysis: undefined }))!;
     expect(l.enCurso).toBe(true);
