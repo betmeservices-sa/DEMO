@@ -5,7 +5,7 @@
 // de HeyGen o de Synthesia, y el render de Creatomate o de Remotion. Cada
 // adaptador devuelve también lo que costó, que va a `usage_log`.
 
-import type { Idioma, LecturaImagen, Marca, Pieza, Red, RegistroUso, TipoPieza } from "../tipos";
+import type { Idioma, LecturaImagen, Marca, OrigenImagen, PedidoImagen, Pieza, Red, RegistroUso, TipoPieza } from "../tipos";
 
 export interface PedidoTexto {
   marca: Marca;
@@ -15,6 +15,7 @@ export interface PedidoTexto {
   idiomas: Record<Idioma, number>;
   redes?: Red[];
   fotos?: string[];
+  origenImagen?: OrigenImagen;
   encargoId: string;
   actor: string;
 }
@@ -25,6 +26,17 @@ export interface ProveedorTexto {
   nombre: string;
   generar(pedido: PedidoTexto): Promise<{ piezas: Pieza[]; uso: UsoSinId[] }>;
   reescribir(pieza: Pieza, marca: Marca, motivo: string): Promise<{ pieza: Pieza; uso: UsoSinId[] }>;
+}
+
+/**
+ * El modelo de imagen (OpenAI). Devuelve la imagen ya guardada donde la
+ * marca guarda sus medios: el modelo entrega la imagen en base64 y el
+ * adaptador la sube. Los créditos no salen de aquí: los cuenta
+ * usoDeGeneracion con lo que se pidió.
+ */
+export interface ProveedorImagen {
+  nombre: string;
+  generar(pedido: PedidoImagen, marcaId: string): Promise<{ url: string }>;
 }
 
 /**
@@ -50,6 +62,7 @@ export interface Publicador {
 
 export interface Proveedores {
   texto: ProveedorTexto;
+  imagen: ProveedorImagen;
   vision: ProveedorVision;
   avatar: ProveedorAvatar;
   publicador: Publicador;

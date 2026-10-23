@@ -2,7 +2,7 @@
 // misma forma y una espera parecida, pero sin salir a la red ni gastar saldo.
 // El texto sale del banco de cada marca (banco.ts).
 
-import { lecturaDeFoto } from "../banco";
+import { fotoDeMuestraPara, lecturaDeFoto } from "../banco";
 import { CREDITOS, TARIFA, generarPiezas, reescribir, usoDeGeneracion } from "../generador";
 import type { Proveedores } from "./tipos";
 
@@ -40,6 +40,18 @@ export const simulados: Proveedores = {
           },
         ],
       };
+    },
+  },
+  imagen: {
+    nombre: "OpenAI",
+    async generar(pedido, marcaId) {
+      await esperar(500 + Math.random() * 500);
+      let k = 0;
+      for (const c of pedido.prompt) k = (k * 31 + c.charCodeAt(0)) >>> 0;
+      const escena = pedido.prompt.match(/^Escena: (.*)$/m)?.[1] ?? "";
+      const url = fotoDeMuestraPara(marcaId, pedido.zonaLibre, k, escena);
+      if (!url) throw new Error("La marca no tiene fotos de muestra.");
+      return { url };
     },
   },
   vision: {

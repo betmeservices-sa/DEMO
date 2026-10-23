@@ -8,13 +8,15 @@ import {
   creditosVideo,
   estimarCreditos,
   generarPiezas,
+  usoDeGeneracion,
   idiomaDe,
   redesPara,
   repartir,
   reescribir,
 } from "@/lib/estudio/generador";
 import { LETRAS, letraDe, rotulosDe, sugerirLetras, urlFuentes } from "@/lib/estudio/letras";
-import { conLectura } from "@/lib/estudio/proveedores";
+import { pedidoDeImagen, zonaParaTexto } from "@/lib/estudio/imagen";
+import { conImagenes, conLectura } from "@/lib/estudio/proveedores";
 import { MARCAS, semillaEstudio } from "@/lib/estudio/semilla";
 import type { TrabajoRender } from "@/lib/estudio/tipos";
 import { resolveTenantByLogin, TENANTS } from "@/lib/tenants";
@@ -290,5 +292,71 @@ describe("la letra del texto en la foto", () => {
     const conTexto = semillaEstudio(AHORA).piezas.filter((p) => rotulosDe(p).length);
     expect(conTexto.length).toBeGreaterThan(0);
     for (const p of conTexto) expect(p.lectura, p.id).toBeDefined();
+  });
+});
+
+describe("la imagen que se le pide al modelo", () => {
+  const solano = () => marca("solano");
+  const pedir = (formato: "imagen" | "carrusel" | "anuncio", origenImagen?: "ia" | "obra", fotos?: string[]) =>
+    generarPiezas({
+      marca: solano(),
+      texto: "3 errores al elegir color",
+      formato,
+      cantidad: 1,
+      idiomas: { es: 100, en: 0 },
+      fotos,
+      origenImagen,
+      encargoId: "enc-img",
+      actor: "Prueba",
+      ahoraIso: new Date(AHORA).toISOString(),
+    });
+
+  it("con texto encima pide el tercio libre y nunca texto dentro de la imagen", () => {
+    const pd = pedidoDeImagen({ marca: solano(), idea: "Casa con porche recién pintada, espacio arriba para el titular", conTexto: true });
+    expect(pd.zonaLibre).toBe("arriba");
+    expect(pd.tamano).toBe("1088x1360");
+    expect(pd.prompt).toContain("tercio superior queda despejado");
+    expect(pd.prompt).toContain("Sin texto, letras");
+    expect(pd.prompt).not.toContain("espacio arriba para el titular");
+    const sin = pedidoDeImagen({ marca: solano(), idea: "Fachada terminada", conTexto: false });
+    expect(sin.zonaLibre).toBeUndefined();
+    expect(zonaParaTexto("Rodillo sobre la pared, espacio abajo")).toBe("abajo");
+  });
+
+  it("el carrusel pide una imagen por lámina, de la misma serie", async () => {
+    const [p] = pedir("carrusel", "ia");
+    const [conImg] = await conImagenes([p], solano());
+    expect(conImg.pedidosImagen).toHaveLength(p.medios.length);
+    expect(conImg.pedidosImagen![1].prompt).toContain(`Lámina 2 de ${p.medios.length}`);
+    const { piezas } = await conLectura([conImg]);
+    // El simulado devuelve una foto con el espacio donde se pidió; la lectura lo confirma.
+    expect(piezas[0].lectura?.zona).toBe(conImg.pedidosImagen![0].zonaLibre);
+  });
+
+  it("la foto de obra no pasa por el modelo", async () => {
+    const [p] = pedir("imagen", "obra");
+    const [igual] = await conImagenes([p], solano());
+    expect(igual.pedidosImagen).toBeUndefined();
+    expect(igual.medios).toEqual(p.medios);
+    const [elegida] = pedir("imagen", "ia", ["/brand/estudio/casa-blanca.jpg"]);
+    expect(elegida.origenImagen).toBe("obra");
+  });
+
+  it("la imagen de IA se cobra por lámina; la foto de obra no", () => {
+    expect(estimarCreditos("imagen", 1, "ia").ahora).toBe(6);
+    expect(estimarCreditos("carrusel", 1, "ia").ahora).toBe(16);
+    expect(estimarCreditos("carrusel", 1, "obra").ahora).toBe(4);
+    expect(estimarCreditos("anuncio", 1, "obra").ahora).toBe(2);
+    const [p] = pedir("carrusel", "ia");
+    const imagen = usoDeGeneracion(p, "2026-10-21T16:00:00Z").find((u) => u.servicio === "imagen");
+    expect(imagen?.creditos).toBe(4 * p.medios.length);
+    expect(usoDeGeneracion(pedir("carrusel", "obra")[0], "2026-10-21T16:00:00Z").some((u) => u.servicio === "imagen")).toBe(false);
+  });
+
+  it("regenerar el texto deja la imagen generada", async () => {
+    const [p] = await conImagenes(pedir("imagen", "ia"), solano());
+    const otra = reescribir(p, solano(), "más corto", new Date(AHORA).toISOString());
+    expect(otra.medios).toEqual(p.medios);
+    expect(otra.pedidosImagen).toEqual(p.pedidosImagen);
   });
 });

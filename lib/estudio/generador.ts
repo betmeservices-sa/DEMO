@@ -4,6 +4,7 @@
 
 import { BANCO, type Angulo, type TextoAngulo } from "./banco";
 import { diaSemana, instanteDe, sumarDias } from "./fechas";
+import { llevaImagen, origenDe } from "./imagen";
 import { llevaRotulo } from "./letras";
 import type {
   DatosAnuncio,
@@ -11,6 +12,7 @@ import type {
   EtapaRender,
   Idioma,
   Marca,
+  OrigenImagen,
   Pieza,
   Red,
   RegistroUso,
@@ -163,6 +165,8 @@ export interface PedidoGeneracion {
   redes?: Red[];
   /** Fotos de la biblioteca sobre las que escribir. */
   fotos?: string[];
+  /** Si la imagen la genera el modelo o sale de las fotos de obra. Con fotos elegidas, es obra. */
+  origenImagen?: OrigenImagen;
   encargoId: string;
   actor: string;
   ahoraIso: string;
@@ -186,6 +190,7 @@ export function generarPiezas(p: PedidoGeneracion): Pieza[] {
     const tipo = p.formato;
     const redes = redesPara(tipo, p.marca, p.redes);
     const medios = mediosPara(tipo, a, p.marca.id, p.fotos);
+    const origenImagen = llevaImagen(tipo) ? (p.fotos?.length ? "obra" : p.origenImagen) : undefined;
     piezas.push({
       id: `${p.encargoId}-${i + 1}`,
       marcaId: p.marca.id,
@@ -199,6 +204,7 @@ export function generarPiezas(p: PedidoGeneracion): Pieza[] {
       ideaImagen: a.idea,
       medios,
       rotulos: rotulosDeAngulo(tipo, t, medios.length),
+      origenImagen,
       duracion: tipo === "video" ? a.duracion : undefined,
       anuncio: tipo === "anuncio" ? anuncioDe(t.titulo, p.marca, idioma) : undefined,
       redes,
@@ -220,7 +226,9 @@ export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso:
   if (!otro) return pieza;
   const t = otro[pieza.idioma];
   const hashtags = pieza.tipo === "anuncio" ? [] : t.hashtags;
-  const medios = pieza.tipo === "video" ? pieza.medios : mediosPara(pieza.tipo, otro, marca.id);
+  // Regenerar es el texto: una imagen generada se queda (rehacerla se cobra aparte).
+  const generada = llevaImagen(pieza.tipo) && origenDe(pieza) === "ia" && Boolean(pieza.pedidosImagen?.length);
+  const medios = pieza.tipo === "video" || generada ? pieza.medios : mediosPara(pieza.tipo, otro, marca.id);
   return {
     ...pieza,
     titulo: t.titulo,
@@ -231,8 +239,8 @@ export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso:
     medios,
     // Fotos nuevas: la letra se vuelve a sugerir con lo que se lea de ellas.
     rotulos: rotulosDeAngulo(pieza.tipo, t, medios.length),
-    letra: undefined,
-    lectura: undefined,
+    letra: generada ? pieza.letra : undefined,
+    lectura: generada ? pieza.lectura : undefined,
     duracion: pieza.tipo === "video" ? otro.duracion : pieza.duracion,
     anuncio: pieza.tipo === "anuncio" ? anuncioDe(t.titulo, marca, pieza.idioma) : pieza.anuncio,
     variantes: variantesDe(t.texto, t.hashtags, pieza.redes, "por_aprobar", pieza.tipo),
@@ -323,16 +331,23 @@ export function creditosVideo(guion: string, duracionSeg: number): { voz: number
 }
 
 /** Lo que gasta generar una pieza del formato (sin el video, que se cobra al aprobar el guion). */
-export function creditosPieza(formato: TipoPieza, laminas = 1): number {
+/** Una imagen generada por lámina; con fotos de obra no se paga imagen. */
+function creditosImagen(formato: TipoPieza, laminas: number, origen?: OrigenImagen): number {
+  if (!llevaImagen(formato)) return 0;
+  return origenDe({ tipo: formato, origenImagen: origen }) === "ia" ? CREDITOS.imagen * (formato === "carrusel" ? laminas : 1) : 0;
+}
+
+export function creditosPieza(formato: TipoPieza, laminas = 1, origen?: OrigenImagen): number {
+  const imagen = creditosImagen(formato, laminas, origen);
   switch (formato) {
     case "texto":
       return CREDITOS.texto;
     case "imagen":
-      return CREDITOS.texto + CREDITOS.grafico;
+      return CREDITOS.texto + CREDITOS.grafico + imagen;
     case "carrusel":
-      return CREDITOS.texto + CREDITOS.grafico * laminas;
+      return CREDITOS.texto + CREDITOS.grafico * laminas + imagen;
     case "anuncio":
-      return CREDITOS.textoAnuncio + CREDITOS.imagen;
+      return CREDITOS.textoAnuncio + imagen;
     case "video":
       return CREDITOS.texto;
   }
@@ -342,8 +357,8 @@ export function creditosPieza(formato: TipoPieza, laminas = 1): number {
  * Lo que va a gastar un encargo, para mostrarlo antes de generar. En video se
  * suma lo que costará armar cada uno si se aprueba el guion (30 s de promedio).
  */
-export function estimarCreditos(formato: TipoPieza, cantidad: number): { ahora: number; alAprobar: number } {
-  const ahora = creditosPieza(formato, 3) * cantidad;
+export function estimarCreditos(formato: TipoPieza, cantidad: number, origen?: OrigenImagen): { ahora: number; alAprobar: number } {
+  const ahora = creditosPieza(formato, 3, origen) * cantidad;
   const alAprobar = formato === "video" ? creditosVideo("x".repeat(420), 30).total * cantidad : 0;
   return { ahora, alAprobar };
 }
@@ -390,11 +405,20 @@ export function usoDeGeneracion(p: Pieza, fecha: string): UsoSinId[] {
       costoUsd: TARIFA.textoPorPieza,
     },
   ];
-  if (p.tipo === "anuncio") {
-    fuera.push({ ...base, servicio: "imagen", proveedor: "Ideogram", unidades: 1, unidad: "imagen", creditos: CREDITOS.imagen, costoUsd: TARIFA.imagenPorGrafico });
-  } else if (p.tipo === "imagen" || p.tipo === "carrusel") {
-    const n = Math.max(1, p.medios.length);
-    fuera.push({ ...base, servicio: "edicion", proveedor: "Creatomate", unidades: n, unidad: n === 1 ? "lámina" : "láminas", creditos: CREDITOS.grafico * n, costoUsd: TARIFA.edicionPorGrafico * n });
+  const laminas = p.tipo === "carrusel" ? Math.max(1, p.medios.length) : 1;
+  if (llevaImagen(p.tipo) && origenDe(p) === "ia") {
+    fuera.push({
+      ...base,
+      servicio: "imagen",
+      proveedor: "OpenAI",
+      unidades: laminas,
+      unidad: laminas === 1 ? "imagen" : "imágenes",
+      creditos: CREDITOS.imagen * laminas,
+      costoUsd: TARIFA.imagenPorGrafico * laminas,
+    });
+  }
+  if (p.tipo === "imagen" || p.tipo === "carrusel") {
+    fuera.push({ ...base, servicio: "edicion", proveedor: "Creatomate", unidades: laminas, unidad: laminas === 1 ? "lámina" : "láminas", creditos: CREDITOS.grafico * laminas, costoUsd: TARIFA.edicionPorGrafico * laminas });
   }
   return fuera;
 }

@@ -18,7 +18,8 @@ import { deMarca, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
 import { generar } from "@/lib/estudio/api";
 import { diaDe, haceCuanto, localSV } from "@/lib/estudio/fechas";
 import { CANTIDADES, creditosTotal, estimarCreditos, idiomaDe, redesDelFormato } from "@/lib/estudio/generador";
-import type { Idioma, Marca, Pieza, Red, RegistroUso, TipoPieza } from "@/lib/estudio/tipos";
+import { llevaImagen } from "@/lib/estudio/imagen";
+import type { Idioma, Marca, OrigenImagen, Pieza, Red, RegistroUso, TipoPieza } from "@/lib/estudio/tipos";
 import {
   Boton,
   Cabecera,
@@ -41,12 +42,12 @@ function esFormato(v: string | null): v is TipoPieza {
   return FORMATOS.includes(v as TipoPieza);
 }
 
-/** "5 imágenes", "1 anuncio", "2 guiones de video". */
+/** "5 posts", "1 anuncio", "2 guiones de video". */
 function cuantasDe(formato: TipoPieza, n: number): string {
   const uno = n === 1;
   switch (formato) {
     case "imagen":
-      return `${n} ${uno ? "imagen" : "imágenes"}`;
+      return `${n} ${uno ? "post" : "posts"}`;
     case "carrusel":
       return `${n} ${uno ? "carrusel" : "carruseles"}`;
     case "video":
@@ -243,6 +244,7 @@ function Composer({
   const [idiomaUno, setIdiomaUno] = useState<Idioma>(marca.idiomas.es >= 50 ? "es" : "en");
   const [redes, setRedes] = useState<Red[]>([]);
   const [foto, setFoto] = useState<string | null>(null);
+  const [origen, setOrigen] = useState<OrigenImagen>("ia");
   const [generando, setGenerando] = useState(false);
 
   const tiene = marca.redes.filter((r) => r.estado !== "sin_conectar");
@@ -297,7 +299,9 @@ function Composer({
       : { es: 0, en: 100 }
     : { es, en: 100 - es };
 
-  const estimado = estimarCreditos(formato, cantidad);
+  // Con una foto elegida, la imagen es esa foto.
+  const origenImagen: OrigenImagen | undefined = llevaImagen(formato) ? (foto ? "obra" : origen) : undefined;
+  const estimado = estimarCreditos(formato, cantidad, origenImagen);
   const porVideo = formato === "video" ? Math.round(estimado.alAprobar / cantidad) : 0;
   const usado = usadoEsteMes(uso, marca.id);
   const quedan = Math.max(0, marca.creditosPlan - usado);
@@ -319,6 +323,7 @@ function Composer({
         idiomas,
         redes,
         fotos: foto && formato !== "video" ? [foto] : undefined,
+        origenImagen,
       });
       if (!piezas.length) {
         avisar(`${marca.nombre} todavía no tiene ${formato === "video" ? "avatar para video" : "ese formato"}.`, "error");
@@ -361,22 +366,55 @@ function Composer({
         ))}
       </div>
 
-      {/* Cuántas */}
-      <div role="group" aria-label="Cuántas" className="mt-3 flex flex-wrap gap-1.5">
-        {CANTIDADES[formato].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => setCantidad(n)}
-            aria-pressed={cantidad === n}
-            className={cn(
-              "rounded-full px-4 py-2 text-[13px] font-semibold transition",
-              cantidad === n ? "bg-[var(--es-acento)] text-[#0b1830]" : "es-hueco text-[var(--text-2)] hover:text-[var(--text)]",
+      {/* Cuántas y de dónde sale la imagen */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div role="group" aria-label="Cuántas" className="flex flex-wrap gap-1.5">
+          {CANTIDADES[formato].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setCantidad(n)}
+              aria-pressed={cantidad === n}
+              className={cn(
+                "rounded-full px-4 py-2 text-[13px] font-semibold transition",
+                cantidad === n ? "bg-[var(--es-acento)] text-[#0b1830]" : "es-hueco text-[var(--text-2)] hover:text-[var(--text)]",
+              )}
+            >
+              {cuantasDe(formato, n)}
+            </button>
+          ))}
+        </div>
+        {llevaImagen(formato) && !foto && (
+          <div role="group" aria-label="La imagen" className="flex flex-wrap items-center gap-2">
+            <span className="text-[12.5px] text-[var(--text-3)]">La imagen</span>
+            <div className="flex rounded-full bg-black/30 p-0.5">
+              {(
+                [
+                  ["ia", "Generarla con IA", Sparkles],
+                  ["obra", "Foto de obra", ImageIcon],
+                ] as const
+              ).map(([id, texto, Icono]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setOrigen(id)}
+                  aria-pressed={origen === id}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition",
+                    origen === id ? "bg-white/[0.14] text-[var(--text)]" : "text-[var(--text-3)] hover:text-[var(--text-2)]",
+                  )}
+                >
+                  <Icono size={14} /> {texto}
+                </button>
+              ))}
+            </div>
+            {origen === "obra" && (
+              <Link href="/estudio/biblioteca" className="text-[12.5px] font-semibold text-[var(--es-acento)] hover:underline">
+                Elegir la foto
+              </Link>
             )}
-          >
-            {cuantasDe(formato, n)}
-          </button>
-        ))}
+          </div>
+        )}
       </div>
 
       {/* El encargo */}
@@ -402,7 +440,7 @@ function Composer({
                 <X size={14} />
               </button>
             </span>
-          ) : formato !== "video" ? (
+          ) : formato === "texto" ? (
             <Link
               href="/estudio/biblioteca"
               className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] text-[var(--text-3)] transition hover:bg-white/[0.05] hover:text-[var(--text-2)]"
@@ -527,18 +565,18 @@ function Composer({
         </Boton>
       </div>
 
-      <AnimatePresence>{generando && <Escribiendo marca={marca} n={cantidad} formato={formato} />}</AnimatePresence>
+      <AnimatePresence>{generando && <Escribiendo marca={marca} n={cantidad} formato={formato} conImagenes={origenImagen === "ia"} />}</AnimatePresence>
     </Vidrio>
   );
 }
 
 /** El momento de espera: los huecos de las piezas que vienen, con un barrido de luz. */
-function Escribiendo({ marca, n, formato }: { marca: Marca; n: number; formato: TipoPieza }) {
+function Escribiendo({ marca, n, formato, conImagenes }: { marca: Marca; n: number; formato: TipoPieza; conImagenes: boolean }) {
   return (
     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
       <p className="mt-5 flex items-center gap-2 text-[13px] text-[var(--text-2)]">
         <Sparkles size={15} className="text-[var(--es-violeta)]" />
-        Escribiendo {cuantasDe(formato, n)} con el tono de {marca.nombre}
+        {conImagenes ? `Escribiendo ${cuantasDe(formato, n)} y generando sus imágenes` : `Escribiendo ${cuantasDe(formato, n)} con el tono de ${marca.nombre}`}
       </p>
       <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
         {Array.from({ length: Math.min(n, 6) }, (_, i) => (

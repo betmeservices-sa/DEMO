@@ -4,7 +4,7 @@
 // guarda en el store; si el servidor no contesta, el error sube a la pantalla.
 
 import { agregarEncargo, aprobar, programar, reemplazar, registrarUso, ACTOR } from "./store";
-import type { Encargo, Idioma, Marca, Pieza, Red, RegistroUso, TipoPieza } from "./tipos";
+import type { Encargo, Idioma, Marca, OrigenImagen, Pieza, Red, RegistroUso, TipoPieza } from "./tipos";
 
 type UsoSinId = Omit<RegistroUso, "id">;
 
@@ -31,6 +31,7 @@ export interface NuevoEncargo {
   idiomas: Record<Idioma, number>;
   redes: Red[];
   fotos?: string[];
+  origenImagen?: OrigenImagen;
 }
 
 /** Genera el lote y lo deja en la cola de aprobación. Devuelve las piezas nuevas. */
@@ -44,6 +45,7 @@ export async function generar(n: NuevoEncargo): Promise<Pieza[]> {
     idiomas: n.idiomas,
     redes: n.redes,
     fotos: n.fotos,
+    origenImagen: n.origenImagen,
     encargoId,
     actor: ACTOR,
   });
@@ -53,6 +55,7 @@ export async function generar(n: NuevoEncargo): Promise<Pieza[]> {
     texto: n.texto,
     formato: n.formato,
     cantidad: n.cantidad,
+    origenImagen: n.origenImagen,
     idiomas: n.idiomas,
     redes: n.redes,
     creado: new Date().toISOString(),

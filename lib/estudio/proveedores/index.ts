@@ -5,8 +5,9 @@
 // tipos.ts (llave en el entorno del servidor, nunca en el navegador) y
 // ponerlo en REALES. Las rutas de /api/estudio y las pantallas no cambian.
 
+import { llevaImagen, origenDe, pedidosDePieza } from "../imagen";
 import { llevaRotulo } from "../letras";
-import type { Pieza } from "../tipos";
+import type { Marca, Pieza } from "../tipos";
 import { simulados } from "./simulado";
 import type { Proveedores, UsoSinId } from "./tipos";
 
@@ -14,6 +15,23 @@ const REALES: Partial<Proveedores> = {};
 
 export function proveedores(): Proveedores {
   return { ...simulados, ...REALES };
+}
+
+/**
+ * Genera las imágenes de las piezas que las piden al modelo: un pedido por
+ * lámina, con el espacio libre donde va su texto. Las fotos de obra no pasan
+ * por aquí. Si una imagen falla, falla el encargo entero: así no queda
+ * cobrada una imagen que no salió.
+ */
+export async function conImagenes(piezas: Pieza[], marca: Marca, imagen = proveedores().imagen): Promise<Pieza[]> {
+  return Promise.all(
+    piezas.map(async (p) => {
+      if (!llevaImagen(p.tipo) || origenDe(p) !== "ia" || p.pedidosImagen?.length) return p;
+      const pedidos = pedidosDePieza(p, marca);
+      const urls = await Promise.all(pedidos.map((pd) => imagen.generar(pd, marca.id).then((r) => r.url)));
+      return { ...p, medios: urls, pedidosImagen: pedidos };
+    }),
+  );
 }
 
 /**

@@ -119,6 +119,20 @@ export interface LecturaImagen {
   zona: "arriba" | "abajo";
 }
 
+/** De dónde sale la imagen: la genera el modelo o es una foto de obra de la marca. */
+export type OrigenImagen = "ia" | "obra";
+
+/** Lo que se le pidió al modelo de imagen, para ver después con qué parámetros salió (imagen.ts). */
+export interface PedidoImagen {
+  modelo: string;
+  /** Ancho x alto en píxeles. */
+  tamano: string;
+  calidad: "low" | "medium" | "high";
+  /** Dónde se pidió el espacio despejado para el texto. Sin texto encima no se pide. */
+  zonaLibre?: "arriba" | "abajo";
+  prompt: string;
+}
+
 export interface EventoPieza {
   ts: string;
   accion: AccionHistorial;
@@ -151,6 +165,10 @@ export interface Pieza {
   letra?: string;
   /** Lo que se leyó de la portada (ver LecturaImagen). */
   lectura?: LecturaImagen;
+  /** Sin decir nada: el anuncio genera su imagen, lo demás usa fotos de obra (imagen.ts, origenDe). */
+  origenImagen?: OrigenImagen;
+  /** Solo si se generó: lo que se le pidió al modelo, uno por lámina. */
+  pedidosImagen?: PedidoImagen[];
   /** Segundos, solo video. */
   duracion?: number;
   /** Solo anuncio. */
@@ -175,6 +193,7 @@ export interface Encargo {
   texto: string;
   formato: TipoPieza;
   cantidad: number;
+  origenImagen?: OrigenImagen;
   idiomas: Record<Idioma, number>;
   redes: Red[];
   creado: string;

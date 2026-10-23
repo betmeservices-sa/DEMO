@@ -9,6 +9,7 @@
 import { BANCO, lecturaDeFoto, type Angulo } from "./banco";
 import { diaDe, instanteDe, localSV, lunesDe, sumarDias } from "./fechas";
 import { anuncioDe, estadoDeVariantes, redesPara, rotulosDeAngulo, usoDeGeneracion, usoDeVideo, variantesDe } from "./generador";
+import { llevaImagen, origenDe, pedidosDePieza } from "./imagen";
 import { llevaRotulo } from "./letras";
 import type {
   Encargo,
@@ -317,6 +318,10 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
       return conId;
     });
     const medios = esVideo ? (videoListo ? [a.fotos[0]] : []) : tipo === "carrusel" ? a.fotos : a.fotos.slice(0, 1);
+    const rotulos = rotulosDeAngulo(tipo, t, medios.length);
+    // Los anuncios de la muestra traen su imagen generada: se ve con qué se pidió.
+    const pedidosImagen =
+      llevaImagen(tipo) && origenDe({ tipo }) === "ia" ? pedidosDePieza({ ideaImagen: a.idea, titulo: t.titulo, rotulos, medios, tipo }, marca) : undefined;
     const historial: Pieza["historial"] = [{ ts: creada, accion: "generada", actor: "Motor" }];
     if (estado !== "por_aprobar" && estado !== "rechazada") {
       historial.push({ ts: new Date(creadaMs + 3 * 3_600_000).toISOString(), accion: "aprobada", actor: APRUEBA });
@@ -350,8 +355,9 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
       guion: esVideo ? t.guion : undefined,
       ideaImagen: a.idea,
       medios,
-      rotulos: rotulosDeAngulo(tipo, t, medios.length),
+      rotulos,
       lectura: llevaRotulo(tipo) ? lecturaDeFoto(medios[0]) : undefined,
+      pedidosImagen,
       duracion: esVideo ? a.duracion : undefined,
       anuncio: tipo === "anuncio" ? anuncioDe(t.titulo, marca, e.idioma) : undefined,
       redes,
@@ -574,7 +580,7 @@ export function semillaEstudio(ahora: number = Date.now()): EstadoEstudio {
   const reg = (r: Omit<RegistroUso, "id">) => uso.push({ ...r, id: `uso-${++n}`, costoUsd: Math.round(r.costoUsd * 10000) / 10000 });
   for (const p of piezas) for (const r of usoDeGeneracion(p, p.creada)) reg(r);
   for (const m of medios.filter((x) => x.tipo === "generada")) {
-    reg({ marcaId: m.marcaId, servicio: "imagen", proveedor: "Ideogram", unidades: 1, unidad: "imagen", creditos: 4, costoUsd: 0.04, fecha: m.fecha });
+    reg({ marcaId: m.marcaId, servicio: "imagen", proveedor: "OpenAI", unidades: 1, unidad: "imagen", creditos: 4, costoUsd: 0.04, fecha: m.fecha });
   }
   for (const t of trabajos) {
     const p = piezas.find((x) => x.id === t.piezaId)!;

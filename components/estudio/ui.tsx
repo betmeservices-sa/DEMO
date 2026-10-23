@@ -142,7 +142,7 @@ export function EstadoPill({ estado, className }: { estado: EstadoPieza; classNa
 }
 
 export const TIPO: Record<TipoPieza, string> = {
-  imagen: "Imagen",
+  imagen: "Post",
   carrusel: "Carrusel",
   video: "Video",
   anuncio: "Anuncio",

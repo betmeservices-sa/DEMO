@@ -11,7 +11,7 @@ import { cn } from "@/lib/cn";
 import { deMarca, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
 import { diaDe, horaCorta, localSV, numeroDia } from "@/lib/estudio/fechas";
 import { creditosPorServicio, creditosTotal, estimarCreditos } from "@/lib/estudio/generador";
-import type { Marca, RegistroUso, Servicio, TipoPieza } from "@/lib/estudio/tipos";
+import type { Marca, OrigenImagen, RegistroUso, Servicio, TipoPieza } from "@/lib/estudio/tipos";
 import { Cabecera, MarcaSello, Vidrio, creditos } from "./ui";
 
 const SERVICIO: Record<Servicio, { texto: string; color: string }> = {
@@ -97,26 +97,28 @@ function Cifras({ uso, plan }: { uso: RegistroUso[]; plan: number }) {
 
 /** Lo que cuesta cada formato, armado con la misma tabla que descuenta los créditos. */
 function Tarifas() {
-  const filas: { tipo: TipoPieza; texto: string; nota?: string }[] = [
+  const filas: { tipo: TipoPieza; texto: string; nota?: string; origen?: OrigenImagen }[] = [
     { tipo: "texto", texto: "Post de texto" },
-    { tipo: "imagen", texto: "Imagen con tu marca" },
-    { tipo: "carrusel", texto: "Carrusel de 3 láminas" },
-    { tipo: "anuncio", texto: "Anuncio", nota: "titular, texto, botón e imagen nueva" },
+    { tipo: "imagen", texto: "Post con foto de obra", origen: "obra" },
+    { tipo: "imagen", texto: "Post con imagen de IA", origen: "ia" },
+    { tipo: "carrusel", texto: "Carrusel de 3 láminas", nota: "con fotos de obra", origen: "obra" },
+    { tipo: "carrusel", texto: "Carrusel de 3 láminas", nota: "con las 3 imágenes de IA", origen: "ia" },
+    { tipo: "anuncio", texto: "Anuncio", nota: "titular, texto, botón e imagen de IA", origen: "ia" },
     { tipo: "video", texto: "Video de 30 s con avatar", nota: "guion, voz, avatar y subtítulos" },
   ];
-  const valor = (t: TipoPieza) => {
-    const e = estimarCreditos(t, 1);
+  const valor = (f: (typeof filas)[number]) => {
+    const e = estimarCreditos(f.tipo, 1, f.origen);
     return e.ahora + e.alAprobar;
   };
-  const max = Math.max(...filas.map((f) => valor(f.tipo)));
+  const max = Math.max(...filas.map(valor));
   return (
     <Vidrio className="p-4 lg:p-5">
       <Cabecera titulo="Lo que cuesta cada formato" detalle="Al generarlo; regenerar el texto suma 1" />
       <ul className="space-y-3">
         {filas.map((f) => {
-          const v = valor(f.tipo);
+          const v = valor(f);
           return (
-            <li key={f.tipo}>
+            <li key={`${f.tipo}-${f.origen ?? ""}`}>
               <div className="flex items-baseline justify-between gap-3">
                 <span className="min-w-0 text-[13px]">
                   <span className="font-medium">{f.texto}</span>

@@ -639,6 +639,29 @@ const LECTURAS: Record<string, LecturaImagen> = {
   "techo-trabajo": { estilo: "obra", tono: "claro", zona: "arriba" },
 };
 
+const ES_INTERIOR = /sala|cuarto|interior|cocina|baño|bano|comedor|ambiente|pared|color/i;
+const FOTO_INTERIOR = /\/(sala|cuarto|interior|cocina|bano|comedor)/;
+
+/**
+ * Una foto de la muestra de la marca con el espacio libre donde se pidió y
+ * del mismo lado (adentro o afuera) que la escena: lo que devuelve el modelo
+ * de imagen simulado. `k` rota entre las que sirven.
+ */
+export function fotoDeMuestraPara(marcaId: string, zona: "arriba" | "abajo" | undefined, k: number, escena = ""): string | undefined {
+  const fotos = [...new Set((BANCO[marcaId] ?? []).flatMap((a) => a.fotos))].filter((f) => !f.includes("retrato-"));
+  const adentro = ES_INTERIOR.test(escena);
+  const filtros: ((f: string) => boolean)[] = [
+    (f) => (!zona || lecturaDeFoto(f)?.zona === zona) && FOTO_INTERIOR.test(f) === adentro,
+    (f) => !zona || lecturaDeFoto(f)?.zona === zona,
+    () => true,
+  ];
+  for (const filtro of filtros) {
+    const lista = fotos.filter(filtro);
+    if (lista.length) return lista[k % lista.length];
+  }
+  return undefined;
+}
+
 /** La lectura de una foto de la muestra; una foto desconocida no tiene. */
 export function lecturaDeFoto(url: string | undefined): LecturaImagen | undefined {
   const nombre = url?.split("/").pop()?.replace(/\.\w+$/, "");

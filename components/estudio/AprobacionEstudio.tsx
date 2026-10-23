@@ -37,6 +37,7 @@ import { deMarca, editar, elegirLetra, rechazar, useEstudio, useMarcaActiva } fr
 import { aprobarPieza, regenerar } from "@/lib/estudio/api";
 import { haceCuanto } from "@/lib/estudio/fechas";
 import { CREDITOS, creditosVideo } from "@/lib/estudio/generador";
+import { origenDe } from "@/lib/estudio/imagen";
 import { rotulosDe } from "@/lib/estudio/letras";
 import type { AccionHistorial, Marca, Pieza, Red } from "@/lib/estudio/tipos";
 import { Boton, EstadoPill, IconoRed, MarcaSello, NOMBRE_RED, TIPO, Vidrio, creditosTexto, useAviso } from "./ui";
@@ -553,7 +554,9 @@ function Detalle({
                     onElegir={(id) => elegirLetra(p.id, id)}
                   />
                 )}
-                {p.ideaImagen && p.tipo !== "video" && (
+                {p.pedidosImagen?.length && origenDe(p) === "ia" ? (
+                  <ImagenGenerada p={p} />
+                ) : p.ideaImagen && p.tipo !== "video" && (
                   <p className="flex items-start gap-2 text-[12.5px] text-[var(--text-2)]">
                     <ImageIcon size={14} className="mt-0.5 shrink-0 text-[var(--text-3)]" />
                     {p.ideaImagen}
@@ -671,6 +674,74 @@ function Detalle({
           )}
         </AnimatePresence>
       </Vidrio>
+    </div>
+  );
+}
+
+/** Con qué se pidió la imagen generada: modelo, tamaño, dónde va el texto y la instrucción entera. */
+function ImagenGenerada({ p }: { p: Pieza }) {
+  const [abierta, setAbierta] = useState(false);
+  const [lamina, setLamina] = useState(0);
+  useEffect(() => {
+    setAbierta(false);
+    setLamina(0);
+  }, [p.id]);
+  const pedidos = p.pedidosImagen ?? [];
+  const pd = pedidos[Math.min(lamina, pedidos.length - 1)];
+  if (!pd) return null;
+  const [ancho, alto] = pd.tamano.split("x");
+  const zonas = new Set(pedidos.map((x) => x.zonaLibre).filter(Boolean));
+  const salio = p.lectura?.zona;
+  const pedida = pedidos[0]?.zonaLibre;
+  return (
+    <div className="es-hueco rounded-[18px] p-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text)]">
+          <Sparkles size={14} className="text-[var(--es-violeta)]" />
+          {pedidos.length > 1 ? `${pedidos.length} imágenes generadas` : "Imagen generada"}
+        </p>
+        <button type="button" onClick={() => setAbierta(!abierta)} className="shrink-0 text-[12px] font-semibold text-[var(--es-acento)] hover:underline">
+          {abierta ? "Ocultar" : "Ver el pedido"}
+        </button>
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-1.5 text-[11.5px] text-[var(--text-2)]">
+        <li className="rounded-full bg-white/[0.06] px-2 py-0.5">{pd.modelo}</li>
+        <li className="rounded-full bg-white/[0.06] px-2 py-0.5">
+          4:5 · {ancho}×{alto}
+        </li>
+        <li className="rounded-full bg-white/[0.06] px-2 py-0.5">
+          {zonas.size ? `Espacio libre ${[...zonas].join(" y ")} para el texto` : "Sin espacio para texto"}
+        </li>
+        <li className="rounded-full bg-white/[0.06] px-2 py-0.5">Sin texto dentro de la imagen</li>
+      </ul>
+      {salio && pedida && salio !== pedida && (
+        <p className="mt-2 text-[12px] text-[var(--es-ambar)]">
+          El espacio se pidió {pedida} pero quedó {salio}: el texto va donde quedó libre.
+        </p>
+      )}
+      {abierta && (
+        <div className="mt-3">
+          {pedidos.length > 1 && (
+            <div className="mb-2 flex gap-1">
+              {pedidos.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setLamina(i)}
+                  aria-pressed={lamina === i}
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold",
+                    lamina === i ? "bg-white/[0.12] text-[var(--text)]" : "text-[var(--text-3)] hover:text-[var(--text)]",
+                  )}
+                >
+                  Lámina {i + 1}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="whitespace-pre-line rounded-[12px] bg-black/30 p-3 text-[12.5px] leading-[1.55] text-[var(--text-2)]">{pd.prompt}</p>
+        </div>
+      )}
     </div>
   );
 }
