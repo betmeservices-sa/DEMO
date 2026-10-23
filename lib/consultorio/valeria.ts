@@ -1,13 +1,56 @@
 // Probar a Valeria desde el demo: lo que se decide sin red.
 //
-// El guion de Valeria (la agente del WhatsApp real del hospital) vive en el
-// hub, en una sola copia. El demo del Centro Ginecológico no lo tiene ni lo
-// quiere tener: reenvía cada turno a `POST /api/hospital/probar` del hub con
-// un secreto compartido, y el hub lo corre en modo espejo (nada se guarda, no
-// abre casos, no sale por WhatsApp). Acá solo se arma la petición y se cuida
-// que nadie deje el chat en bucle.
+// Hay dos Valerias para probar:
+// - La del LABORATORIO (por defecto): su guion (valeria-guion.ts) y su base
+//   (lab-kb-datos.ts) viven en este demo, salen del respaldo del WhatsApp de
+//   la Sucursal Escalón, y contesta con luna como cualquier turno del tenant.
+// - La del HOSPITAL: su guion vive en el hub, en una sola copia. Cada turno se
+//   reenvía a `POST /api/hospital/probar` con un secreto compartido, y el hub
+//   lo corre en modo espejo (nada se guarda, no abre casos, no sale por
+//   WhatsApp).
+// Acá solo se arma lo que viaja y se cuida que nadie deje el chat en bucle.
 
 import type { Politica } from "../freno";
+import type { TurnoIA } from "../ai";
+
+export type GuionDePrueba = "laboratorio" | "hospital";
+
+/** El guion que pidió el navegador. Cualquier otra cosa es el del laboratorio. */
+export function guionDePrueba(b: unknown): GuionDePrueba {
+  return (b as { guion?: unknown } | null)?.guion === "hospital" ? "hospital" : "laboratorio";
+}
+
+/** El historial de la prueba en la forma de un turno real: lo de Valeria cuenta como del equipo. */
+export function turnosParaIA(mensajes: MensajeDePrueba[]): TurnoIA[] {
+  return mensajes.map((m) => ({ autor: m.autor === "cliente" ? "cliente" : "staff", texto: m.texto }));
+}
+
+/**
+ * Cuándo le escribe una persona después de abrir un caso, con la hora de El
+ * Salvador y el horario de la Sucursal Escalón (lunes a sábado de 6:00 a.m. a
+ * 6:00 p.m., domingo hasta las 12:00 m.). No promete minutos: el personal
+ * contesta entre paciente y paciente.
+ */
+export function cierreDeCaso(ahora: Date = new Date()): string {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/El_Salvador",
+    weekday: "short",
+    hour: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(ahora);
+  const dia = partes.find((p) => p.type === "weekday")?.value;
+  const hora = Number(partes.find((p) => p.type === "hour")?.value ?? 0);
+  const cierra = dia === "Sun" ? 12 : 18;
+  if (hora >= 6 && hora < cierra) return "Una compañera del laboratorio le escribe por aquí lo antes posible.";
+  if (hora < 6) return "Una compañera del laboratorio le escribe por aquí a partir de las 6:00 a.m.";
+  return "Una compañera del laboratorio le escribe por aquí mañana a partir de las 6:00 a.m.";
+}
+
+/** Lo que el navegador muestra cuando Valeria habría abierto un caso en la prueba. */
+export interface CasoDePrueba {
+  tipo: string;
+  titulo: string;
+}
 
 export interface MensajeDePrueba {
   autor: "cliente" | "agente";

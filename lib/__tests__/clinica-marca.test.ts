@@ -61,7 +61,9 @@ describe("la marca de la clínica", () => {
 
   it("el guion del agente se presenta con el nombre nuevo", () => {
     expect(TENANTS.consultorio.ai.systemPrompt).toContain("Centro Ginecológico");
-    expect(TENANTS.consultorio.ai.systemPrompt).not.toContain("San Benito");
+    // San Benito sí aparece: es una sucursal real del laboratorio (Zona Rosa).
+    // Lo que no puede volver es el nombre viejo de la clínica.
+    expect(TENANTS.consultorio.ai.systemPrompt).not.toContain("Centro Médico San Benito");
   });
 });
 

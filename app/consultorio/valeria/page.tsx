@@ -1,34 +1,54 @@
 "use client";
 
-// Probar a Valeria: un chat contra el guion real del hospital, sin número.
+// Probar a Valeria: un chat de prueba, sin número.
 //
-// Quien prueba hace de paciente. Cada turno pasa por /api/consultorio/valeria,
-// que lo reenvía al hub (donde vive el guion de la Valeria del WhatsApp real)
-// y el hub lo corre en modo espejo: nada se guarda, ningún caso se abre, nada
-// sale a nadie. El historial vive en el navegador (localStorage) para poder
-// seguir mañana, y "Reiniciar conversación" lo borra.
+// Quien prueba hace de paciente. Hay dos Valerias:
+// - "Laboratorio" (por defecto): la del WhatsApp del laboratorio, con su guion
+//   y su base, armados con el respaldo de la Sucursal Escalón. Corre en este
+//   demo, con luna. Los casos que abriría (resultados, cotización con seguro,
+//   queja) no se abren: se muestran debajo de su respuesta.
+// - "Hospital": la del WhatsApp real del hospital. El turno se reenvía al hub,
+//   que lo corre en modo espejo.
+// Nada sale a nadie. El historial vive en el navegador (localStorage) para
+// poder seguir mañana, y "Reiniciar conversación" lo borra.
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Loader2, RotateCcw, Send, UserRound } from "lucide-react";
+import { Bot, ClipboardList, Loader2, RotateCcw, Send, UserRound } from "lucide-react";
 import { Encabezado } from "@/components/consultorio/Encabezado";
+
+type Guion = "laboratorio" | "hospital";
 
 interface Mensaje {
   autor: "cliente" | "agente";
   texto: string;
+  /** Casos que Valeria habría abierto en ese turno (solo el guion del laboratorio). */
+  casos?: { tipo: string; titulo: string }[];
 }
 
 interface Estado {
   sesion: string;
+  guion: Guion;
   mensajes: Mensaje[];
 }
 
 const LLAVE = "consultorio.valeria.prueba";
 const SIN_RESPUESTA = "Valeria no respondió. Intenta de nuevo.";
 
-function nuevoEstado(): Estado {
+const NOMBRE_GUION: Record<Guion, string> = { laboratorio: "Laboratorio", hospital: "Hospital" };
+const DETALLE_GUION: Record<Guion, string> = {
+  laboratorio:
+    "Conversación de prueba. No sale por WhatsApp ni abre casos. Valeria del laboratorio, con los datos del WhatsApp de la Sucursal Escalón.",
+  hospital: "Conversación de prueba. No sale por WhatsApp ni abre casos. Mismo guion que el número del hospital.",
+};
+const PISTA_GUION: Record<Guion, string> = {
+  laboratorio: "Pregunta precios de exámenes, ayuno, horarios, sucursales, seguros o tus resultados, y mira qué contesta Valeria.",
+  hospital: "Pregunta precios, horarios, preparación de estudios, promociones o aseguradoras, y mira qué contesta Valeria.",
+};
+
+function nuevoEstado(guion: Guion = "laboratorio"): Estado {
   const id =
     typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : String(Date.now());
-  return { sesion: id, mensajes: [] };
+  return { sesion: id, guion, mensajes: [] };
 }
 
 export default function PaginaValeria() {
@@ -42,7 +62,9 @@ export default function PaginaValeria() {
   useEffect(() => {
     try {
       const guardado = localStorage.getItem(LLAVE);
-      setEstado(guardado ? (JSON.parse(guardado) as Estado) : nuevoEstado());
+      const e = guardado ? (JSON.parse(guardado) as Partial<Estado>) : null;
+      // Lo guardado antes de que hubiera dos guiones era del hospital.
+      setEstado(e?.sesion ? { sesion: e.sesion, guion: e.guion ?? "hospital", mensajes: e.mensajes ?? [] } : nuevoEstado());
     } catch {
       setEstado(nuevoEstado());
     }
@@ -70,14 +92,26 @@ export default function PaginaValeria() {
       const r = await fetch("/api/consultorio/valeria", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sesion: estado.sesion, mensajes: conPaciente }),
+        body: JSON.stringify({
+          sesion: estado.sesion,
+          guion: estado.guion,
+          mensajes: conPaciente.map(({ autor, texto }) => ({ autor, texto })),
+        }),
       });
-      const d = (await r.json()) as { ok: boolean; respuesta?: string; error?: string };
+      const d = (await r.json()) as {
+        ok: boolean;
+        respuesta?: string;
+        error?: string;
+        casos?: { tipo: string; titulo: string }[];
+      };
       if (!d.ok || !d.respuesta) {
         setError(d.error ?? SIN_RESPUESTA);
         return;
       }
-      setEstado({ ...estado, mensajes: [...conPaciente, { autor: "agente", texto: d.respuesta }] });
+      setEstado({
+        ...estado,
+        mensajes: [...conPaciente, { autor: "agente", texto: d.respuesta, casos: d.casos?.length ? d.casos : undefined }],
+      });
     } catch {
       setError(SIN_RESPUESTA);
     } finally {
@@ -86,21 +120,35 @@ export default function PaginaValeria() {
     }
   }
 
-  function reiniciar() {
+  function reiniciar(guion?: Guion) {
     if (!estado) return;
     if (estado.mensajes.length && !window.confirm("¿Borrar esta conversación de prueba y empezar de cero?")) return;
     setError(null);
     setTexto("");
-    setEstado(nuevoEstado());
+    setEstado(nuevoEstado(guion ?? estado.guion));
   }
+
+  const guion = estado?.guion ?? "laboratorio";
 
   return (
     <>
-      <Encabezado
-        titulo="Probar a Valeria"
-        detalle="Conversación de prueba. No sale por WhatsApp ni abre casos. Mismo guion que el número del hospital."
-      >
-        <button type="button" onClick={reiniciar} className="boton-2">
+      <Encabezado titulo="Probar a Valeria" detalle={DETALLE_GUION[guion]}>
+        <div role="group" aria-label="Qué Valeria probar" className="inline-flex rounded-lg border border-[var(--linea)] bg-[var(--panel-2)] p-0.5">
+          {(["laboratorio", "hospital"] as const).map((g) => (
+            <button
+              key={g}
+              type="button"
+              aria-pressed={guion === g}
+              onClick={() => g !== guion && reiniciar(g)}
+              className={`rounded-md px-3 py-1 text-[12.5px] font-semibold transition ${
+                guion === g ? "bg-[var(--verde)] text-white shadow-sm" : "text-[var(--texto-3)] hover:text-[var(--texto)]"
+              }`}
+            >
+              {NOMBRE_GUION[g]}
+            </button>
+          ))}
+        </div>
+        <button type="button" onClick={() => reiniciar()} className="boton-2">
           <RotateCcw size={15} /> Reiniciar conversación
         </button>
       </Encabezado>
@@ -112,10 +160,7 @@ export default function PaginaValeria() {
               <div className="flex h-full flex-col items-center justify-center text-center">
                 <Bot size={30} className="mb-2 text-[var(--verde)]" />
                 <p className="font-serif text-[18px] text-[var(--texto)]">Escribe como si fueras un paciente</p>
-                <p className="mt-1 max-w-[44ch] text-[13.5px] leading-relaxed text-[var(--texto-2)]">
-                  Pregunta precios, horarios, preparación de estudios, promociones o aseguradoras, y mira
-                  qué contesta Valeria.
-                </p>
+                <p className="mt-1 max-w-[44ch] text-[13.5px] leading-relaxed text-[var(--texto-2)]">{PISTA_GUION[guion]}</p>
               </div>
             )}
             {estado?.mensajes.map((m, i) => {
@@ -137,6 +182,14 @@ export default function PaginaValeria() {
                     >
                       {m.texto}
                     </div>
+                    {m.casos?.map((c, j) => (
+                      <p
+                        key={j}
+                        className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-dashed border-[var(--linea)] px-2 py-0.5 text-[11.5px] text-[var(--texto-2)]"
+                      >
+                        <ClipboardList size={12} /> Abriría un caso: {c.titulo}
+                      </p>
+                    ))}
                     <p className={`mt-0.5 text-[11px] text-[var(--texto-3)] ${paciente ? "text-right" : ""}`}>
                       {paciente ? "Paciente" : "Valeria"}
                     </p>

@@ -33,6 +33,9 @@ import { areaHospitalPara, areaYaliPara, RESPONSABLE_HOSPITAL } from "./tickets-
 // la de WhatsApp son la misma agente, ver lib/llamada-contexto.ts).
 import { contextoDeLlamadaPara } from "./llamada-contexto";
 import { pasarAPersona, type Motivo, type Traspaso } from "./pasar-a-persona";
+import { respuestaDeBusqueda } from "./consultorio/lab-kb";
+import { BASE_LAB } from "./consultorio/lab-kb-datos";
+import { cierreDeCaso } from "./consultorio/valeria";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -93,6 +96,8 @@ interface AccionesIA {
    * Si no viene, se usa el camino de WhatsApp.
    */
   onPasarAPersona?: (motivo: Motivo, area?: string) => Promise<Traspaso>;
+  /** Probar a Valeria del laboratorio: el caso que se habría abierto, para mostrarlo. */
+  onCaso?: (c: { tipo: string; titulo: string }) => void;
 }
 
 // Tags de interés del tenant, para clasificar al contacto (autos en Grupo Q,
@@ -407,6 +412,50 @@ const TOOL_TICKET_HOSPITAL: Anthropic.Tool = {
 };
 const TOOLS_HOSPITAL: Anthropic.Tool[] = [...TOOLS_SIN_AGENDA, TOOL_TICKET_HOSPITAL];
 
+// El laboratorio (tenant consultorio): Valeria no agenda, porque el lab
+// atiende por orden de llegada. Saca todo dato de la base del lab con
+// kb_buscar (lib/consultorio/lab-kb.ts) y abre un caso solo para lo que
+// necesita a una persona.
+const TOOL_KB_LAB: Anthropic.Tool = {
+  name: "kb_buscar",
+  description:
+    "Busca en la base del laboratorio: exámenes y perfiles (precio particular, preparación, muestra, tiempo de resultado), sucursales (dirección, horario, teléfonos), aseguradoras y convenios, temas generales (formas de pago, domicilio, resultados, factura, cita, orden médica, recargo fuera de horario) y promociones vigentes. Escribe en `consulta` lo que ENTENDISTE que la persona busca, en pocas palabras (\"hemograma\", \"curva de glucosa\", \"sucursal escalón\", \"mapfre\", \"domicilio\"). Devuelve hasta 6 candidatos ordenados por `score` (0 a 1), cada uno con `tipo`, `estado` y `datos`. Si `resultados` viene vacío, ese dato no está en la base.",
+  input_schema: {
+    type: "object",
+    properties: {
+      consulta: { type: "string", description: "Qué buscar, en pocas palabras" },
+    },
+    required: ["consulta"],
+  },
+};
+
+const TOOL_TICKET_LAB: Anthropic.Tool = {
+  name: "crear_ticket",
+  description:
+    "Abre un caso para una compañera del laboratorio, que le escribe a la persona por este mismo chat. Úsala UNA sola vez por asunto y solo para: pedir sus resultados o saber si ya están (tipo resultados), cotizar con seguro médico o una orden que viene en foto (tipo cotizacion), una factura, un crédito fiscal o los datos para pagar por transferencia (tipo facturacion), programar un domicilio (tipo informacion), una queja (tipo queja) o cuando pide hablar con una persona (tipo otro). Devuelve `cierre`: la frase que dice cuándo le van a escribir. Nunca digas la palabra ticket ni el número del caso.",
+  input_schema: {
+    type: "object",
+    properties: {
+      tipo: {
+        type: "string",
+        enum: ["resultados", "cotizacion", "facturacion", "informacion", "queja", "otro"],
+      },
+      titulo: {
+        type: "string",
+        description: "Una línea, como la escribiría una persona. Ej: 'Pide sus resultados del urocultivo del martes'",
+      },
+      detalle: {
+        type: "string",
+        description: "Todo lo que la compañera necesita para resolverlo sin volver a preguntar: qué pidió, a nombre de quién, qué seguro, qué se le dijo ya. En frases.",
+      },
+      nombre: { type: "string", description: "Nombre del paciente, si lo dio" },
+    },
+    required: ["tipo", "titulo", "detalle"],
+  },
+};
+
+const TOOLS_CONSULTORIO: Anthropic.Tool[] = [TOOL_KB_LAB, TOOL_TICKET_LAB, ...TOOLS_SIN_AGENDA];
+
 function toolsPara(tenantId?: TenantId): Anthropic.Tool[] {
   const base =
     tenantId === "hotel"
@@ -415,7 +464,9 @@ function toolsPara(tenantId?: TenantId): Anthropic.Tool[] {
         ? TOOLS_YALI
         : tenantId === "hospital"
           ? TOOLS_HOSPITAL
-          : tenantId === "comercial" || tenantId === "chalatenango" || tenantId === "shopusa"
+          : tenantId === "consultorio"
+            ? TOOLS_CONSULTORIO
+            : tenantId === "comercial" || tenantId === "chalatenango" || tenantId === "shopusa"
             ? TOOLS_SIN_AGENDA
             : TOOLS_BASE;
   const elegir = toolElegirHotel(tenantId);
@@ -548,6 +599,9 @@ export async function ejecutarHerramienta(
     clave?: string;
   },
 ): Promise<string> {
+  if (nombre === "kb_buscar" && contexto?.tenantId === "consultorio") {
+    return respuestaDeBusqueda(BASE_LAB, (input as { consulta?: unknown }).consulta, hoyDeTenant(contexto.tenantId));
+  }
   if (nombre === "guardar_datos_contacto") {
     await acciones?.onGuardarContacto?.(
       input as { nombre?: string; apellido?: string; correo?: string; interes?: string },
@@ -619,6 +673,12 @@ export async function ejecutarHerramienta(
     };
     const tenant = contexto?.tenantId ?? "yaly";
     const esHospital = tenant === "hospital";
+    // Probar a Valeria del laboratorio: el caso no se abre, solo se cuenta.
+    // La conversación de prueba no tiene teléfono ni paciente real detrás.
+    if (tenant === "consultorio" && contexto?.clave?.startsWith("prueba:")) {
+      acciones?.onCaso?.({ tipo: t.tipo ?? "otro", titulo: (t.titulo ?? "").trim() || "Caso sin título" });
+      return JSON.stringify({ ok: true, cierre: cierreDeCaso() });
+    }
     try {
       // Se carga aquí y no arriba a propósito: el store de tickets arrastra el
       // cliente de Supabase, y este archivo es el que se importa en cada
@@ -653,7 +713,9 @@ export async function ejecutarHerramienta(
         contactoTelefono: contexto?.telefono,
         area: esHospital
           ? areaHospitalPara(t.tipo ?? "otro")
-          : areaYaliPara(t.tipo ?? "otro", contexto?.sucursal?.id ?? null),
+          : tenant === "consultorio"
+            ? "Laboratorio"
+            : areaYaliPara(t.tipo ?? "otro", contexto?.sucursal?.id ?? null),
         // En el hospital todo caso nace con dueña: Marielos. Sin esto el
         // ticket cae en "Sin tomar" y nadie lo ve hasta que alguien revise
         // la cola.
