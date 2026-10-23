@@ -14,6 +14,7 @@ import type { Movimiento } from "./tipos";
 import { armarVista, type VistaHotel } from "./vista";
 import { hotelMuestraDe } from "./registro";
 import { diaSV } from "./fechas";
+import type { LlamadaHotel } from "./llamadas";
 
 const clave = (tenant: string) => `hotelMuestra.${tenant}.movimientos.v1`;
 
@@ -21,6 +22,38 @@ const movimientos = new Map<string, Movimiento[]>();
 const vistas = new Map<string, VistaHotel>();
 const oyentes = new Set<() => void>();
 let escuchando = false;
+
+// Las llamadas REALES a la línea de voz del hotel. No son de la muestra ni se
+// guardan en el navegador: las trae el servidor de Vapi una vez por carga (y
+// cuando alguien toca "Actualizar" en Llamadas), y se suman a la vista.
+const llamadasReales = new Map<string, LlamadaHotel[]>();
+const trayendo = new Map<string, Promise<void>>();
+
+function traerLlamadas(tenant: string): Promise<void> {
+  const enCamino = trayendo.get(tenant);
+  if (enCamino) return enCamino;
+  const p = (async () => {
+    try {
+      const res = await fetch("/api/hotel-muestra/llamadas", { cache: "no-store" });
+      const j = (await res.json().catch(() => null)) as { llamadas?: LlamadaHotel[] } | null;
+      llamadasReales.set(tenant, Array.isArray(j?.llamadas) ? j.llamadas : (llamadasReales.get(tenant) ?? []));
+    } catch {
+      // Sin red el demo sigue con la muestra.
+      if (!llamadasReales.has(tenant)) llamadasReales.set(tenant, []);
+    } finally {
+      trayendo.delete(tenant);
+      vistas.delete(tenant);
+      emitir();
+    }
+  })();
+  trayendo.set(tenant, p);
+  return p;
+}
+
+/** Vuelve a pedir las llamadas reales del panel activo. */
+export function recargarLlamadas(): Promise<void> {
+  return traerLlamadas(activeTenantId());
+}
 
 function leer(tenant: string): Movimiento[] {
   try {
@@ -61,6 +94,8 @@ function suscribir(f: () => void) {
     });
   }
   oyentes.add(f);
+  const tenant = activeTenantId();
+  if (hotelMuestraDe(tenant)?.voz && !llamadasReales.has(tenant)) void traerLlamadas(tenant);
   return () => oyentes.delete(f);
 }
 
@@ -71,7 +106,7 @@ export function vistaDe(tenant: string): VistaHotel | null {
   let v = vistas.get(tenant);
   if (!v) {
     const ahora = Date.now();
-    v = armarVista(hotel, deTenant(tenant), ahora, diaSV(ahora));
+    v = armarVista(hotel, deTenant(tenant), ahora, diaSV(ahora), llamadasReales.get(tenant) ?? []);
     vistas.set(tenant, v);
   }
   return v;

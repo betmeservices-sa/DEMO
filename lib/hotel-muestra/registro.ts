@@ -26,12 +26,14 @@ export const TENANTS_HOTEL_MUESTRA: readonly string[] = Object.keys(HOTELES);
 /**
  * El menú de un hotel de muestra, en el orden de Porta Stays. Redes,
  * Comentarios y Promociones van solo si el hotel trae esos datos (NAWI sí,
- * Tesoro no): un módulo vacío en un demo se ve como algo roto.
+ * Tesoro no), y Llamadas y Agentes solo si tiene recepcionista de voz (Tesoro
+ * sí, NAWI no): un módulo vacío en un demo se ve como algo roto.
  */
 export function modulosDeHotelMuestra(tenant: string): ModuleId[] {
   const hotel = hotelMuestraDe(tenant);
   if (!hotel) return [];
   const extra: ModuleId[] = [
+    ...(hotel.voz ? (["llamadas", "agentes"] as const) : []),
     ...(hotel.redes ? (["redes", "comentarios"] as const) : []),
     ...(hotel.promociones ? (["promociones"] as const) : []),
   ];

@@ -54,8 +54,9 @@ describe("tenant nawi: acceso y menú", () => {
     expect(modulosDeHotelMuestra("nawi")).toEqual([
       "bandeja", "mis-chats", "tickets", "contactos", "interno", "redes", "comentarios", "promociones", "dashboard", "ia",
     ]);
-    // Tesoro no trae redes ni promociones de muestra: su menú sigue igual.
-    expect(modulosDeHotelMuestra("tesoro")).toEqual([...MODULOS_HOTEL_MUESTRA]);
+    // Tesoro no trae redes ni promociones de muestra; suma su línea de voz (ver tesoro-voz.test.ts).
+    expect(modulosDeHotelMuestra("tesoro")).not.toContain("redes");
+    expect(modulosDeHotelMuestra("tesoro")).not.toContain("promociones");
     expect(modulosDeHotelMuestra("yaly")).toEqual([]);
     expect(MODULO_RUTA.ia).toBe("/ia");
     expect(moduloDeRuta("/ia")).toBe("ia");

@@ -12,6 +12,7 @@ import type { TipoTicket, EstadoTicket, OrigenTicket, PrioridadTicket } from "@/
 import type { TenantId } from "@/lib/tenants/types";
 import type { PostEngagement, RedSocial, SocialPost, SocialStats } from "@/lib/data/types";
 import type { PromocionNueva } from "@/lib/promos";
+import type { DatosLlamada, TurnoLlamada } from "./llamadas";
 
 export interface HabitacionMuestra {
   id: string;
@@ -69,7 +70,7 @@ export interface ApartadoSemilla {
   estado: EstadoApartado;
   /** Minutos que le quedan a la hora del apartado. */
   quedanMin: number;
-  canal: "WhatsApp" | "Instagram" | "Messenger";
+  canal: "WhatsApp" | "Instagram" | "Messenger" | "Llamada";
   nota?: string;
   /** La conversación de la bandeja de donde salió ("Ver chat"). */
   conversacionId?: string;
@@ -184,6 +185,33 @@ export interface PromocionSemilla {
   activa: boolean;
 }
 
+/**
+ * Una llamada de la muestra a la línea de voz. La llegada va por día de la
+ * semana ("el próximo viernes") para que lo que se dice en la conversación
+ * ("el viernes") siga siendo cierto cualquier día que se abra el demo.
+ */
+export interface LlamadaSemilla {
+  id: string;
+  /** Hace cuántos minutos colgó. */
+  haceMin: number;
+  duracionSeg: number;
+  numero: string;
+  resumen: string;
+  datos: Omit<DatosLlamada, "fecha_llegada" | "fecha_salida" | "total_estimado"> & {
+    /** 0 = domingo … 6 = sábado: el próximo, mañana como pronto. */
+    llegaDiaSemana?: number;
+    semanasDespues?: number;
+  };
+  turnos: TurnoLlamada[];
+}
+
+/** La recepcionista de voz. Con esto el menú suma Llamadas y Agentes. */
+export interface VozMuestra {
+  /** "2505-4620", como se escribe en el panel. */
+  linea: string;
+  llamadas: LlamadaSemilla[];
+}
+
 /** Un tema de "Qué nos piden" con su peso en las conversaciones. */
 export interface TemaPedido {
   tema: string;
@@ -220,6 +248,8 @@ export interface HotelMuestra {
   redes?: RedesMuestra;
   /** Con esto el menú suma Promociones. */
   promociones?: PromocionSemilla[];
+  /** Con esto el menú suma Llamadas y Agentes. */
+  voz?: VozMuestra;
 }
 
 // ── Lo que se hace en el demo y queda guardado en el navegador ──

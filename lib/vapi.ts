@@ -33,7 +33,11 @@ export interface VapiCall {
     presignedMonoUrl?: string;
     presignedStereoUrl?: string;
     presignedUrlsExpiresAt?: string;
+    /** La conversación turno por turno ("bot", "user", "system", herramientas). */
+    messages?: Array<{ role?: string; message?: string }>;
   };
+  /** Lo que el asistente anotó al colgar (summaryPlan y structuredDataPlan). */
+  analysis?: { summary?: string; structuredData?: unknown };
 }
 
 // Catalogos que traducen ids de Vapi a algo legible. Se piden una vez por
@@ -213,6 +217,18 @@ export async function fetchVapiCalls(limit = 200): Promise<CallRecord[]> {
   const data = await pedir<unknown>(`/call?limit=${limit}`, key);
   const arr = Array.isArray(data) ? (data as VapiCall[]) : [];
   return arr.map((c) => normalizarCall(c, dir));
+}
+
+/**
+ * Las llamadas de UN asistente, crudas (con `analysis` y `artifact`). Para las
+ * pantallas que leen lo que el agente anoto, no solo la duracion y el costo.
+ * Sin llave devuelve vacio: no hay muestra de Vapi que tenga sentido aca.
+ */
+export async function fetchVapiCallsDeAsistente(assistantId: string, limit = 100): Promise<VapiCall[]> {
+  const key = process.env.VAPI_PRIVATE_KEY;
+  if (!key) return [];
+  const data = await pedir<unknown>(`/call?assistantId=${encodeURIComponent(assistantId)}&limit=${limit}`, key);
+  return Array.isArray(data) ? (data as VapiCall[]) : [];
 }
 
 // ---------------------------------------------------------------------------

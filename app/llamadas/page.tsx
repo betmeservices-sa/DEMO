@@ -14,6 +14,8 @@ import { categoriaOutcome, resumirLlamadas } from "@/lib/calls-metrics";
 import { ETIQUETA_OUTCOME } from "@/lib/calls-format";
 import { activeTenantId } from "@/lib/tenants/active";
 import { LlamadasPizza } from "@/components/eventos/LlamadasPizza";
+import { LlamadasHotel } from "@/components/hotel-muestra/LlamadasHotel";
+import { esHotelMuestra } from "@/lib/hotel-muestra/registro";
 import type { CallMetrics, CallOutcome, CallRecord } from "@/lib/data/types";
 
 interface Respuesta {
@@ -40,8 +42,11 @@ type FiltroDias = 0 | 1 | 7 | 30;
 
 // Pizza Hut tiene su propia vista: la línea de eventos con lo que atendió
 // Daniela, sus propuestas y lo de fuera de horario, guardado por su webhook.
+// Los hoteles de muestra con recepcionista de voz (Tesoro) también: lo que
+// atendió y lo que dejó en el panel, sin costos de la cuenta de voz.
 export default function LlamadasPage() {
   if (activeTenantId() === "pizzahut") return <LlamadasPizza />;
+  if (esHotelMuestra(activeTenantId())) return <LlamadasHotel />;
   return <LlamadasGeneral />;
 }
 

@@ -11,6 +11,7 @@
 
 import type { HabitacionMuestra, HotelMuestra, ReservaMuestra, ZonaMuestra } from "./tipos";
 import { azar, diasEntre, elegir, esNocheFinde, hash, sumarDias } from "./fechas";
+import { tarifaFinde } from "./tarifas";
 
 /** Noches hacia atrás que se generan, para que hoy tenga huéspedes que ya estaban. */
 const ATRAS = 8;
@@ -19,7 +20,7 @@ const ADELANTE = 45;
 
 /** El precio de una noche: el fin de semana sube un 20 %. */
 export function precioNoche(hab: HabitacionMuestra, dia: string): number {
-  return esNocheFinde(dia) ? Math.round(hab.tarifaNoche * 1.2) : hab.tarifaNoche;
+  return esNocheFinde(dia) ? tarifaFinde(hab.tarifaNoche) : hab.tarifaNoche;
 }
 
 export function totalEstadia(hab: HabitacionMuestra, desde: string, noches: number): number {

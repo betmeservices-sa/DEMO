@@ -5,8 +5,9 @@
 // hora para pagar, el comprobante que hay que verificar, las últimas cerradas
 // y lo que quedó en pausa), pero sobre la muestra del hotel.
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Clock, MessageSquare, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, MessageSquare, PhoneIncoming, XCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { registrar } from "@/lib/hotel-muestra/store";
 import type { Apartado, Cerrada, EnPausa, VistaHotel } from "@/lib/hotel-muestra/vista";
@@ -17,6 +18,9 @@ function fechas(desde: string, hasta: string, noches: number) {
 }
 
 const personas = (n: number) => `${n} ${n === 1 ? "persona" : "personas"}`;
+
+/** Lo que le queda al apartado: minutos los del chat (una hora), horas los del teléfono (un día). */
+const restante = (min: number) => (min < 120 ? `${min} min` : `${Math.floor(min / 60)} h`);
 
 export function ReservasPorConfirmar({ vista, actor }: { vista: VistaHotel; actor: string }) {
   const router = useRouter();
@@ -111,10 +115,19 @@ function ApartadoCard({ a, actor, onVerChat }: { a: Apartado; actor: string; onV
             Ver chat
           </button>
         )}
+        {a.llamadaId && (
+          <Link
+            href={`/llamadas?llamada=${encodeURIComponent(a.llamadaId)}`}
+            className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-[11px] font-semibold text-[var(--text-2)] transition hover:bg-surface"
+          >
+            <PhoneIncoming size={11} />
+            Ver llamada
+          </Link>
+        )}
         {!comprobante && (
           <span className="inline-flex items-center gap-1 text-[11px] text-[var(--text-3)]">
             <Clock size={11} />
-            apartada {a.quedanMin} min más
+            apartada {restante(a.quedanMin)} más
           </span>
         )}
       </div>

@@ -5,10 +5,16 @@
 // los tickets y las cifras del agente salen de lib/hotel-muestra; la bandeja,
 // de su semilla.
 //
-// La agente NO contesta sola: el demo no tiene número conectado y no se
-// enciende el Modo IA. Sus respuestas en la bandeja son de la muestra.
+// La agente NO contesta sola por chat: el demo no tiene número de WhatsApp
+// conectado y no se enciende el Modo IA. Sus respuestas en la bandeja son de
+// la muestra.
+//
+// Por teléfono SÍ atiende: Marina, la recepcionista de voz, contesta la línea
+// 2505-4620 (lib/tesoro-agente.ts, se sube con scripts/tesoro/crear-agente.mjs).
+// Sus llamadas reales salen en Llamadas y dejan apartados y tickets en el panel.
 
 import type { TenantConfig } from "./types";
+import { NOMBRE_AGENTE, TESORO_ASSISTANT_ID } from "@/lib/tesoro-agente";
 import { tesoroSeed } from "./seeds/tesoro";
 import { tesoroSimulacion } from "./simulacion/tesoro";
 
@@ -115,4 +121,7 @@ export const tesoroTenant: TenantConfig = {
   // Sin número conectado: las plantillas del número de la demo son de otra
   // empresa y no se le muestran.
   whatsapp: { plantillasDelNumeroDemo: false },
+  // La recepcionista de voz. Con este id, Llamadas y Agentes muestran solo lo
+  // suyo.
+  voz: { assistantId: TESORO_ASSISTANT_ID, nombre: NOMBRE_AGENTE },
 };

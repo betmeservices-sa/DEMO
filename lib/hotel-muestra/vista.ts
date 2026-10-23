@@ -21,6 +21,7 @@ import type { Comentario } from "@/lib/meta-comentarios";
 import type { Promocion } from "@/lib/promos";
 import { comentariosDeMuestra } from "./redes";
 import { promocionesDeMuestra } from "./promos";
+import { apartadoDeLlamada, ticketDeLlamada, todasLasLlamadas, type LlamadaHotel } from "./llamadas";
 
 export interface Apartado {
   id: string;
@@ -39,6 +40,8 @@ export interface Apartado {
   canal: ApartadoSemilla["canal"];
   nota?: string;
   conversacionId?: string;
+  /** La llamada de donde salió ("Escuchar la llamada"). */
+  llamadaId?: string;
 }
 
 export interface Cerrada {
@@ -75,6 +78,8 @@ export interface VistaHotel {
   tickets: Ticket[];
   comentarios: Comentario[];
   promociones: Promocion[];
+  /** Lo que atendió la recepcionista de voz: la muestra y las reales. Vacío sin voz. */
+  llamadas: LlamadaHotel[];
 }
 
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -137,9 +142,22 @@ export function reservaDeApartado(hotel: HotelMuestra, apartadoId: string): stri
   return apartadoId.replace(hotel.prefijoApartado, hotel.prefijoReserva);
 }
 
-export function armarVista(hotel: HotelMuestra, movimientos: Movimiento[], ahora: number, hoy: string): VistaHotel {
+export function armarVista(
+  hotel: HotelMuestra,
+  movimientos: Movimiento[],
+  ahora: number,
+  hoy: string,
+  llamadasReales: LlamadaHotel[] = [],
+): VistaHotel {
   const libro = libroDeMuestra(hotel, hoy);
-  let apartados = hotel.apartados.map((a) => armarApartado(hotel, a, hoy));
+  const llamadas = hotel.voz ? todasLasLlamadas(hotel, llamadasReales, ahora) : [];
+  // Lo que se apartó por teléfono va primero: es lo más nuevo y lo que alguien
+  // tiene que confirmar con una llamada.
+  const porTelefono: Apartado[] = llamadas.flatMap((l) => {
+    const a = apartadoDeLlamada(hotel, l, ahora);
+    return a ? [{ ...a, estado: "esperando_pago" as const, canal: "Llamada" as const }] : [];
+  });
+  let apartados = [...porTelefono, ...hotel.apartados.map((a) => armarApartado(hotel, a, hoy))];
 
   const cerradas: Cerrada[] = hotel.cerradas.map((c) => {
     const ref = habitacionDe(hotel, c.habitacionId);
@@ -172,6 +190,13 @@ export function armarVista(hotel: HotelMuestra, movimientos: Movimiento[], ahora
   }
 
   let tickets = ticketsDeMuestra(hotel, ahora);
+  // Los de las llamadas siguen la numeración de la muestra, del más viejo al más nuevo.
+  const deLlamadas = llamadas
+    .map((l) => ticketDeLlamada(hotel, l, ahora))
+    .filter((t): t is Omit<Ticket, "numero"> => t !== null)
+    .sort((a, b) => Date.parse(a.creado) - Date.parse(b.creado));
+  let siguiente = tickets.reduce((n, t) => Math.max(n, t.numero), 100);
+  tickets = [...tickets, ...deLlamadas.map((t) => ({ ...t, numero: ++siguiente }))];
 
   for (const m of movimientos) {
     if (m.tipo === "apartado.confirmar" || m.tipo === "apartado.rechazar") {
@@ -292,5 +317,6 @@ export function armarVista(hotel: HotelMuestra, movimientos: Movimiento[], ahora
     tickets: ordenarCola(tickets),
     comentarios: comentariosDeMuestra(hotel, movimientos, ahora),
     promociones: promocionesDeMuestra(hotel, movimientos, hoy),
+    llamadas,
   };
 }
