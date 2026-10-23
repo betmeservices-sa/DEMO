@@ -5,11 +5,17 @@
 // cualquier cuenta a quien conozca la URL.
 //
 //   http://localhost:3200/api/auth/entrar-como?usuario=veronica.viches@yalihospitality.com
+//
+// Con ?tenant= entra a un demo igual que su clave de DEMO_LOGINS, sin pasar
+// por el login:
+//
+//   http://localhost:3260/api/auth/entrar-como?tenant=estudio
 
 import { NextResponse } from "next/server";
 import { cuentaDeUsuario } from "@/lib/usuarios";
 import { crearSesion, cookieDeSesion } from "@/lib/session";
 import { registrarAcceso } from "@/lib/accesos";
+import { esDelDemo, isTenantId } from "@/lib/tenants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +25,15 @@ export async function GET(req: Request) {
     return new Response("No existe", { status: 404 });
   }
   const url = new URL(req.url);
+  const tenant = (url.searchParams.get("tenant") ?? "").trim().toLowerCase();
+  if (tenant) {
+    if (!isTenantId(tenant) || !esDelDemo(tenant)) return new Response("Demo desconocido", { status: 404 });
+    const sesion = await crearSesion(tenant, "gerente_marketing", false);
+    if (!sesion) return new Response("Falta SESSION_SECRET", { status: 503 });
+    const res = NextResponse.redirect(new URL("/", req.url));
+    res.headers.append("Set-Cookie", cookieDeSesion(sesion.valor, sesion.maxAge, req.headers.get("host")));
+    return res;
+  }
   const usuario = (url.searchParams.get("usuario") ?? "").trim().toLowerCase();
   const cuenta = usuario ? cuentaDeUsuario(usuario) : null;
   if (!cuenta) return new Response("Usuario desconocido", { status: 404 });
