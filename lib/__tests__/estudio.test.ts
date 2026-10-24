@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BANCO, lecturaDeFoto } from "@/lib/estudio/banco";
 import { diaSemana, horaEnZona, instanteDe, localSV, lunesDe, sumarDias } from "@/lib/estudio/fechas";
 import {
@@ -23,6 +23,11 @@ import { resolveTenantByLogin, TENANTS } from "@/lib/tenants";
 import { moduloDeRuta, puedeVerRuta } from "@/lib/modulos";
 
 const marca = (id: string) => MARCAS.find((m) => m.id === id)!;
+
+// Estas pruebas van contra los proveedores simulados: una llave de OpenAI en
+// el entorno haría que generen imágenes de verdad y gasten saldo.
+beforeEach(() => vi.stubEnv("OPENAI_API_KEY", ""));
+afterEach(() => vi.unstubAllEnvs());
 // Miércoles 21 de octubre de 2026, 10:00 en El Salvador.
 const AHORA = instanteDe("2026-10-21T10:00");
 

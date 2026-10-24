@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { conImagenes, conLectura, proveedores } from "@/lib/estudio/proveedores";
+import { FallaImagen } from "@/lib/estudio/proveedores/openai";
 import type { PedidoTexto } from "@/lib/estudio/proveedores/tipos";
 import { cuerpo, fueraDelPanel, malPedido } from "@/lib/estudio/servidor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Las imágenes de un carrusel salen en paralelo, pero cada una tarda: más que el texto.
+export const maxDuration = 300;
 
 // Un encargo (prompt + perfil de la marca) se vuelve piezas para aprobar.
 export async function POST(req: Request) {
@@ -18,8 +21,10 @@ export async function POST(req: Request) {
   let conImagen;
   try {
     conImagen = await conImagenes(r.piezas, p.marca);
-  } catch {
-    return NextResponse.json({ ok: false, error: "No salieron las imágenes y no se descontaron créditos. Vuelve a generar." }, { status: 502 });
+  } catch (e) {
+    console.error("[estudio] imagen:", e);
+    const porque = e instanceof FallaImagen ? `${e.paraPersona} ` : "";
+    return NextResponse.json({ ok: false, error: `${porque}No salieron las imágenes y no se descontaron créditos. Vuelve a generar.` }, { status: 502 });
   }
   const leidas = await conLectura(conImagen);
   return NextResponse.json({ ok: true, piezas: leidas.piezas, uso: [...r.uso, ...leidas.uso] });

@@ -8,14 +8,33 @@
 import { llevaImagen, origenDe, pedidosDePieza } from "../imagen";
 import { llevaRotulo } from "../letras";
 import type { Marca, Pieza } from "../tipos";
+import { imagenOpenAI, visionOpenAI } from "./openai";
 import { simulados } from "./simulado";
-import type { Proveedores, UsoSinId } from "./tipos";
+import type { Proveedores, ProveedorVision, UsoSinId } from "./tipos";
 
-const REALES: Partial<Proveedores> = {};
+/**
+ * Las fotos de muestra viven dentro del panel (/brand/estudio) y OpenAI no
+ * llega a ellas; su lectura ya está en la tabla de la muestra. Al modelo van
+ * solo las imágenes generadas.
+ */
+function visionConMuestra(real: ProveedorVision): ProveedorVision {
+  return {
+    nombre: real.nombre,
+    leer: (url) => (/^(https?:|data:)/.test(url) ? real.leer(url) : simulados.vision.leer(url)),
+  };
+}
+
+/** Con la llave de OpenAI del panel, la imagen y su lectura salen de verdad. */
+function reales(): Partial<Proveedores> {
+  const openai = process.env.OPENAI_API_KEY;
+  return openai ? { imagen: imagenOpenAI(openai), vision: visionConMuestra(visionOpenAI(openai)) } : {};
+}
 
 export function proveedores(): Proveedores {
-  return { ...simulados, ...REALES };
+  return { ...simulados, ...reales() };
 }
+
+const IMAGENES_A_LA_VEZ = 4;
 
 /**
  * Genera las imágenes de las piezas que las piden al modelo: un pedido por
@@ -24,14 +43,29 @@ export function proveedores(): Proveedores {
  * cobrada una imagen que no salió.
  */
 export async function conImagenes(piezas: Pieza[], marca: Marca, imagen = proveedores().imagen): Promise<Pieza[]> {
-  return Promise.all(
-    piezas.map(async (p) => {
-      if (!llevaImagen(p.tipo) || origenDe(p) !== "ia" || p.pedidosImagen?.length) return p;
-      const pedidos = pedidosDePieza(p, marca);
-      const urls = await Promise.all(pedidos.map((pd) => imagen.generar(pd, marca.id).then((r) => r.url)));
-      return { ...p, medios: urls, pedidosImagen: pedidos };
-    }),
+  const pedidos = piezas.map((p) =>
+    !llevaImagen(p.tipo) || origenDe(p) !== "ia" || p.pedidosImagen?.length ? null : pedidosDePieza(p, marca),
   );
+  const tareas = pedidos.flatMap((ps, i) => (ps ?? []).map((pd, j) => ({ i, j, pd })));
+  const urls: string[][] = pedidos.map((ps) => (ps ? Array<string>(ps.length) : []));
+  // De a pocas a la vez: un lote de carruseles son decenas de imágenes, y
+  // todas juntas chocan con el límite por minuto de OpenAI. Si una falla, las
+  // que faltan ya no se piden: el encargo entero va a fallar igual.
+  let siguiente = 0;
+  let fallo = false;
+  const trabajador = async () => {
+    while (!fallo && siguiente < tareas.length) {
+      const t = tareas[siguiente++];
+      try {
+        urls[t.i][t.j] = (await imagen.generar(t.pd, marca.id)).url;
+      } catch (e) {
+        fallo = true;
+        throw e;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(IMAGENES_A_LA_VEZ, tareas.length) }, trabajador));
+  return piezas.map((p, i) => (pedidos[i] ? { ...p, medios: urls[i], pedidosImagen: pedidos[i] } : p));
 }
 
 /**
