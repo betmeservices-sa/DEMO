@@ -108,12 +108,18 @@ describe("comprobante y confirmación", () => {
 describe("reservarManualYali", () => {
   it("toma la reserva de una vez, a nombre de quien la tomó, y el contacto solo si hay teléfono", async () => {
     const { reservarManualYali } = await import("../yali-prereservas");
-    const r = await reservarManualYali(
-      "yaly",
-      { nombre: "Carlos Ruiz", habitacion: "Planta Baja", adultos: 2, ninos: 0, telefono: "+503 7000 1234", notas: "llega tarde", ...fechas(60) },
-      "a",
-      { staffId: "s2", nombre: "Verónica" },
-    );
+    // El libro de muestra cambia con la fecha (yali-pms.ts): a 60 días justo
+    // puede estar ocupada, como el 26 de octubre, que caía en Navidad. Se toma
+    // la primera ventana libre desde ahí; un intento que no cabe no deja nada.
+    let r: Awaited<ReturnType<typeof reservarManualYali>> = { ok: false };
+    for (let d = 60; d < 120 && !r.ok; d += 3) {
+      r = await reservarManualYali(
+        "yaly",
+        { nombre: "Carlos Ruiz", habitacion: "Planta Baja", adultos: 2, ninos: 0, telefono: "+503 7000 1234", notas: "llega tarde", ...fechas(d) },
+        "a",
+        { staffId: "s2", nombre: "Verónica" },
+      );
+    }
     expect(r.ok).toBe(true);
     expect(r.reserva?.estado).toBe("confirmada");
     expect(r.reserva?.confirmadaPor).toBe("Verónica");
