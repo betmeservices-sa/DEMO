@@ -29,7 +29,7 @@ export function FuentesRotulo() {
 }
 
 /** Cuánto se oscurece la foto detrás del texto: una foto clara necesita más velo. */
-const VELO: Record<LecturaImagen["tono"], number> = { claro: 0.62, medio: 0.55, oscuro: 0.35 };
+export const VELO: Record<LecturaImagen["tono"], number> = { claro: 0.62, medio: 0.55, oscuro: 0.35 };
 
 export function Rotulo({
   texto,
@@ -72,7 +72,7 @@ function luz(hex: string): number {
 }
 
 /** El primer color de la marca que se ve encima del velo oscuro. */
-function colorVisible(colores: string[]): string {
+export function colorVisible(colores: string[]): string {
   return colores.find((c) => luz(c) > 0.35) ?? "#ffffff";
 }
 

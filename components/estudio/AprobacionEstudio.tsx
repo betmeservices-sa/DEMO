@@ -41,6 +41,7 @@ import { origenDe } from "@/lib/estudio/imagen";
 import { rotulosDe } from "@/lib/estudio/letras";
 import type { AccionHistorial, Marca, Pieza, Red } from "@/lib/estudio/tipos";
 import { Boton, EstadoPill, IconoRed, MarcaSello, NOMBRE_RED, TIPO, Vidrio, creditosTexto, useAviso } from "./ui";
+import { Descargar } from "./Descargar";
 import { ElegirLetra } from "./Rotulo";
 import { VistaPrevia } from "./VistaPrevia";
 
@@ -449,6 +450,11 @@ function Detalle({
                     )}
                   </AnimatePresence>
                 </div>
+                {p.tipo !== "video" && (
+                  <div className="mx-auto w-full max-w-[400px]">
+                    <Descargar pieza={p} marca={m} />
+                  </div>
+                )}
                 {cuentaVencida && (
                   <p className="mt-2 text-center text-[12px] text-[var(--es-rojo)]">
                     La sesión de {NOMBRE_RED[red]} venció. Reconéctala antes de programar.
