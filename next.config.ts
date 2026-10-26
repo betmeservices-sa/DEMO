@@ -2,7 +2,6 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const enDesarrollo = process.env.NODE_ENV === "development";
-
 // Content-Security-Policy, por ahora SOLO EN MODO REPORTE: el navegador no
 // bloquea nada, pero avisa a /api/csp-reporte cada vez que algo se saldría de
 // esta lista. Cuando el reporte lleve unos días limpio, se pasa a
@@ -21,7 +20,9 @@ const enDesarrollo = process.env.NODE_ENV === "development";
 //   - media-src https: blob:: las notas de voz de WhatsApp y las grabaciones
 //     de las llamadas.
 //   - connect-src 'self': el navegador solo habla con este panel (en desarrollo
-//     también el websocket del HMR). Lo externo lo hace el servidor.
+//     también el websocket del HMR). Lo externo lo hace el servidor. La
+//     excepción es leer imágenes para la descarga del estudio: las generadas
+//     viven en el storage de la base (*.supabase.co) y en local van como data:.
 //   - frame-ancestors 'none': lo mismo que X-Frame-Options DENY.
 const csp = [
   "default-src 'self'",
@@ -30,7 +31,7 @@ const csp = [
   "img-src 'self' https: data: blob:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "media-src 'self' https: blob: data:",
-  `connect-src 'self'${enDesarrollo ? " ws: wss:" : ""}`,
+  `connect-src 'self' data: blob: https://*.supabase.co${enDesarrollo ? " ws: wss:" : ""}`,
   "worker-src 'self' blob:",
   "frame-src 'none'",
   "frame-ancestors 'none'",
