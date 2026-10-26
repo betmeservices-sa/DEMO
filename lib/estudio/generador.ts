@@ -127,13 +127,16 @@ function fotosDeMarca(marcaId: string): string[] {
   return [...vistas];
 }
 
+/** Cuántas láminas lleva un carrusel. */
+export const LAMINAS_CARRUSEL = 3;
+
 function mediosPara(formato: TipoPieza, a: Angulo, marcaId: string, fotos?: string[]): string[] {
   if (formato === "video") return [];
   const base = fotos?.length ? fotos : a.fotos.filter((f) => !f.includes("retrato-"));
   const propias = base.length ? base : fotosDeMarca(marcaId).slice(0, 1);
   if (formato !== "carrusel") return propias.slice(0, 1);
   const extra = fotosDeMarca(marcaId).filter((f) => !propias.includes(f));
-  return [...propias, ...extra].slice(0, 3);
+  return [...propias, ...extra].slice(0, LAMINAS_CARRUSEL);
 }
 
 /**
@@ -172,9 +175,13 @@ export interface PedidoGeneracion {
   ahoraIso: string;
 }
 
-/** Arma las piezas de un encargo, todas del formato pedido y sin repetir ángulo e idioma mientras alcancen. */
-export function generarPiezas(p: PedidoGeneracion): Pieza[] {
-  const angulos = angulosPara(p.marca.id, p.texto, p.formato);
+/**
+ * Arma las piezas de un encargo, todas del formato pedido y sin repetir ángulo e idioma mientras alcancen.
+ * Sin `escritos` los ángulos salen del banco de la marca; con ellos (los que escribió el modelo, uno por
+ * pieza y ya en el idioma de `idiomaDe`) se usan esos.
+ */
+export function generarPiezas(p: PedidoGeneracion, escritos?: Angulo[]): Pieza[] {
+  const angulos = escritos ?? angulosPara(p.marca.id, p.texto, p.formato);
   if (!angulos.length) return [];
   const n = Math.max(1, Math.min(p.cantidad, 12));
   const piezas: Pieza[] = [];
@@ -218,11 +225,11 @@ export function generarPiezas(p: PedidoGeneracion): Pieza[] {
   return piezas;
 }
 
-/** Otra versión de la misma pieza, en el mismo formato: el siguiente ángulo que sirva. */
-export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso: string): Pieza {
-  const sirven = angulosPara(marca.id, "", pieza.tipo);
+/** Otra versión de la misma pieza, en el mismo formato: la que escribió el modelo o el siguiente ángulo del banco. */
+export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso: string, escrito?: Angulo): Pieza {
+  const sirven = escrito ? [] : angulosPara(marca.id, "", pieza.tipo);
   const actual = sirven.findIndex((a) => a[pieza.idioma].titulo === pieza.titulo);
-  const otro = sirven[(actual + 1) % Math.max(1, sirven.length)] ?? sirven[0];
+  const otro = escrito ?? sirven[(actual + 1) % Math.max(1, sirven.length)] ?? sirven[0];
   if (!otro) return pieza;
   const t = otro[pieza.idioma];
   const hashtags = pieza.tipo === "anuncio" ? [] : t.hashtags;
@@ -235,7 +242,8 @@ export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso:
     texto: t.texto,
     hashtags,
     guion: pieza.tipo === "video" ? t.guion : pieza.guion,
-    ideaImagen: otro.idea,
+    // La imagen generada se queda, y con ella la escena que se le pidió.
+    ideaImagen: generada ? pieza.ideaImagen : otro.idea,
     medios,
     // Fotos nuevas: la letra se vuelve a sugerir con lo que se lea de ellas.
     rotulos: rotulosDeAngulo(pieza.tipo, t, medios.length),
@@ -392,13 +400,13 @@ export function porHora(a: Pieza, b: Pieza): number {
 type UsoSinId = Omit<RegistroUso, "id">;
 
 /** Lo que se descuenta al generar una pieza, por servicio. */
-export function usoDeGeneracion(p: Pieza, fecha: string): UsoSinId[] {
+export function usoDeGeneracion(p: Pieza, fecha: string, proveedorTexto = "Claude"): UsoSinId[] {
   const base = { marcaId: p.marcaId, fecha, piezaId: p.id };
   const fuera: UsoSinId[] = [
     {
       ...base,
       servicio: "texto",
-      proveedor: "Claude",
+      proveedor: proveedorTexto,
       unidades: 1,
       unidad: "pieza",
       creditos: p.tipo === "anuncio" ? CREDITOS.textoAnuncio : CREDITOS.texto,

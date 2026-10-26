@@ -8,7 +8,7 @@
 import { llevaImagen, origenDe, pedidosDePieza } from "../imagen";
 import { llevaRotulo } from "../letras";
 import type { Marca, Pieza } from "../tipos";
-import { imagenOpenAI, visionOpenAI } from "./openai";
+import { imagenOpenAI, textoOpenAI, visionOpenAI } from "./openai";
 import { simulados } from "./simulado";
 import type { Proveedores, ProveedorVision, UsoSinId } from "./tipos";
 
@@ -24,10 +24,12 @@ function visionConMuestra(real: ProveedorVision): ProveedorVision {
   };
 }
 
-/** Con la llave de OpenAI del panel, la imagen y su lectura salen de verdad. */
+/** Con la llave de OpenAI del panel, el texto, la imagen y su lectura salen de verdad. */
 function reales(): Partial<Proveedores> {
   const openai = process.env.OPENAI_API_KEY;
-  return openai ? { imagen: imagenOpenAI(openai), vision: visionConMuestra(visionOpenAI(openai)) } : {};
+  return openai
+    ? { texto: textoOpenAI(openai), imagen: imagenOpenAI(openai), vision: visionConMuestra(visionOpenAI(openai)) }
+    : {};
 }
 
 export function proveedores(): Proveedores {

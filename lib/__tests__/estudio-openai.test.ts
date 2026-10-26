@@ -2,8 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generarPiezas } from "@/lib/estudio/generador";
 import { guardarImagen } from "@/lib/estudio/medios";
 import { conImagenes, proveedores } from "@/lib/estudio/proveedores";
-import { FallaImagen, imagenOpenAI, lecturaDeTexto, visionOpenAI } from "@/lib/estudio/proveedores/openai";
+import { FallaOpenAI, imagenOpenAI, lecturaDeTexto, textoOpenAI, visionOpenAI } from "@/lib/estudio/proveedores/openai";
 import type { ProveedorImagen } from "@/lib/estudio/proveedores/tipos";
+import { angulosEscritos, instruccionesDeMarca, pedidoDeLote } from "@/lib/estudio/redaccion";
 import { MARCAS } from "@/lib/estudio/semilla";
 import type { PedidoImagen } from "@/lib/estudio/tipos";
 
@@ -79,7 +80,7 @@ describe("imagen con OpenAI", () => {
   it("sin saldo no reintenta y dice por qué", async () => {
     fetchFalso(respuesta(429, { error: { message: "You exceeded your current quota", code: "insufficient_quota", type: "insufficient_quota" } }));
     const e = await imagenOpenAI("sk", async () => "u").generar(PEDIDO, "solano").catch((x) => x);
-    expect(e).toBeInstanceOf(FallaImagen);
+    expect(e).toBeInstanceOf(FallaOpenAI);
     expect(e.paraPersona).toMatch(/sin saldo/);
     expect(llamadas).toHaveLength(1);
   });
@@ -163,11 +164,109 @@ describe("qué proveedor contesta", () => {
       nombre: "Prueba",
       async generar() {
         pedidas++;
-        throw new FallaImagen("OpenAI no devolvió la imagen.", "500");
+        throw new FallaOpenAI("OpenAI no devolvió la imagen.", "500");
       },
     };
-    await expect(conImagenes(piezas, solano(), imagen)).rejects.toBeInstanceOf(FallaImagen);
+    await expect(conImagenes(piezas, solano(), imagen)).rejects.toBeInstanceOf(FallaOpenAI);
     expect(total).toBeGreaterThan(4);
     expect(pedidas).toBeLessThanOrEqual(4);
+  });
+});
+
+describe("textos con OpenAI", () => {
+  const escrita = (titulo: string, extra: Partial<Record<string, unknown>> = {}) => ({
+    titulo,
+    texto: "Lavado a presión, sellador y dos manos. La casa quedó como nueva.",
+    hashtags: ["PinturaMiami", "#Coral Gables"],
+    laminas: ["Primero se lava", "Después, dos manos"],
+    guion: "",
+    duracion: 0,
+    idea: "Fachada blanca recién pintada al atardecer",
+    ...extra,
+  });
+
+  it("el pedido lleva la voz de la marca, lo que no se dice y un idioma por pieza", () => {
+    const m = solano();
+    const inst = instruccionesDeMarca(m);
+    expect(inst).toContain(m.tono);
+    expect(inst).toContain(m.ofertas[0]);
+    expect(inst).toContain(`"${m.palabrasProhibidas[0]}"`);
+    expect(inst).toMatch(/No inventes/);
+    const lote = pedidoDeLote("Colores para fachada en Miami", "carrusel", m, ["es", "en", "es"]);
+    expect(lote).toContain("Pedido: Colores para fachada en Miami");
+    expect(lote).toContain("1. español, 2. inglés, 3. español");
+    expect(lote).toMatch(/láminas 2 a 3/);
+  });
+
+  it("lo escrito se vuelve ángulos con hashtags limpios y una foto de la marca", () => {
+    const [a] = angulosEscritos([escrita("Fachada nueva en 3 días")], "imagen", solano());
+    expect(a.es.hashtags).toEqual(["#PinturaMiami", "#CoralGables"]);
+    expect(a.es.laminas).toBeUndefined();
+    expect(a.fotos[0]).toMatch(/^\/brand\/estudio\//);
+    expect(angulosEscritos([escrita("")], "imagen", solano())).toHaveLength(0);
+  });
+
+  it("arma el lote con lo que escribió el modelo, en el idioma de cada pieza", async () => {
+    fetchFalso(
+      respuesta(200, {
+        output: [
+          {
+            type: "message",
+            content: [{ type: "output_text", text: JSON.stringify({ piezas: [escrita("Antes y después en Coral Gables"), escrita("Before and after in Coral Gables")] }) }],
+          },
+        ],
+      }),
+    );
+    const { piezas, uso } = await textoOpenAI("sk", "gpt-6-luna").generar({
+      marca: solano(),
+      texto: "antes y después de una fachada",
+      formato: "carrusel",
+      cantidad: 2,
+      idiomas: { es: 50, en: 50 },
+      origenImagen: "ia",
+      encargoId: "enc-ia",
+      actor: "Prueba",
+    });
+    expect(piezas.map((p) => [p.idioma, p.titulo])).toEqual([
+      ["es", "Antes y después en Coral Gables"],
+      ["en", "Before and after in Coral Gables"],
+    ]);
+    expect(piezas[0].rotulos?.slice(0, 2)).toEqual(["Antes y después en Coral Gables", "Primero se lava"]);
+    expect(piezas[0].ideaImagen).toBe("Fachada blanca recién pintada al atardecer");
+    expect(uso.find((u) => u.servicio === "texto")?.proveedor).toBe("OpenAI");
+    const cuerpo = JSON.parse(String(llamadas[0].init.body));
+    expect(cuerpo.text.format).toMatchObject({ type: "json_schema", name: "piezas", strict: true });
+    expect(cuerpo.input[0].role).toBe("system");
+  });
+
+  it("otra versión conserva la imagen generada y su escena", async () => {
+    const [p] = await conImagenes(
+      generarPiezas({
+        marca: solano(),
+        texto: "fachada",
+        formato: "imagen",
+        cantidad: 1,
+        idiomas: { es: 100, en: 0 },
+        origenImagen: "ia",
+        encargoId: "enc-v",
+        actor: "Prueba",
+        ahoraIso: "2026-10-21T16:00:00Z",
+      }),
+      solano(),
+    );
+    fetchFalso(respuesta(200, { output: [{ type: "message", content: [{ text: JSON.stringify({ piezas: [escrita("Tres días, dos manos", { idea: "Otra escena" })] }) }] }] }));
+    const { pieza } = await textoOpenAI("sk", "gpt-6-luna").reescribir(p, solano(), "más corto");
+    expect(pieza.titulo).toBe("Tres días, dos manos");
+    expect(pieza.medios).toEqual(p.medios);
+    expect(pieza.ideaImagen).toBe(p.ideaImagen);
+    expect(JSON.parse(String(llamadas[0].init.body)).input[1].content[0].text).toContain("Motivo de quien la revisó: más corto");
+  });
+
+  it("si no vuelve texto, el encargo falla sin piezas", async () => {
+    fetchFalso(respuesta(200, { output: [{ type: "message", content: [{ text: '{"piezas":[]}' }] }] }));
+    const e = await textoOpenAI("sk", "m")
+      .generar({ marca: solano(), texto: "x", formato: "texto", cantidad: 1, idiomas: { es: 100, en: 0 }, encargoId: "e", actor: "P" })
+      .catch((x) => x);
+    expect(e).toBeInstanceOf(FallaOpenAI);
   });
 });
