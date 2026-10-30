@@ -551,11 +551,11 @@ export const TEMAS_LAB: TemaKb[] = [
   {
     id: "tema-muestra-orina",
     nombre: "Muestra de orina",
-    sinonimos: ["muestra de orina", "frasco de orina", "bote de orina", "botecito", "primera orina", "primera orina del dia", "cuanto aguanta la orina", "cuanto dura la muestra de orina", "orina de bebe", "bolsita recolectora", "cuantos ml de orina", "llevar orina de la casa", "frasco esteril"],
+    sinonimos: ["muestra de orina", "frasco de orina", "bote de orina", "botecito", "primera orina", "primera orina del dia", "cuanto aguanta la orina", "cuanto dura la muestra de orina", "orina de bebe", "bolsita recolectora", "cuantos ml de orina", "llevar orina de la casa", "frasco esteril", "venden frascos", "cuanto cuesta el frasco", "precio del frasco"],
     respuesta:
-      "Puede tomar la muestra en su casa o aquí en el laboratorio. Hágase un buen aseo del área genital antes de recolectarla. No es necesario que sea la primera orina del día, a menos que su médico se lo haya indicado. Para el examen general bastan unos 10 ml. Use un frasco estéril que no sea de vidrio; si no tiene, aquí se lo damos. Si la toma en casa, tráigala lo antes posible: no debe pasar de 1 hora y media desde que la recolectó. En bebés se usa una bolsita recolectora, que se consigue en farmacia, colocada después de un buen aseo.",
+      "Puede tomar la muestra en su casa o aquí en el laboratorio. Hágase un buen aseo del área genital antes de recolectarla. No es necesario que sea la primera orina del día, a menos que su médico se lo haya indicado. Para el examen general bastan unos 10 ml. Use un frasco estéril que no sea de vidrio; si no tiene, aquí lo vendemos a $1.40. Si la toma en casa, tráigala lo antes posible: no debe pasar de 1 hora y media desde que la recolectó. En bebés se usa una bolsita recolectora, que se consigue en farmacia, colocada después de un buen aseo.",
     fuente:
-      "chats Escalón: 07/10/2026 y 16/10/2026 conv 42; 18/09/2026 conv 132; 19/06/2026 conv 474; 26/08/2026 conv 278; 2026 conv 563, 639, 773; 09/10/2025 conv 1183 (frasco)",
+      "chats Escalón: 07/10/2026 y 16/10/2026 conv 42; 18/09/2026 conv 132; 19/06/2026 conv 474; 26/08/2026 conv 278; 2026 conv 563, 639, 773; 09/10/2025 conv 1183 (frasco); frasco a $1.40, dicho por el usuario el 30/10/2026",
     notas:
       "CONTRADICCIÓN del tiempo: 1 h y media (lo más dicho en 2026); bebé 2 h desde que termina de recolectarse (conv 773); 'general 2 horas, cultivo 1 hora y 30 minutos' (conv 977); 'antes de una hora' (conv 1790); '2 o 3 horas' (conv 1168); 'con duración de 3 horas' (conv 1662). Primera orina: 'no solicitamos que sea la primera' (2026) frente a 'de preferencia la primera de la mañana' (2025, conv 577, 1412). Gonorrea en orina: primera del día sin aseo (2025), pero en 01/2026 'no se están realizando'. Para curvas, la orina se da antes de la sangre (conv 600).",
   },
@@ -564,7 +564,7 @@ export const TEMAS_LAB: TemaKb[] = [
     nombre: "Muestra de heces",
     sinonimos: ["muestra de heces", "frasco de heces", "muestra de popo", "popo", "heces de bebe", "pamper", "panal", "cuanta muestra de heces", "cuanto dura la muestra de heces"],
     respuesta:
-      "Basta con una cantidad pequeña, no necesita traer mucho. Puede traerla en un frasco para muestras; si no tiene, aquí se lo damos. No es necesario que sea la primera del día. Tráigala lo antes posible: la muestra sirve hasta 1 hora y media después de recolectada. En bebés con pañal, póngale el pañal al revés para que la muestra no se absorba, y recoja suficiente cantidad.",
+      "Basta con una cantidad pequeña, no necesita traer mucho. Puede traerla en un frasco para muestras; si no tiene, aquí lo vendemos a $1.40. No es necesario que sea la primera del día. Tráigala lo antes posible: la muestra sirve hasta 1 hora y media después de recolectada. En bebés con pañal, póngale el pañal al revés para que la muestra no se absorba, y recoja suficiente cantidad.",
     fuente: "chats Escalón: 07/10/2026 conv 42; 18/09/2026 conv 132; 2026 conv 452; 2025 conv 977, 1183; pañal 06/02/2025 conv 203",
     notas: "Sangre oculta en heces lleva dieta de 3 días (va en el catálogo). Muestras de bebé insuficientes no se procesan (conv 10, 29, 134).",
   },
