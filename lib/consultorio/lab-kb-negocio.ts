@@ -129,7 +129,7 @@ export const SUCURSALES_LAB: SucursalKb[] = [
     id: "suc-aguilares",
     nombre: "Laboratorio C.C. El Encuentro, Aguilares",
     sinonimos: ["aguilares", "el encuentro", "cc el encuentro", "encuentro aguilares", "troncal del norte"],
-    direccion: "Centro Comercial El Encuentro, Carretera Troncal del Norte, Aguilares.",
+    direccion: "Centro Comercial El Encuentro, local MA4, Carretera Troncal del Norte, Aguilares.",
     horario: "Lunes a domingo de 6:00 a.m. a 6:00 p.m.",
     telefono: "2556-5351",
     whatsapp: "7226-8560",

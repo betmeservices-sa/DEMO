@@ -22,5 +22,6 @@
   { "nombre": "referencia por que tarda", "turnos": [["por que el brca tarda tanto? donde lo procesan?"]] },
   { "nombre": "domicilio datos", "turnos": [["hacen examenes a domicilio?"], ["si quiero programarlo para el lunes"]] },
   { "nombre": "tamizaje y covid", "turnos": [["cuanto cuesta el tamizaje para mi bebe?"], ["y la prueba de covid cuanto vale? tengo seguro"]] },
-  { "nombre": "frasco de orina", "turnos": [["venden frascos para la orina? cuanto cuestan"]] }
+  { "nombre": "frasco de orina", "turnos": [["venden frascos para la orina? cuanto cuestan"]] },
+  { "nombre": "tamizaje con plan prenatal", "turnos": [["cuanto cuesta el tamizaje si lo agrego al plan prenatal del hospital?"], ["el genes basico, no tengo seguro"]] }
 ]

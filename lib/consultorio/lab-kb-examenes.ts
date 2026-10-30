@@ -2193,6 +2193,17 @@ export const EXAMENES_LAB: ExamenKb[] = [
     fuente: "Word del laboratorio §3.8 (2026-10-30)",
   },
   {
+    id: "lab-tamizaje-plan-prenatal",
+    tipo: "servicio",
+    nombre: "Tamizajes que se agregan al plan prenatal del hospital",
+    sinonimos: ["tamizaje con plan prenatal", "tamizaje del plan prenatal", "tamizaje plan de parto", "agregar tamizaje al plan", "tamizaje genes basico", "screening basico", "screening completo", "tamizaje del talon", "prueba del talon", "tamizaje neonatal", "tamizaje"],
+    estado: "vigente",
+    descripcion:
+      "Al contratar el plan prenatal del Hospital Centro Ginecológico se pueden agregar estos paquetes: tamizaje GENES básico, 60 pruebas, con muestra del talón, $316.60; tamizaje GENES ampliado, 70 pruebas, del talón, $406.80; screening básico, 70 pruebas, con muestra de vena, $250.00; screening completo, 77 pruebas, de vena, $350.00. Los indica el pediatra de cabecera, se piden al personal de Nursería y se entregan en 22 días hábiles; si prefiere traer después a su bebé, de lunes a viernes de 6:00 a.m. a 5:00 p.m. Estos precios no aplican con aseguradora. Lo demás del plan lo informa planes prenatales al WhatsApp 7837-6301.",
+    fuente: "Documento del hospital 'Respuestas automáticas actualizada octubre 2026', adiciones del plan prenatal (2026-10-30)",
+    notas: "Los precios no cuadran con los de la sección de laboratorio del mismo documento (GENES total $314.60, ampliado $330.00, screening $225.01): pueden ser paquetes distintos. Confirmar con el laboratorio.",
+  },
+  {
     id: "lab-geneticas-otras",
     tipo: "examen",
     nombre: "Otras pruebas genéticas (FISH, 9p21, ApoE, KIF6, metilación)",
