@@ -13,6 +13,7 @@ import {
   respuestaDeBusqueda,
   type BaseLab,
 } from "@/lib/consultorio/lab-kb";
+import { BASE_LAB } from "@/lib/consultorio/lab-kb-datos";
 
 const BASE: BaseLab = {
   examenes: [
@@ -139,5 +140,19 @@ describe("lo que nunca le llega al modelo", () => {
   it("una promoción vencida no existe", () => {
     expect(buscarEnBase(BASE, "promociones", "2026-10-23")[0]?.id).toBe("promo-oct");
     expect(buscarEnBase(BASE, "promociones", "2026-11-01")).toEqual([]);
+  });
+
+  it("la base real no le dice al paciente que una prueba se manda a otro laboratorio", () => {
+    // Pedido del laboratorio: eso va solo en notas. "Punto de referencia" de una dirección sí vale.
+    const visible = [
+      ...BASE_LAB.examenes,
+      ...BASE_LAB.sucursales,
+      ...BASE_LAB.convenios,
+      ...BASE_LAB.temas,
+      ...BASE_LAB.promociones,
+    ].map((x) => JSON.stringify(datosParaElModelo("vigente", Object.fromEntries(Object.entries(x).filter(([k]) => !["fuente", "notas", "sinonimos"].includes(k))))));
+    for (const texto of visible) {
+      expect(texto).not.toMatch(/(laboratorio|prueba|pruebas|examen|ex[aá]menes) de referencia|(env[ií]a|manda|procesa)n? (en|a) otro laboratorio|env[ií]o de la muestra/i);
+    }
   });
 });
