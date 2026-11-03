@@ -11,10 +11,12 @@ import {
   PLANES,
   cicloDelPlan,
   cicloEnCurso,
+  ciclosDelPlan,
   conversacionesDelCiclo,
   conversacionesQueArrancanEn,
   hayCicloAnterior,
   idDeConsumo,
+  tablaDePaquetes,
   usoDelPlan,
   type Conversacion,
 } from "@/lib/plan-conversaciones";
@@ -126,8 +128,8 @@ describe("los paquetes se llenan en orden", () => {
       numero: 1,
       abre: null,
       abrioPor: null,
-      generales: { usadas: 700, incluidas: 1000, llenoEl: null, delOtroAlLlenarse: null },
-      dayPass: { usadas: 300, incluidas: 500, llenoEl: null, delOtroAlLlenarse: null },
+      generales: { usadas: 700, incluidas: 1000, primeraEl: g[0]!.inicio, llenoEl: null, delOtroAlLlenarse: null },
+      dayPass: { usadas: 300, incluidas: 500, primeraEl: dp[0]!.inicio, llenoEl: null, delOtroAlLlenarse: null },
     });
     expect(u.enUso).toEqual({ generales: 1, dayPass: 1 });
   });
@@ -141,11 +143,12 @@ describe("los paquetes se llenan en orden", () => {
     const [p1, p2] = u.paquetes;
     // Cuando se llenaron sus normales, el plan llevaba 3 de Day Pass; cuando se
     // llenó su Day Pass, ya tenía las 10 normales.
-    expect(p1!.generales).toEqual({ usadas: 10, incluidas: 10, llenoEl: de("G")[9]!.inicio, delOtroAlLlenarse: 3 });
-    expect(p1!.dayPass).toEqual({ usadas: 5, incluidas: 5, llenoEl: de("D")[4]!.inicio, delOtroAlLlenarse: 10 });
+    expect(p1!.generales).toEqual({ usadas: 10, incluidas: 10, primeraEl: de("G")[0]!.inicio, llenoEl: de("G")[9]!.inicio, delOtroAlLlenarse: 3 });
+    expect(p1!.dayPass).toEqual({ usadas: 5, incluidas: 5, primeraEl: de("D")[0]!.inicio, llenoEl: de("D")[4]!.inicio, delOtroAlLlenarse: 10 });
     expect(p2).toMatchObject({ numero: 2, abre: de("G")[10]!.inicio, abrioPor: "generales" });
-    expect(p2!.generales).toEqual({ usadas: 3, incluidas: 10, llenoEl: null, delOtroAlLlenarse: null });
-    expect(p2!.dayPass).toEqual({ usadas: 1, incluidas: 5, llenoEl: null, delOtroAlLlenarse: null });
+    // El paquete 2 arranca sus normales con la 11 y su Day Pass con el 6.
+    expect(p2!.generales).toEqual({ usadas: 3, incluidas: 10, primeraEl: de("G")[10]!.inicio, llenoEl: null, delOtroAlLlenarse: null });
+    expect(p2!.dayPass).toEqual({ usadas: 1, incluidas: 5, primeraEl: de("D")[5]!.inicio, llenoEl: null, delOtroAlLlenarse: null });
     expect(u.enUso).toEqual({ generales: 2, dayPass: 2 });
   });
 
@@ -183,9 +186,9 @@ describe("los paquetes se llenan en orden", () => {
     expect(u.paquetes[0]!.generales.llenoEl).toBe(de("G")[9]!.inicio);
     expect(u.paquetes[0]!.dayPass.llenoEl).toBe(de("D")[4]!.inicio);
     expect(u.paquetes[1]!.generales.llenoEl).toBe(de("G")[19]!.inicio);
-    expect(u.paquetes[1]!.dayPass).toEqual({ usadas: 2, incluidas: 5, llenoEl: null, delOtroAlLlenarse: null });
-    expect(u.paquetes[2]!.generales).toEqual({ usadas: 3, incluidas: 10, llenoEl: null, delOtroAlLlenarse: null });
-    expect(u.paquetes[2]!.dayPass).toEqual({ usadas: 0, incluidas: 5, llenoEl: null, delOtroAlLlenarse: null });
+    expect(u.paquetes[1]!.dayPass).toEqual({ usadas: 2, incluidas: 5, primeraEl: de("D")[5]!.inicio, llenoEl: null, delOtroAlLlenarse: null });
+    expect(u.paquetes[2]!.generales).toEqual({ usadas: 3, incluidas: 10, primeraEl: de("G")[20]!.inicio, llenoEl: null, delOtroAlLlenarse: null });
+    expect(u.paquetes[2]!.dayPass).toEqual({ usadas: 0, incluidas: 5, primeraEl: null, llenoEl: null, delOtroAlLlenarse: null });
     expect(u.enUso).toEqual({ generales: 3, dayPass: 2 });
   });
 
@@ -205,8 +208,8 @@ describe("los paquetes se llenan en orden", () => {
         numero: 1,
         abre: null,
         abrioPor: null,
-        generales: { usadas: 0, incluidas: 1000, llenoEl: null, delOtroAlLlenarse: null },
-        dayPass: { usadas: 0, incluidas: 500, llenoEl: null, delOtroAlLlenarse: null },
+        generales: { usadas: 0, incluidas: 1000, primeraEl: null, llenoEl: null, delOtroAlLlenarse: null },
+        dayPass: { usadas: 0, incluidas: 500, primeraEl: null, llenoEl: null, delOtroAlLlenarse: null },
       },
     ]);
     expect(u.enUso).toEqual({ generales: 1, dayPass: 1 });
@@ -289,5 +292,70 @@ describe("el ciclo de facturación", () => {
     const c = cicloDelPlan("2026-12-20T06:00:00.000Z", 15);
     expect(c.hasta).toBe("2027-01-15T06:00:00.000Z");
     expect(c.etiqueta).toBe("15 dic al 14 ene 2027");
+  });
+});
+
+describe("todos los ciclos desde que arrancó el plan", () => {
+  it("el 3 de noviembre van tres: septiembre, octubre y noviembre, del más viejo al más nuevo", () => {
+    const c = ciclosDelPlan(new Date("2026-11-03T15:00:00Z"), plan);
+    expect(c.map((x) => x.etiqueta)).toEqual(["Septiembre 2026", "Octubre 2026", "Noviembre 2026"]);
+    expect(c[0]!.desde).toBe("2026-09-01T06:00:00.000Z");
+    expect(c[2]!.hasta).toBe("2026-12-01T06:00:00.000Z");
+  });
+
+  it("el primer día del plan hay un solo ciclo", () => {
+    expect(ciclosDelPlan(new Date("2026-09-01T12:00:00Z"), plan).map((x) => x.etiqueta)).toEqual(["Septiembre 2026"]);
+  });
+
+  it("si el plan arrancó a mitad de ciclo, ese ciclo cuenta igual", () => {
+    const aMitad = { ...plan, inicio: "2026-09-15" };
+    expect(ciclosDelPlan(new Date("2026-10-03T12:00:00Z"), aMitad).map((x) => x.etiqueta)).toEqual(["Septiembre 2026", "Octubre 2026"]);
+  });
+});
+
+describe("la tabla de paquetes: de cuándo a cuándo fueron las 1.000 de cada uno", () => {
+  const chico = { ...plan, incluidas: { generales: 10, dayPass: 5 }, adicional: { generales: 10, dayPass: 5 } };
+  const ciclo = (etiqueta: string, desde: string, hasta: string) => ({ desde, hasta, etiqueta });
+
+  it("un paquete lleno lleva inicio y fin; el que corre, inicio y 'en curso'", () => {
+    const g = fila("g", 13);
+    const uso = usoDelPlan(g, new Set(), chico);
+    const filas = tablaDePaquetes(
+      [{ ciclo: ciclo("Septiembre 2026", "2026-09-01T06:00:00.000Z", "2026-10-01T06:00:00.000Z"), uso }],
+      new Date("2026-09-20T12:00:00Z"),
+    );
+    expect(filas).toEqual([
+      { ciclo: "Septiembre 2026", numero: 1, inicio: g[0]!.inicio, fin: g[9]!.inicio, usadas: 10, incluidas: 10, estado: "lleno" },
+      { ciclo: "Septiembre 2026", numero: 2, inicio: g[10]!.inicio, fin: null, usadas: 3, incluidas: 10, estado: "en_curso" },
+    ]);
+  });
+
+  it("un ciclo que terminó sin llenar su último paquete lo deja 'cerrado', y los ciclos van en orden", () => {
+    const sept = usoDelPlan(fila("s", 12), new Set(), chico);
+    const oct = usoDelPlan(fila("o", 4), new Set(), chico);
+    const filas = tablaDePaquetes(
+      [
+        { ciclo: ciclo("Septiembre 2026", "2026-09-01T06:00:00.000Z", "2026-10-01T06:00:00.000Z"), uso: sept },
+        { ciclo: ciclo("Octubre 2026", "2026-10-01T06:00:00.000Z", "2026-11-01T06:00:00.000Z"), uso: oct },
+      ],
+      new Date("2026-10-05T12:00:00Z"),
+    );
+    expect(filas.map((f) => [f.ciclo, f.numero, f.usadas, f.estado])).toEqual([
+      ["Septiembre 2026", 1, 10, "lleno"],
+      ["Septiembre 2026", 2, 2, "cerrado"],
+      ["Octubre 2026", 1, 4, "en_curso"],
+    ]);
+  });
+
+  it("un paquete que abrió el Day Pass y todavía no tiene normales va sin inicio", () => {
+    // 3 normales y 6 de Day Pass: el sexto abre el paquete 2 sin ninguna normal.
+    const g = fila("g", 3);
+    const d = fila("d", 6, 3);
+    const uso = usoDelPlan([...g, ...d], new Set(d.map((c) => c.chat)), chico);
+    const filas = tablaDePaquetes(
+      [{ ciclo: ciclo("Septiembre 2026", "2026-09-01T06:00:00.000Z", "2026-10-01T06:00:00.000Z"), uso }],
+      new Date("2026-09-20T12:00:00Z"),
+    );
+    expect(filas[1]).toEqual({ ciclo: "Septiembre 2026", numero: 2, inicio: null, fin: null, usadas: 0, incluidas: 10, estado: "en_curso" });
   });
 });

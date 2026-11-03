@@ -87,6 +87,8 @@ export interface Cubeta {
   usadas: number;
   /** Las que trae el paquete. */
   incluidas: number;
+  /** Cuándo arrancó la primera conversación que se contó en este paquete (ISO); null si todavía ninguna. */
+  primeraEl: string | null;
   /** Cuándo arrancó la conversación que lo llenó (ISO); null si no se llenó. */
   llenoEl: string | null;
   /** Cuántas del otro tipo llevaba el mismo paquete en ese momento; null si no se llenó. */
@@ -165,7 +167,7 @@ export function usoDelPlan(
   p: PlanConversaciones,
 ): UsoDelPlan {
   const totales = { generales: 0, dayPass: 0 };
-  const cubeta = (incluidas: number): Cubeta => ({ usadas: 0, incluidas, llenoEl: null, delOtroAlLlenarse: null });
+  const cubeta = (incluidas: number): Cubeta => ({ usadas: 0, incluidas, primeraEl: null, llenoEl: null, delOtroAlLlenarse: null });
   const paquetes: Paquete[] = [
     { numero: 1, abre: null, abrioPor: null, generales: cubeta(p.incluidas.generales), dayPass: cubeta(p.incluidas.dayPass) },
   ];
@@ -194,6 +196,7 @@ export function usoDelPlan(
     const paq = paquetes[cursor[tipo]]!;
     const cub = paq[tipo];
     cub.usadas++;
+    if (cub.usadas === 1) cub.primeraEl = c.inicio;
     if (cub.usadas === cub.incluidas) {
       cub.llenoEl = c.inicio;
       cub.delOtroAlLlenarse = paq[tipo === "generales" ? "dayPass" : "generales"].usadas;
@@ -264,6 +267,76 @@ export function inicioDelPlanMs(p: PlanConversaciones): number {
  */
 export function hayCicloAnterior(ahora: Date, p: PlanConversaciones): boolean {
   return Date.parse(cicloEnCurso(ahora, p.diaDeRenovacion, true).desde) >= inicioDelPlanMs(p);
+}
+
+export interface CicloDelPlan {
+  desde: string;
+  hasta: string;
+  etiqueta: string;
+}
+
+/** Más de tres años de ciclos mensuales no se muestran de una: la tabla sería ilegible. */
+const TOPE_CICLOS = 40;
+
+/**
+ * Todos los ciclos desde que arrancó el plan hasta el que corre en `ahora`,
+ * del más viejo al más nuevo. El primero puede empezar antes del plan (si el
+ * plan arrancó a mitad de ciclo): se cuenta desde el plan, como siempre.
+ */
+export function ciclosDelPlan(ahora: Date, p: PlanConversaciones): CicloDelPlan[] {
+  const inicio = inicioDelPlanMs(p);
+  const out: CicloDelPlan[] = [];
+  let c = cicloEnCurso(ahora, p.diaDeRenovacion);
+  while (Date.parse(c.hasta) > inicio && out.length < TOPE_CICLOS) {
+    out.unshift(c);
+    c = cicloDelPlan(c.desde, p.diaDeRenovacion);
+  }
+  return out;
+}
+
+/**
+ * Una fila de la tabla de paquetes: de cuándo a cuándo fueron las
+ * conversaciones generales de cada paquete, desde que arrancó el plan. Es lo
+ * que pidió la agencia el 2026-11-03: "paquete #, fecha de inicio y fecha de
+ * fin, una tablita rápida".
+ */
+export interface FilaDePaquete {
+  /** El ciclo, como se nombra: "Octubre 2026". */
+  ciclo: string;
+  /** 1 = el plan del mes. */
+  numero: number;
+  /** La primera conversación general que se contó en el paquete (ISO); null si todavía ninguna. */
+  inicio: string | null;
+  /** Cuándo se usó la última de las incluidas (ISO); null si no se llenó. */
+  fin: string | null;
+  usadas: number;
+  incluidas: number;
+  /** lleno: se acabaron. en_curso: el ciclo sigue y le queda lugar. cerrado: el ciclo terminó sin llenarse. */
+  estado: "lleno" | "en_curso" | "cerrado";
+}
+
+/** Las filas de la tabla de paquetes, ciclo por ciclo y paquete por paquete. */
+export function tablaDePaquetes(
+  ciclos: readonly { ciclo: CicloDelPlan; uso: UsoDelPlan }[],
+  ahora: Date,
+): FilaDePaquete[] {
+  const out: FilaDePaquete[] = [];
+  for (const { ciclo, uso } of ciclos) {
+    const cerrado = Date.parse(ciclo.hasta) <= ahora.getTime();
+    for (const p of uso.paquetes) {
+      const g = p.generales;
+      out.push({
+        ciclo: ciclo.etiqueta,
+        numero: p.numero,
+        inicio: g.primeraEl,
+        fin: g.llenoEl,
+        usadas: g.usadas,
+        incluidas: g.incluidas,
+        estado: g.llenoEl ? "lleno" : cerrado ? "cerrado" : "en_curso",
+      });
+    }
+  }
+  return out;
 }
 
 /**

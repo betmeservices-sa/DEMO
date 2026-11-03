@@ -10,13 +10,13 @@
 // Por PAQUETES que se llenan en orden (lo pidió el usuario el 2026-10-01):
 // arriba, las conversaciones del ciclo y cuántos paquetes van consumidos; abajo,
 // de qué paquete salen ahora las normales y de cuál el Day Pass (puede ser uno
-// anterior que todavía tiene lugar), y cómo va cada paquete. Ver
-// lib/plan-conversaciones.ts.
+// anterior que todavía tiene lugar). De cuándo a cuándo fue cada paquete lo
+// dice la tabla de al lado (TablaDePaquetes). Ver lib/plan-conversaciones.ts.
 
 import { useEffect, useState } from "react";
 import { Loader2, MessagesSquare, Sun, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { fechaHora, miles } from "@/lib/formato-agencia";
+import { miles } from "@/lib/formato-agencia";
 import type { Cubeta, Paquete, PlanConversaciones, TipoDeConversacion, UsoDelPlan } from "@/lib/plan-conversaciones";
 
 type Ciclo = "actual" | "anterior";
@@ -150,13 +150,6 @@ export function PlanDelCiclo({ cliente }: { cliente: string }) {
             })}
           </div>
 
-          {vigente.uso.paquetes.length > 1 && (
-            <ul className="mt-4 space-y-1 border-t border-line pt-3 text-[11.5px] text-[var(--text-3)]">
-              {vigente.uso.paquetes.map((p) => (
-                <li key={p.numero}>{resumenDePaquete(p)}</li>
-              ))}
-            </ul>
-          )}
         </>
       )}
     </section>
@@ -181,19 +174,6 @@ function notaDeTipo(paquetes: readonly Paquete[], t: TipoDeConversacion, n: numb
   return despues.length
     ? `${resto} · después siguen ${despues.map((p) => `${miles(p[t].incluidas - p[t].usadas)} del paquete ${p.numero}`).join(" y ")}`
     : resto;
-}
-
-/** "Paquete 2 (desde el 20 sept, 7:48 a. m.): normales llenas el 29 sept, 6:15 p. m. · Day Pass 346 de 500" */
-function resumenDePaquete(p: Paquete): string {
-  const nombre = p.numero === 1 ? "El plan" : `Paquete ${p.numero}`;
-  const desde = p.abre ? ` (desde el ${fechaHora(p.abre)})` : "";
-  const normales = p.generales.llenoEl
-    ? `normales llenas el ${fechaHora(p.generales.llenoEl)}`
-    : `normales ${miles(p.generales.usadas)} de ${miles(p.generales.incluidas)}`;
-  const dayPass = p.dayPass.llenoEl
-    ? `Day Pass lleno el ${fechaHora(p.dayPass.llenoEl)}`
-    : `Day Pass ${miles(p.dayPass.usadas)} de ${miles(p.dayPass.incluidas)}`;
-  return `${nombre}${desde}: ${normales} · ${dayPass}`;
 }
 
 function Barra({

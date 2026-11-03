@@ -1,10 +1,12 @@
 // El plan de conversaciones de un cliente en su ciclo de facturación, contado
 // por paquetes (ver usoDelPlan en lib/plan-conversaciones.ts).
 //
-// GET ?cliente=<tenant>&ciclo=actual|anterior
+// GET ?cliente=<tenant>&ciclo=actual|anterior|todos
 //
 // Va por CICLO de facturación y NO sigue al filtro de periodo del tablero:
 // "actual" es el ciclo en curso y "anterior" el que ya cerró (para cobrarlo).
+// "todos" devuelve cada ciclo desde que arrancó el plan, para la tabla de
+// paquetes (de cuándo a cuándo fueron las 1.000 de cada uno).
 //
 // Solo para la agencia, igual que el resto del tablero.
 
@@ -17,11 +19,15 @@ import {
   DURACION_CONVERSACION_MS,
   PLANES,
   cicloEnCurso,
+  ciclosDelPlan,
   conversacionesQueArrancanEn,
   hayCicloAnterior,
   idDeConsumo,
   inicioDelPlanMs,
   usoDelPlan,
+  type CicloDelPlan,
+  type PlanConversaciones,
+  type UsoDelPlan,
 } from "@/lib/plan-conversaciones";
 
 export const runtime = "nodejs";
@@ -70,80 +76,100 @@ export async function GET(req: Request) {
   if (!plan) return NextResponse.json({ ok: true, plan: null });
 
   const ahora = new Date();
+  const sb = getSupabase(cliente);
+  if (!sb) return NextResponse.json({ ok: false, error: "Sin base configurada." });
+
+  if (q.get("ciclo") === "todos") {
+    try {
+      const ciclos = ciclosDelPlan(ahora, plan);
+      const usos = await Promise.all(ciclos.map((c) => usoDelCiclo(sb, cliente, plan, c)));
+      return NextResponse.json({
+        ok: true,
+        plan,
+        ciclos: ciclos.map((ciclo, i) => ({ ciclo, uso: usos[i]!.uso })),
+        truncado: usos.some((u) => u.truncado),
+      });
+    } catch (e) {
+      console.error("[agencia/plan] todos", cliente, e instanceof Error ? e.message : e);
+      return NextResponse.json({ ok: false, error: "No se pudo leer el plan." });
+    }
+  }
+
   const hayAnterior = hayCicloAnterior(ahora, plan);
   const pideAnterior = q.get("ciclo") === "anterior";
   // Antes de que arranque el plan no hay ciclo que mostrar (ni que cobrar).
   if (pideAnterior && !hayAnterior) return NextResponse.json({ ok: true, plan, hayAnterior, ciclo: null, uso: null });
   const ciclo = cicloEnCurso(ahora, plan.diaDeRenovacion, pideAnterior);
-  // Si el plan arrancó a mitad de un ciclo, se cuenta desde que arrancó.
-  const desde = new Date(Math.max(Date.parse(ciclo.desde), inicioDelPlanMs(plan))).toISOString();
-
-  const sb = getSupabase(cliente);
-  if (!sb) return NextResponse.json({ ok: false, error: "Sin base configurada." });
 
   try {
-    const [filas, analizadas, mencionesWa, mencionesMeta] = await Promise.all([
-      // 24 h antes del corte: así se ve dónde arrancó una sesión que viene
-      // abierta del ciclo anterior y no se cuenta de nuevo en este.
-      detalleConsumo(cliente, TOPE_FILAS, new Date(Date.parse(desde) - DURACION_CONVERSACION_MS).toISOString(), ciclo.hasta),
-      // Lo que el análisis diario marcó como Day Pass, de cualquier fecha: si
-      // el chat tuvo conversaciones en este ciclo, esas cuentan como Day Pass.
-      todas<{ conversacion_id: string }>((a, b) =>
-        sb
-          .from("conversacion_analisis")
-          .select("conversacion_id")
-          .eq("tenant", cliente)
-          .or("tema.eq.day_pass,temas.cs.{day_pass}")
-          .order("conversacion_id")
-          .range(a, b),
-      ),
-      todas<{ wa_from: string }>((a, b) =>
-        sb
-          .from("wa_messages")
-          .select("wa_from")
-          .eq("tenant", cliente)
-          .eq("direccion", "in")
-          .gte("ts", desde)
-          .lt("ts", ciclo.hasta)
-          .filter("texto", "imatch", MENCIONA_DAY_PASS)
-          .order("id")
-          .range(a, b),
-      ),
-      todas<{ canal: string; sender_id: string }>((a, b) =>
-        sb
-          .from("meta_messages")
-          .select("canal, sender_id")
-          .eq("tenant", cliente)
-          .eq("direction", "in")
-          .gte("ts", desde)
-          .lt("ts", ciclo.hasta)
-          .filter("texto", "imatch", MENCIONA_DAY_PASS)
-          .order("id")
-          .range(a, b),
-      ),
-    ]);
-
-    // Sesiones de 24 h que arrancan en el ciclo, en orden de inicio.
-    const conversaciones = conversacionesQueArrancanEn(
-      filas.filter((f) => (f.tipo ?? "respuesta") === "respuesta"),
-      desde,
-    );
-    const chatsDayPass = new Set<string>([
-      ...analizadas.map((f) => idDeConsumo(f.conversacion_id)),
-      ...mencionesWa.map((f) => f.wa_from),
-      ...mencionesMeta.map((f) => `${f.canal === "instagram" ? "instagram" : "facebook"}:${f.sender_id}`),
-    ]);
-
-    return NextResponse.json({
-      ok: true,
-      plan,
-      hayAnterior,
-      ciclo,
-      uso: usoDelPlan(conversaciones, chatsDayPass, plan),
-      truncado: filas.length >= TOPE_FILAS,
-    });
+    const { uso, truncado } = await usoDelCiclo(sb, cliente, plan, ciclo);
+    return NextResponse.json({ ok: true, plan, hayAnterior, ciclo, uso, truncado });
   } catch (e) {
     console.error("[agencia/plan]", cliente, e instanceof Error ? e.message : e);
     return NextResponse.json({ ok: false, error: "No se pudo leer el plan." });
   }
+}
+
+/** Cuenta un ciclo por paquetes a partir de las respuestas del agente y los chats de Day Pass. */
+async function usoDelCiclo(
+  sb: NonNullable<ReturnType<typeof getSupabase>>,
+  cliente: string,
+  plan: PlanConversaciones,
+  ciclo: CicloDelPlan,
+): Promise<{ uso: UsoDelPlan; truncado: boolean }> {
+  // Si el plan arrancó a mitad de un ciclo, se cuenta desde que arrancó.
+  const desde = new Date(Math.max(Date.parse(ciclo.desde), inicioDelPlanMs(plan))).toISOString();
+  const [filas, analizadas, mencionesWa, mencionesMeta] = await Promise.all([
+    // 24 h antes del corte: así se ve dónde arrancó una sesión que viene
+    // abierta del ciclo anterior y no se cuenta de nuevo en este.
+    detalleConsumo(cliente, TOPE_FILAS, new Date(Date.parse(desde) - DURACION_CONVERSACION_MS).toISOString(), ciclo.hasta),
+    // Lo que el análisis diario marcó como Day Pass, de cualquier fecha: si
+    // el chat tuvo conversaciones en este ciclo, esas cuentan como Day Pass.
+    todas<{ conversacion_id: string }>((a, b) =>
+      sb
+        .from("conversacion_analisis")
+        .select("conversacion_id")
+        .eq("tenant", cliente)
+        .or("tema.eq.day_pass,temas.cs.{day_pass}")
+        .order("conversacion_id")
+        .range(a, b),
+    ),
+    todas<{ wa_from: string }>((a, b) =>
+      sb
+        .from("wa_messages")
+        .select("wa_from")
+        .eq("tenant", cliente)
+        .eq("direccion", "in")
+        .gte("ts", desde)
+        .lt("ts", ciclo.hasta)
+        .filter("texto", "imatch", MENCIONA_DAY_PASS)
+        .order("id")
+        .range(a, b),
+    ),
+    todas<{ canal: string; sender_id: string }>((a, b) =>
+      sb
+        .from("meta_messages")
+        .select("canal, sender_id")
+        .eq("tenant", cliente)
+        .eq("direction", "in")
+        .gte("ts", desde)
+        .lt("ts", ciclo.hasta)
+        .filter("texto", "imatch", MENCIONA_DAY_PASS)
+        .order("id")
+        .range(a, b),
+    ),
+  ]);
+
+  // Sesiones de 24 h que arrancan en el ciclo, en orden de inicio.
+  const conversaciones = conversacionesQueArrancanEn(
+    filas.filter((f) => (f.tipo ?? "respuesta") === "respuesta"),
+    desde,
+  );
+  const chatsDayPass = new Set<string>([
+    ...analizadas.map((f) => idDeConsumo(f.conversacion_id)),
+    ...mencionesWa.map((f) => f.wa_from),
+    ...mencionesMeta.map((f) => `${f.canal === "instagram" ? "instagram" : "facebook"}:${f.sender_id}`),
+  ]);
+
+  return { uso: usoDelPlan(conversaciones, chatsDayPass, plan), truncado: filas.length >= TOPE_FILAS };
 }

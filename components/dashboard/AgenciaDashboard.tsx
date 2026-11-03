@@ -46,6 +46,7 @@ import { PERIODOS, queMostrarEnTablero, type Canal, type Periodo, type ReporteCo
 import { PERIODOS_AGENCIA, type ReservasDelPeriodo, type TicketsDelPeriodo } from "@/lib/agencia-resumen";
 import { ROL, TZ, fechaCorta, fechaHora, miles } from "@/lib/formato-agencia";
 import { PlanDelCiclo } from "@/components/dashboard/PlanDelCiclo";
+import { TablaDePaquetes } from "@/components/dashboard/TablaDePaquetes";
 
 interface Cierre {
   inicio: string | null;
@@ -355,6 +356,7 @@ export function AgenciaDashboard() {
             facturación. La raya de abajo separa lo que el filtro sí mueve; un
             cliente sin plan (el hospital) no tiene nada que separar. */}
         <PlanDelCiclo cliente={cliente} />
+        <TablaDePaquetes cliente={cliente} />
 
         <div className="flex flex-wrap items-center gap-2 border-line not-first:border-t not-first:pt-5">
           <div className="relative flex flex-wrap gap-1 rounded-xl border border-line bg-surface p-1">
