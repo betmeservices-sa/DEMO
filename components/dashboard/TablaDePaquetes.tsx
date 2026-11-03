@@ -7,69 +7,20 @@
 // ve todo el historial de una, sin selector. Se baja como CSV para Excel.
 //
 // Sale de /api/agencia/plan?ciclo=todos (lib/plan-conversaciones.ts:
-// tablaDePaquetes), así que cuenta igual que el bloque del plan.
+// tablaDePaquetes), así que cuenta igual que el bloque del plan. El botón
+// baja un .xlsx de verdad (lib/xlsx-minimo), no un CSV: el CSV no se veía
+// como Excel y nadie lo encontraba.
 
 import { useEffect, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
-import { TZ, fechaHora, miles } from "@/lib/formato-agencia";
+import { fechaHora, miles } from "@/lib/formato-agencia";
+import { ANCHOS_PAQUETES, ESTADO_PAQUETE as ESTADO, filasParaExcel } from "@/lib/paquetes-excel";
 import { tablaDePaquetes, type CicloDelPlan, type FilaDePaquete, type UsoDelPlan } from "@/lib/plan-conversaciones";
+import { TIPO_XLSX, libroXlsx } from "@/lib/xlsx-minimo";
 
 interface Leido {
   cliente: string;
   filas: FilaDePaquete[];
-}
-
-/** "13/10/2026 14:22", que Excel lee como fecha. */
-const FECHA_EXCEL = new Intl.DateTimeFormat("es-SV", {
-  timeZone: TZ,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-});
-const fechaExcel = (iso: string | null) => (iso ? FECHA_EXCEL.format(new Date(iso)).replace(",", "") : "");
-
-const ESTADO: Record<FilaDePaquete["estado"], string> = {
-  lleno: "Se acabó",
-  en_curso: "En curso",
-  cerrado: "Cerró el mes sin llenarse",
-};
-
-/** El CSV para Excel: con BOM y "sep=," para que abra en columnas en cualquier idioma. */
-export function csvDePaquetes(filas: readonly FilaDePaquete[]): string {
-  const celda = (v: string | number) => {
-    const s = String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const cabecera = [
-    "Mes",
-    "Paquete",
-    "Inicio",
-    "Fin",
-    "Normales usadas",
-    "Normales del paquete",
-    "Day Pass usadas",
-    "Day Pass del paquete",
-    "Estado",
-  ];
-  const lineas = filas.map((f) =>
-    [
-      f.ciclo,
-      f.numero,
-      fechaExcel(f.inicio),
-      fechaExcel(f.fin),
-      f.usadas,
-      f.incluidas,
-      f.dayPassUsadas,
-      f.dayPassIncluidas,
-      ESTADO[f.estado],
-    ]
-      .map(celda)
-      .join(","),
-  );
-  return "﻿sep=,\n" + [cabecera.join(","), ...lineas].join("\n");
 }
 
 export function TablaDePaquetes({ cliente }: { cliente: string }) {
@@ -109,11 +60,12 @@ export function TablaDePaquetes({ cliente }: { cliente: string }) {
 
   const descargar = () => {
     if (!vigente) return;
-    const blob = new Blob([csvDePaquetes(vigente.filas)], { type: "text/csv;charset=utf-8" });
+    const libro = libroXlsx("Paquetes", filasParaExcel(vigente.filas), ANCHOS_PAQUETES);
+    const blob = new Blob([libro as BlobPart], { type: TIPO_XLSX });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `paquetes-${cliente}.csv`;
+    a.download = `paquetes-${cliente}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
   };
