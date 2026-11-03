@@ -309,9 +309,13 @@ export interface FilaDePaquete {
   inicio: string | null;
   /** Cuándo se usó la última de las incluidas (ISO); null si no se llenó. */
   fin: string | null;
+  /** Conversaciones normales usadas del paquete, y las que trae. */
   usadas: number;
   incluidas: number;
-  /** lleno: se acabaron. en_curso: el ciclo sigue y le queda lugar. cerrado: el ciclo terminó sin llenarse. */
+  /** Conversaciones de Day Pass usadas del mismo paquete, y las que trae. */
+  dayPassUsadas: number;
+  dayPassIncluidas: number;
+  /** lleno: se acabaron las normales. en_curso: el ciclo sigue y le queda lugar. cerrado: el ciclo terminó sin llenarse. */
   estado: "lleno" | "en_curso" | "cerrado";
 }
 
@@ -332,6 +336,8 @@ export function tablaDePaquetes(
         fin: g.llenoEl,
         usadas: g.usadas,
         incluidas: g.incluidas,
+        dayPassUsadas: p.dayPass.usadas,
+        dayPassIncluidas: p.dayPass.incluidas,
         estado: g.llenoEl ? "lleno" : cerrado ? "cerrado" : "en_curso",
       });
     }

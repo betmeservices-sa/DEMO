@@ -325,8 +325,8 @@ describe("la tabla de paquetes: de cuándo a cuándo fueron las 1.000 de cada un
       new Date("2026-09-20T12:00:00Z"),
     );
     expect(filas).toEqual([
-      { ciclo: "Septiembre 2026", numero: 1, inicio: g[0]!.inicio, fin: g[9]!.inicio, usadas: 10, incluidas: 10, estado: "lleno" },
-      { ciclo: "Septiembre 2026", numero: 2, inicio: g[10]!.inicio, fin: null, usadas: 3, incluidas: 10, estado: "en_curso" },
+      { ciclo: "Septiembre 2026", numero: 1, inicio: g[0]!.inicio, fin: g[9]!.inicio, usadas: 10, incluidas: 10, dayPassUsadas: 0, dayPassIncluidas: 5, estado: "lleno" },
+      { ciclo: "Septiembre 2026", numero: 2, inicio: g[10]!.inicio, fin: null, usadas: 3, incluidas: 10, dayPassUsadas: 0, dayPassIncluidas: 5, estado: "en_curso" },
     ]);
   });
 
@@ -356,6 +356,8 @@ describe("la tabla de paquetes: de cuándo a cuándo fueron las 1.000 de cada un
       [{ ciclo: ciclo("Septiembre 2026", "2026-09-01T06:00:00.000Z", "2026-10-01T06:00:00.000Z"), uso }],
       new Date("2026-09-20T12:00:00Z"),
     );
-    expect(filas[1]).toEqual({ ciclo: "Septiembre 2026", numero: 2, inicio: null, fin: null, usadas: 0, incluidas: 10, estado: "en_curso" });
+    // Y lleva el Day Pass que lo abrió: 1 de 5; el plan quedó con sus 5.
+    expect(filas[0]).toMatchObject({ numero: 1, usadas: 3, dayPassUsadas: 5, dayPassIncluidas: 5 });
+    expect(filas[1]).toEqual({ ciclo: "Septiembre 2026", numero: 2, inicio: null, fin: null, usadas: 0, incluidas: 10, dayPassUsadas: 1, dayPassIncluidas: 5, estado: "en_curso" });
   });
 });
