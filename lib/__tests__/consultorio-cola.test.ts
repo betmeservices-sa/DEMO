@@ -240,7 +240,9 @@ describe("el historial del paciente", () => {
 describe("el paciente en Contactos", () => {
   it("la clínica ve Contactos, y Contactos sigue siendo de todos", () => {
     expect(VE_CLINICA).toContain("contactos");
-    for (const m of MODULOS_CLINICA) expect(VE_CLINICA).toContain(m);
+    // La bandeja de muestra ("mensajes") dejó el menú cuando el lab tuvo
+    // WhatsApp real: lo demás de la clínica sigue.
+    for (const m of MODULOS_CLINICA.filter((x) => x !== "mensajes")) expect(VE_CLINICA).toContain(m);
     // Contactos NO va en la lista que esconde módulos a los demás clientes.
     expect(MODULOS_CLINICA).not.toContain("contactos");
   });

@@ -123,7 +123,20 @@ export const MODULOS_CLINICA: readonly ModuleId[] = [
 // (examenes, facturas, recetas y notas). Contactos NO entra en MODULOS_CLINICA
 // porque esa lista es la que esconde modulos a los demas clientes, y
 // Contactos es de todos.
-export const VE_CLINICA: readonly ModuleId[] = [...MODULOS_CLINICA, "contactos"];
+// Desde 2026-11-03 el laboratorio tiene WhatsApp real (2247 1141, Valeria):
+// la bandeja de muestra ("mensajes") deja el menu y entran la bandeja real y
+// los casos que abre Valeria. Sin esto el equipo no veia ni los chats ni los
+// casos, y Valeria le promete al paciente que una compañera le escribe.
+export const VE_CLINICA: readonly ModuleId[] = [
+  "consultorio",
+  "laboratorio",
+  "imagenologia",
+  "jefatura",
+  "bandeja",
+  "tickets",
+  "valeria",
+  "contactos",
+];
 
 // El menu de MiAgentIA Comercial (las asesoras), EN ESTE ORDEN: primero los
 // leads, que es para lo que entran, despues el WhatsApp comercial y sus

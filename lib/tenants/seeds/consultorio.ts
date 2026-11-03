@@ -42,37 +42,10 @@ export const consultorioSeed: TenantSeed = {
     { id: "c9", nombre: "Doris Quintanilla", telefono: "50378112360", canal: "whatsapp", notas: "Pregunta seguido por preparación de exámenes. Prefiere que le expliquen por audio.", tags: ["Exámenes de laboratorio"] },
     { id: "c10", nombre: "Fernando Aguirre", telefono: "50376990412", correo: "faguirre@pymesv.com", canal: "whatsapp", notas: "Trae al personal de su empresa a chequeo. Pide factura a nombre de la empresa.", tags: ["Chequeo anual"] },
   ],
-  conversations: [
-    { id: "v1", canal: "whatsapp", contactId: "c1", departamento: "laboratorio", estado: "en_progreso", asignadoA: "s4", noLeidos: 1, ultimoMensajeTs: "2026-09-08T09:34:00" },
-    { id: "v2", canal: "whatsapp", contactId: "c2", departamento: "recepcion", estado: "en_progreso", asignadoA: "s6", noLeidos: 0, ultimoMensajeTs: "2026-09-08T09:05:00" },
-    { id: "v3", canal: "whatsapp", contactId: "c3", departamento: "laboratorio", estado: "nuevo", noLeidos: 2, ultimoMensajeTs: "2026-09-08T08:41:00" },
-    { id: "v4", canal: "instagram", contactId: "c4", departamento: "recepcion", estado: "nuevo", noLeidos: 1, ultimoMensajeTs: "2026-09-07T19:12:00" },
-    { id: "v5", canal: "facebook", contactId: "c5", departamento: "recepcion", estado: "resuelto", asignadoA: "s6", noLeidos: 0, ultimoMensajeTs: "2026-09-07T16:28:00" },
-    { id: "v6", canal: "whatsapp", contactId: "c6", departamento: "laboratorio", estado: "en_progreso", asignadoA: "s5", noLeidos: 0, ultimoMensajeTs: "2026-09-06T11:50:00" },
-  ],
-  messages: [
-    { id: "m1", conversationId: "v1", autor: "cliente", texto: "Buenos días, la doctora me dejó unos exámenes. ¿Puedo llegar mañana en ayunas?", ts: "2026-09-08T09:28:00" },
-    { id: "m2", conversationId: "v1", autor: "staff", staffId: "ia", texto: "¡Buenos días doña Marta! Sí, puede llegar mañana. Para la glucosa y el perfil lipídico necesita ayuno de 8 horas, puede tomar agua.", ts: "2026-09-08T09:29:00" },
-    { id: "m3", conversationId: "v1", autor: "cliente", texto: "Perfecto. ¿Y hasta qué hora toman muestras?", ts: "2026-09-08T09:33:00" },
-    { id: "m4", conversationId: "v1", autor: "staff", staffId: "s4", texto: "Hasta las 10 de la mañana en Escalón, doña Marta. Si llega antes de las 8 sale más rápido.", ts: "2026-09-08T09:34:00" },
-
-    { id: "m5", conversationId: "v2", autor: "cliente", texto: "Buenos días, necesito el chequeo anual que pide mi empresa. ¿Qué incluye?", ts: "2026-09-08T09:01:00" },
-    { id: "m6", conversationId: "v2", autor: "staff", staffId: "ia", texto: "Buenos días. El chequeo anual incluye consulta, hemograma completo, glucosa, perfil lipídico y examen general de orina. ¿Le agendo la consulta esta semana?", ts: "2026-09-08T09:02:00" },
-    { id: "m7", conversationId: "v2", autor: "cliente", texto: "Sí, el jueves temprano si se puede.", ts: "2026-09-08T09:04:00" },
-    { id: "m8", conversationId: "v2", autor: "staff", staffId: "s6", texto: "Listo don Rodrigo, jueves a las 7:30 con el Dr. Rivas. Le mandamos el enlace para que llene sus datos antes de venir.", ts: "2026-09-08T09:05:00" },
-
-    { id: "m9", conversationId: "v3", autor: "cliente", texto: "Ayer solo me hicieron cinco exámenes de los siete que traía.", ts: "2026-09-08T08:39:00" },
-    { id: "m10", conversationId: "v3", autor: "cliente", texto: "¿Tengo que volver a sacar cita o solo llego?", ts: "2026-09-08T08:41:00" },
-
-    { id: "m11", conversationId: "v4", autor: "cliente", texto: "Hola, buenas. ¿Hacen control prenatal ahí?", ts: "2026-09-07T19:12:00" },
-
-    { id: "m12", conversationId: "v5", autor: "cliente", texto: "Buenas tardes, ¿cuánto cuesta el hemograma y necesito ayuno?", ts: "2026-09-07T16:22:00" },
-    { id: "m13", conversationId: "v5", autor: "staff", staffId: "ia", texto: "Buenas tardes. El hemograma completo cuesta $12 y no necesita ayuno. Si en la misma visita le van a hacer glucosa, ahí sí se pide ayuno de 8 horas.", ts: "2026-09-07T16:23:00" },
-    { id: "m14", conversationId: "v5", autor: "cliente", texto: "Gracias, paso mañana entonces.", ts: "2026-09-07T16:28:00" },
-
-    { id: "m15", conversationId: "v6", autor: "staff", staffId: "s5", texto: "Don Nelson, sus resultados están listos desde el martes. Se los podemos mandar por correo si prefiere.", ts: "2026-09-06T11:48:00" },
-    { id: "m16", conversationId: "v6", autor: "cliente", texto: "Sí por favor, al correo. Paso por el original el fin de semana.", ts: "2026-09-06T11:50:00" },
-  ],
+  // Sin chats de muestra: desde 2026-11-03 la bandeja es la del WhatsApp real
+  // del laboratorio (2247 1141). Los de muestra viven en bandejaDeMuestra.
+  conversations: [],
+  messages: [],
   internalChannels: [
     { id: "ic1", nombre: "general", tipo: "canal", miembros: [ME, "s2", "s3", "s4", "s5", "s6", "s7"] },
     { id: "ic2", nombre: "laboratorio", tipo: "canal", miembros: ["s4", "s5", "s6"] },
@@ -104,5 +77,42 @@ export const consultorioSeed: TenantSeed = {
     { label: "Tiempo de respuesta", valor: "4 min", delta: -22 },
     { label: "Citas agendadas", valor: 11, delta: 15 },
     { label: "Atendidas por IA", valor: "68%", delta: 6 },
+  ],
+};
+
+// La bandeja de muestra (/mensajes): conversaciones inventadas con la misma
+// gente de la semilla. Ya no sale en el menu de la clinica, que ahora tiene la
+// bandeja real, pero la pagina sigue existiendo.
+export const bandejaDeMuestra: Pick<TenantSeed, "conversations" | "messages"> = {
+  conversations: [
+    { id: "v1", canal: "whatsapp", contactId: "c1", departamento: "laboratorio", estado: "en_progreso", asignadoA: "s4", noLeidos: 1, ultimoMensajeTs: "2026-09-08T09:34:00" },
+    { id: "v2", canal: "whatsapp", contactId: "c2", departamento: "recepcion", estado: "en_progreso", asignadoA: "s6", noLeidos: 0, ultimoMensajeTs: "2026-09-08T09:05:00" },
+    { id: "v3", canal: "whatsapp", contactId: "c3", departamento: "laboratorio", estado: "nuevo", noLeidos: 2, ultimoMensajeTs: "2026-09-08T08:41:00" },
+    { id: "v4", canal: "instagram", contactId: "c4", departamento: "recepcion", estado: "nuevo", noLeidos: 1, ultimoMensajeTs: "2026-09-07T19:12:00" },
+    { id: "v5", canal: "facebook", contactId: "c5", departamento: "recepcion", estado: "resuelto", asignadoA: "s6", noLeidos: 0, ultimoMensajeTs: "2026-09-07T16:28:00" },
+    { id: "v6", canal: "whatsapp", contactId: "c6", departamento: "laboratorio", estado: "en_progreso", asignadoA: "s5", noLeidos: 0, ultimoMensajeTs: "2026-09-06T11:50:00" },
+  ],
+  messages: [
+    { id: "m1", conversationId: "v1", autor: "cliente", texto: "Buenos días, la doctora me dejó unos exámenes. ¿Puedo llegar mañana en ayunas?", ts: "2026-09-08T09:28:00" },
+    { id: "m2", conversationId: "v1", autor: "staff", staffId: "ia", texto: "¡Buenos días doña Marta! Sí, puede llegar mañana. Para la glucosa y el perfil lipídico necesita ayuno de 8 horas, puede tomar agua.", ts: "2026-09-08T09:29:00" },
+    { id: "m3", conversationId: "v1", autor: "cliente", texto: "Perfecto. ¿Y hasta qué hora toman muestras?", ts: "2026-09-08T09:33:00" },
+    { id: "m4", conversationId: "v1", autor: "staff", staffId: "s4", texto: "Hasta las 10 de la mañana en Escalón, doña Marta. Si llega antes de las 8 sale más rápido.", ts: "2026-09-08T09:34:00" },
+
+    { id: "m5", conversationId: "v2", autor: "cliente", texto: "Buenos días, necesito el chequeo anual que pide mi empresa. ¿Qué incluye?", ts: "2026-09-08T09:01:00" },
+    { id: "m6", conversationId: "v2", autor: "staff", staffId: "ia", texto: "Buenos días. El chequeo anual incluye consulta, hemograma completo, glucosa, perfil lipídico y examen general de orina. ¿Le agendo la consulta esta semana?", ts: "2026-09-08T09:02:00" },
+    { id: "m7", conversationId: "v2", autor: "cliente", texto: "Sí, el jueves temprano si se puede.", ts: "2026-09-08T09:04:00" },
+    { id: "m8", conversationId: "v2", autor: "staff", staffId: "s6", texto: "Listo don Rodrigo, jueves a las 7:30 con el Dr. Rivas. Le mandamos el enlace para que llene sus datos antes de venir.", ts: "2026-09-08T09:05:00" },
+
+    { id: "m9", conversationId: "v3", autor: "cliente", texto: "Ayer solo me hicieron cinco exámenes de los siete que traía.", ts: "2026-09-08T08:39:00" },
+    { id: "m10", conversationId: "v3", autor: "cliente", texto: "¿Tengo que volver a sacar cita o solo llego?", ts: "2026-09-08T08:41:00" },
+
+    { id: "m11", conversationId: "v4", autor: "cliente", texto: "Hola, buenas. ¿Hacen control prenatal ahí?", ts: "2026-09-07T19:12:00" },
+
+    { id: "m12", conversationId: "v5", autor: "cliente", texto: "Buenas tardes, ¿cuánto cuesta el hemograma y necesito ayuno?", ts: "2026-09-07T16:22:00" },
+    { id: "m13", conversationId: "v5", autor: "staff", staffId: "ia", texto: "Buenas tardes. El hemograma completo cuesta $12 y no necesita ayuno. Si en la misma visita le van a hacer glucosa, ahí sí se pide ayuno de 8 horas.", ts: "2026-09-07T16:23:00" },
+    { id: "m14", conversationId: "v5", autor: "cliente", texto: "Gracias, paso mañana entonces.", ts: "2026-09-07T16:28:00" },
+
+    { id: "m15", conversationId: "v6", autor: "staff", staffId: "s5", texto: "Don Nelson, sus resultados están listos desde el martes. Se los podemos mandar por correo si prefiere.", ts: "2026-09-06T11:48:00" },
+    { id: "m16", conversationId: "v6", autor: "cliente", texto: "Sí por favor, al correo. Paso por el original el fin de semana.", ts: "2026-09-06T11:50:00" },
   ],
 };

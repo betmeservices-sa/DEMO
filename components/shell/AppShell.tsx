@@ -59,8 +59,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (destino) router.replace(MODULO_RUTA[destino]);
   }, [permitido, esAgencia, def, router]);
 
-  // La clinica solo tiene sus dos pantallas: entrar cae en el consultorio y no
-  // en la bandeja, que para este cliente no existe.
+  // La clinica solo ve lo de su menu (VE_CLINICA): cualquier otra pantalla la
+  // devuelve al consultorio. Desde 2026-11-03 la bandeja real si es suya.
   useEffect(() => {
     // Las páginas del paciente NO son del menú: se abren en el teléfono de otra
     // persona y se ven enteras. Sin esta salida, el efecto corría igual (los

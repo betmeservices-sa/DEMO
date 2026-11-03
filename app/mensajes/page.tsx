@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { esDeLaClinica } from "@/lib/consultorio/guardia";
 import { TENANTS } from "@/lib/tenants";
+import { bandejaDeMuestra } from "@/lib/tenants/seeds/consultorio";
 import { Bandeja, type ChatDemo } from "@/components/consultorio/Bandeja";
 import { Encabezado } from "@/components/consultorio/Encabezado";
 
@@ -21,7 +22,7 @@ export default async function PaginaMensajes() {
       ? `${TENANTS.consultorio.ai?.nombre ?? "Asistente"} (IA)`
       : (seed.staff.find((s) => s.id === id)?.nombre ?? "Equipo");
 
-  const chats: ChatDemo[] = seed.conversations.map((c) => {
+  const chats: ChatDemo[] = bandejaDeMuestra.conversations.map((c) => {
     const contacto = seed.contacts.find((x) => x.id === c.contactId);
     return {
       id: c.id,
@@ -31,7 +32,7 @@ export default async function PaginaMensajes() {
       estado: c.estado,
       noLeidos: c.noLeidos,
       ultimo: c.ultimoMensajeTs,
-      mensajes: seed.messages
+      mensajes: bandejaDeMuestra.messages
         .filter((m) => m.conversationId === c.id)
         .map((m) => ({
           id: m.id,

@@ -267,16 +267,18 @@ describe("configuración del agente", () => {
   // son parte de lo que se muestra, y su guion lo dice.
   // "shopusa" (ShopUSA) vive de leer la captura del pedido que manda el
   // cliente: es su prealerta, y su guion lo dice.
-  it("solo yaly, miagentia, comercial y shopusa ven imágenes", () => {
+  it("solo yaly, miagentia, comercial, shopusa y el laboratorio ven imágenes", () => {
     expect(TENANTS.yaly.ai.imagenes).toBe(true);
     expect(TENANTS.miagentia.ai.imagenes).toBe(true);
     expect(TENANTS.comercial.ai.imagenes).toBe(true);
     expect(TENANTS.shopusa.ai.imagenes).toBe(true);
+    // Valeria del lab (2026-11-03): lee la foto de la orden médica para cotizar.
+    expect(TENANTS.consultorio.ai.imagenes).toBe(true);
     const conVision = Object.values(TENANTS)
       .filter((t) => t.ai.imagenes === true)
       .map((t) => t.id)
       .sort();
-    expect(conVision).toEqual(["comercial", "miagentia", "shopusa", "yaly"]);
+    expect(conVision).toEqual(["comercial", "consultorio", "miagentia", "shopusa", "yaly"]);
   });
 
   // La otra mitad del guardarraíl: el guion de quien SÍ ve tiene que decirlo, o

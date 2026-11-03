@@ -51,7 +51,11 @@ export const consultorioTenant: TenantConfig = {
   simulacion: consultorioSimulacion,
   // Valeria del laboratorio, con luna como los demás agentes: guion de reglas
   // (consultorio/valeria-guion.ts) y los datos en la base del lab (kb_buscar).
-  ai: { systemPrompt: VALERIA_LAB, nombre: "Valeria", modelo: "luna" },
+  // Desde 2026-11-03 contesta el WhatsApp real del lab (2247 1141). Ve las
+  // fotos porque casi todos mandan la orden médica en foto (el guion ya lo
+  // contempla), y el tope de mensajes va alto como el del hospital: con el
+  // de 10 un paciente que pregunta por varios exámenes quedaba sin respuesta.
+  ai: { systemPrompt: VALERIA_LAB, nombre: "Valeria", modelo: "luna", imagenes: true, limiteMensajes: 500 },
   dashboard: [
     { label: "Conversaciones hoy", icon: "MessageSquare", kind: "metric", metricLabel: "Conversaciones hoy", fallback: 0 },
     { label: "Tiempo de respuesta", icon: "Clock", kind: "metric", metricLabel: "Tiempo de respuesta", fallback: "4 min" },
