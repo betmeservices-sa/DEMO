@@ -6,10 +6,12 @@
 import { describe, it, expect } from "vitest";
 import {
   contextoParaAgente,
+  FRASES_HOSPITAL,
   fundir,
   normalizarTelefono,
   type MemoriaLlamada,
 } from "@/lib/memoria-llamadas";
+import { extraerHospital, notaHospital } from "@/lib/memoria-hospital";
 
 const AHORA = Date.parse("2026-08-21T18:00:00.000Z");
 const hace = (dias: number) => new Date(AHORA - dias * 86_400_000).toISOString();
@@ -136,6 +138,41 @@ describe("el párrafo que recibe el agente", () => {
     expect(contextoParaAgente({ ...base, ultima: hace(70) }, AHORA)).toContain("meses");
   });
 
+  it("cuenta los días por calendario de El Salvador y reconoce al que volvió a marcar", () => {
+    const base: MemoriaLlamada = {
+      tenant: "gineco", telefono: "1", modelos: [], agendo: false, resumen: "", llamadas: 1, ultima: hace(0),
+    };
+    // AHORA es mediodía en El Salvador. Anoche a las 11:30 p. m. es AYER,
+    // aunque hayan pasado menos de 24 horas.
+    expect(contextoParaAgente({ ...base, ultima: "2026-08-21T05:30:00.000Z" }, AHORA)).toContain("ayer");
+    // Esta mañana a las 8 es hoy, y no "hace un rato".
+    const manana = contextoParaAgente({ ...base, ultima: "2026-08-21T14:00:00.000Z" }, AHORA);
+    expect(manana).toContain("hoy mismo");
+    expect(manana).not.toContain("hace un rato");
+    // Se cortó hace 40 minutos y volvió a marcar.
+    expect(contextoParaAgente({ ...base, ultima: new Date(AHORA - 40 * 60_000).toISOString() }, AHORA)).toContain(
+      "hoy mismo, hace un rato",
+    );
+  });
+
+  it("en el hospital nombra todo lo que consultó y le dice cómo retomarlo", () => {
+    const t = contextoParaAgente(
+      {
+        tenant: "gineco", telefono: "75391721", modelos: ["hemograma", "prueba de embarazo en sangre"], agendo: false,
+        resumen: "Preguntó al laboratorio por el hemograma y la prueba de embarazo en sangre; se cortó la llamada.",
+        llamadas: 1, ultima: new Date(AHORA - 60 * 60_000).toISOString(),
+      },
+      AHORA,
+      FRASES_HOSPITAL,
+    );
+    expect(t).toContain("hace un rato");
+    expect(t).toContain("hemograma y prueba de embarazo en sangre");
+    expect(t).toContain("De la última llamada");
+    expect(t).toContain("le sigue interesando");
+    expect(t).toContain("búscalos otra vez");
+    expect(t).not.toContain("como mucho UNA cosa");
+  });
+
   it("omite lo que no sabe en vez de inventar un hueco", () => {
     const t = contextoParaAgente(
       {
@@ -160,5 +197,28 @@ describe("el párrafo que recibe el agente", () => {
     );
     expect(t).toContain("Rav cuatro y Corolla Cross");
     expect(t).not.toContain("Hilux");
+  });
+});
+
+describe("lo que guardan los agentes de voz del hospital", () => {
+  it("se queda con los estudios concretos, no con categorías", () => {
+    // En Ultras y en el Lab `temas` son "precio" u "horario": no sirven para retomar.
+    const e = extraerHospital({ temas: ["precio"], estudios: ["hemograma", "prueba de embarazo en sangre"] });
+    expect(e.modelos).toEqual(["hemograma", "prueba de embarazo en sangre"]);
+    // Recepción, antes del cambio, solo mandaba `temas`.
+    expect(extraerHospital({ temas: ["control prenatal"] }).modelos).toEqual(["control prenatal"]);
+  });
+
+  it("una llamada que se cortó sin consulta no pisa el resumen de la anterior", () => {
+    expect(extraerHospital({}, "La persona colgó sin decir nada.").resumen).toBeUndefined();
+    expect(extraerHospital({ estudios: ["ultra 4D"] }, "Preguntó el precio de la ultra 4D.").resumen).toBe(
+      "Preguntó el precio de la ultra 4D.",
+    );
+  });
+
+  it("la nota de la ficha habla del hospital, no de pagar un carro", () => {
+    const n = notaHospital({ modelos: ["hemograma", "TSH"], pago: "la doctora Rivas" });
+    expect(n).toBe("Consultó por hemograma, TSH; se atiende con la doctora Rivas.");
+    expect(notaHospital({})).toBeUndefined();
   });
 });

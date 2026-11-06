@@ -85,10 +85,27 @@ export function fundir(
   };
 }
 
+const DIA_SV = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/El_Salvador",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Días de CALENDARIO en El Salvador entre dos momentos (anoche a las 11 p. m. es "ayer", no "hoy"). */
+function diasDeCalendario(desde: number, hasta: number): number {
+  const dia = (ms: number) => Date.parse(`${DIA_SV.format(ms)}T00:00:00Z`);
+  return Math.round((dia(hasta) - dia(desde)) / 86_400_000);
+}
+
 function haceCuanto(iso: string, ahora = Date.now()): string {
-  const dias = Math.floor((ahora - Date.parse(iso)) / 86_400_000);
-  if (!Number.isFinite(dias) || dias < 0) return "hace poco";
-  if (dias === 0) return "hoy mismo";
+  const antes = Date.parse(iso);
+  if (!Number.isFinite(antes) || antes > ahora) return "hace poco";
+  const dias = diasDeCalendario(antes, ahora);
+  // Se cortó la llamada y volvió a marcar: eso es "hace un rato", no "hoy".
+  const unRato = ahora - antes < 2 * 3_600_000;
+  if (dias === 0) return unRato ? "hoy mismo, hace un rato" : "hoy mismo";
+  if (unRato) return "hace un rato";
   if (dias === 1) return "ayer";
   if (dias < 7) return `hace ${dias} días`;
   if (dias < 14) return "hace una semana";
@@ -110,6 +127,18 @@ export interface FrasesMemoria {
   uso: (x: string) => string;
   pago: (x: string) => string;
   agendo: string;
+  /** Cuántos modelos o temas se nombran. Por defecto 2. */
+  cuantos?: number;
+  /** Cómo usar el párrafo. Por defecto: mencionar como mucho una cosa. */
+  cierre?: string;
+}
+
+const CIERRE_AUTO =
+  "Esto es para que lo tengas presente, no para que lo recites. Mencioná como mucho UNA cosa, al principio, como quien se acuerda.";
+
+/** "a", "a y b", "a, b y c". */
+function enLista(xs: string[]): string {
+  return xs.length <= 1 ? (xs[0] ?? "") : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
 }
 
 export const FRASES_AUTO: FrasesMemoria = {
@@ -120,12 +149,25 @@ export const FRASES_AUTO: FrasesMemoria = {
   agendo: "Quedó una cita agendada.",
 };
 
+/**
+ * El hospital nombra TODO lo que consultó, no una cosa: pedido del usuario
+ * (2026-11-06). Si alguien preguntó por dos exámenes, se cortó y vuelve a
+ * marcar, la agente tiene que poder decir "nos llamó por el hemograma y la
+ * prueba de embarazo, ¿le sigo ayudando con eso?" y contestar "¿por qué
+ * exámenes pregunté?".
+ */
 export const FRASES_HOSPITAL: FrasesMemoria = {
-  unModelo: (x) => `Consultó por ${x}.`,
-  variosModelos: (x) => `Consultó por ${x}.`,
+  unModelo: (x) => `Ha consultado por ${x}.`,
+  variosModelos: (x) => `Ha consultado por ${x}.`,
   uso: (x) => `Llamó por ${x}.`,
   pago: (x) => `Se atiende con ${x}.`,
   agendo: "Tiene una cita agendada.",
+  cuantos: 4,
+  cierre:
+    "Esto es para tenerlo presente, no para leerlo como ficha. Al principio, en una sola frase, retoma lo que consultó " +
+    "la última vez y pregunta si le sigue interesando (por ejemplo: \"Usted nos llamó hace un rato por el hemograma y " +
+    "la prueba de embarazo, ¿le sigo ayudando con eso?\"). Si pregunta qué fue lo que consultó, díselo con estos datos. " +
+    "Los precios no los repitas de memoria: búscalos otra vez. Si dice que ahora es por otra cosa, suéltalo y atiende eso.",
 };
 
 /**
@@ -152,14 +194,11 @@ export function contextoParaAgente(
   );
   if (m.nombre) partes.push(`Se llama ${m.nombre}.`);
   if (m.modelos.length === 1) partes.push(frases.unModelo(m.modelos[0]));
-  else if (m.modelos.length > 1) partes.push(frases.variosModelos(m.modelos.slice(0, 2).join(" y ")));
+  else if (m.modelos.length > 1) partes.push(frases.variosModelos(enLista(m.modelos.slice(0, frases.cuantos ?? 2))));
   if (m.uso) partes.push(frases.uso(m.uso));
   if (m.pago) partes.push(frases.pago(m.pago));
   if (m.agendo) partes.push(frases.agendo);
   if (m.resumen) partes.push(`De la última llamada: ${m.resumen}`);
 
-  return (
-    partes.join(" ") +
-    "\n\nEsto es para que lo tengas presente, no para que lo recites. Mencioná como mucho UNA cosa, al principio, como quien se acuerda."
-  );
+  return `${partes.join(" ")}\n\n${frases.cierre ?? CIERRE_AUTO}`;
 }
