@@ -38,6 +38,11 @@ export interface ConfigTickets {
   horario: Horario;
   /** A qué área cae un ticket cuando el agente no logra decidir. */
   areaPorDefecto: string;
+  /**
+   * Contestarle a la persona desde el panel (texto, archivo o plantilla) cierra
+   * sus casos abiertos. Ver cerrarTicketsDeChat.
+   */
+  cerrarAlResponder?: boolean;
 }
 
 const HOSPITAL: ConfigTickets = {
@@ -144,6 +149,9 @@ const LABORATORIO: ConfigTickets = {
   areas: [{ id: "laboratorio", label: "Laboratorio" }],
   horario: HORARIO_HOSPITAL,
   areaPorDefecto: "laboratorio",
+  // Pedido del 9/11: lo del lab se contesta en una respuesta (un precio, si ya
+  // están los resultados), así que contestarle a la persona cierra su caso.
+  cerrarAlResponder: true,
 };
 
 const POR_TENANT: Record<string, ConfigTickets> = {

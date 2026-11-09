@@ -3,6 +3,7 @@ import { addOutbound } from "@/lib/wa-store";
 import { enviarPlantilla } from "@/lib/wa-send";
 import { setChatOverride } from "@/lib/ai-store";
 import { tenantFromRequest } from "@/lib/tenants/server";
+import { cerrarCasosAlResponder } from "@/lib/tickets-al-responder";
 import { normalizarDestinoSV } from "@/lib/phone";
 
 export const runtime = "nodejs";
@@ -49,5 +50,12 @@ export async function POST(req: Request) {
     const texto = body.texto?.trim() || `[plantilla: ${name}]`;
     await addOutbound({ waId: env.id, to, texto, ts: new Date().toISOString(), tenant: tenantFromRequest(req) });
   }
-  return NextResponse.json({ ok: true, id: env.id });
+  // Pasadas las 24 horas, la plantilla es la forma de contestarle: en el lab
+  // también cierra el caso.
+  const casosCerrados = await cerrarCasosAlResponder(
+    req,
+    tenantFromRequest(req),
+    normalizarDestinoSV(to)?.replace(/\D/g, "") ?? to,
+  );
+  return NextResponse.json({ ok: true, id: env.id, casosCerrados });
 }

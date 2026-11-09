@@ -254,6 +254,36 @@ export async function asignarTicket(tenant: string, id: string, staffId: string)
   });
 }
 
+/**
+ * Cerrar los casos abiertos de una persona porque alguien del equipo ya le
+ * contestó por WhatsApp.
+ *
+ * POR QUÉ. El trabajo pasa en la bandeja: quien atiende responde ahí, y el caso
+ * se quedaba abierto porque hay que ir a otra pantalla a cerrarlo, y nadie va.
+ * Mismo problema que tuvo el hospital en el panel de hub (cerrarTicketsDeChat
+ * de allá, 15/10). Solo en los negocios que lo piden: ver cerrarAlResponder en
+ * lib/tickets-tenant.ts. Cada cierre deja una nota que dice de dónde salió.
+ */
+export async function cerrarTicketsDeChat(
+  tenant: string,
+  telefono: string | null | undefined,
+  autor: string,
+  nota = "Se le respondió en el chat.",
+): Promise<Ticket[]> {
+  const tel = (telefono ?? "").replace(/\D/g, "");
+  if (!tel) return [];
+  const abiertos = (await listarTickets(tenant)).filter(
+    (t) => t.estado !== "resuelto" && (t.contactoTelefono ?? "").replace(/\D/g, "") === tel,
+  );
+  const cerrados: Ticket[] = [];
+  for (const t of abiertos) {
+    await agregarNota(tenant, t.id, autor, nota);
+    const cerrado = await cambiarEstado(tenant, t.id, "resuelto");
+    if (cerrado) cerrados.push(cerrado);
+  }
+  return cerrados;
+}
+
 export async function cambiarEstado(tenant: string, id: string, estado: EstadoTicket): Promise<Ticket | null> {
   const t = await obtenerTicket(tenant, id);
   if (!t) return null;

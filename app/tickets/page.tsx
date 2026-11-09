@@ -12,12 +12,14 @@
 // lo agarre.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
   Clock,
   Inbox,
   Loader2,
+  MessageCircle,
   Plus,
   Timer,
   UserRound,
@@ -42,6 +44,7 @@ import { configTickets, explicacionReloj, horarioDeArea } from "@/lib/tickets-te
 import { activeTenant, activeTenantId } from "@/lib/tenants/active";
 import { esHotelMuestra } from "@/lib/hotel-muestra/registro";
 import { cambiarTicketMuestra, crearTicketMuestra, leerTicketsMuestra } from "@/lib/hotel-muestra/tickets";
+import { useYoNombre } from "@/lib/yo";
 
 interface Respuesta {
   ok: boolean;
@@ -70,6 +73,18 @@ const TIPOS_VISIBLES = TIPOS.filter((t) => CFG.tipos.includes(t.id));
 
 const areaLabel = (id: string) => AREAS.find((a) => a.id === id)?.label ?? id;
 const nombreStaff = (id?: string) => (id ? (staff.find((s) => s.id === id)?.nombre ?? id) : null);
+
+/**
+ * El chat del caso en la bandeja. Los casos de WhatsApp que abre el agente
+ * guardan solo el teléfono, y la bandeja llama a ese chat `wac-<teléfono>`.
+ * Null si no hay con qué abrirlo: mejor sin botón que uno que abre la bandeja
+ * en blanco.
+ */
+function chatDelCaso(t: Ticket): string | null {
+  if (t.conversacionId?.trim()) return t.conversacionId.trim();
+  const tel = (t.contactoTelefono ?? "").replace(/\D/g, "");
+  return tel.length >= 8 ? `wac-${tel}` : null;
+}
 
 const COLOR_ESTADO: Record<EstadoTicket, string> = {
   abierto: "bg-[var(--warn-bg,#fef3c7)] text-[var(--warn-fg,#92400e)]",
@@ -411,30 +426,42 @@ function Fila({
   onCambio: (cambios: Record<string, unknown>) => void;
 }) {
   const [nota, setNota] = useState("");
+  const router = useRouter();
+  const yo = useYoNombre();
+  const chat = chatDelCaso(t);
+
+  // Mismo camino que "Mis chats": se deja la conversación anotada y la bandeja
+  // la abre al cargar.
+  function abrirChat(id: string) {
+    sessionStorage.setItem("ccg.abrirConv", id);
+    router.push("/");
+  }
 
   return (
     <div className="rounded-xl border border-line bg-card">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-start gap-3 px-4 py-3 text-left"
-      >
-        <span className="mt-0.5 w-10 shrink-0 text-[12px] font-bold tabular-nums text-[var(--text-3)]">
-          #{t.numero}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="text-[13.5px] font-semibold text-[var(--text-1)]">{t.titulo}</span>
-            {t.prioridad === "urgente" && (
-              <span className="rounded-full bg-[var(--bad-bg,#fee2e2)] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-[var(--bad-fg,#991b1b)]">
-                Urgente
-              </span>
-            )}
+      <div className="flex items-start gap-2 px-4 py-3">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex min-w-0 flex-1 items-start gap-3 text-left"
+        >
+          <span className="mt-0.5 w-10 shrink-0 text-[12px] font-bold tabular-nums text-[var(--text-3)]">
+            #{t.numero}
           </span>
-          <span className="mt-0.5 block text-[12px] text-[var(--text-3)]">
-            {t.contactoNombre} · {areaLabel(t.area)} · {etiquetaOrigen(t.origen)} · {horaCorta(t.creado)}
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="text-[13.5px] font-semibold text-[var(--text-1)]">{t.titulo}</span>
+              {t.prioridad === "urgente" && (
+                <span className="rounded-full bg-[var(--bad-bg,#fee2e2)] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-[var(--bad-fg,#991b1b)]">
+                  Urgente
+                </span>
+              )}
+            </span>
+            <span className="mt-0.5 block text-[12px] text-[var(--text-3)]">
+              {t.contactoNombre} · {areaLabel(t.area)} · {etiquetaOrigen(t.origen)} · {horaCorta(t.creado)}
+            </span>
           </span>
-        </span>
+        </button>
         <span className="flex shrink-0 items-center gap-2">
           {t.asignadoA ? (
             <span className="hidden items-center gap-1 text-[11.5px] text-[var(--text-3)] sm:flex">
@@ -445,8 +472,21 @@ function Fila({
           <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold", COLOR_ESTADO[t.estado])}>
             {etiquetaEstado(t.estado)}
           </span>
+          {/* El chat a un clic: es lo primero que se hace con un caso. En el
+              lab, contestarle desde ahí lo deja resuelto (cerrarAlResponder). */}
+          {chat && (
+            <button
+              type="button"
+              onClick={() => abrirChat(chat)}
+              title="Abrir la conversación"
+              className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[11.5px] font-semibold text-brand hover:bg-[var(--bg-2,#f8fafc)]"
+            >
+              <MessageCircle size={13} />
+              Chat
+            </button>
+          )}
         </span>
-      </button>
+      </div>
 
       {abierto && (
         <div className="space-y-3 border-t border-line px-4 py-3">
@@ -497,7 +537,7 @@ function Fila({
             onSubmit={(e) => {
               e.preventDefault();
               if (!nota.trim()) return;
-              onCambio({ nota, autor: "Gerente de Marketing" });
+              onCambio({ nota, autor: yo || "Equipo" });
               setNota("");
             }}
             className="flex gap-2"

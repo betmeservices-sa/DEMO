@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { addOutbound } from "@/lib/wa-store";
 import { addAdjunto } from "@/lib/contacts-store";
 import { tenantFromRequest } from "@/lib/tenants/server";
+import { cerrarCasosAlResponder } from "@/lib/tickets-al-responder";
 import { credencialesWa } from "@/lib/wa-credenciales";
 
 export const runtime = "nodejs";
@@ -168,5 +169,8 @@ export async function POST(req: Request) {
     ts,
   });
 
-  return NextResponse.json({ ok: true, id: msgId });
+  // Solo la bandeja manda archivos por acá, siempre una persona: en el lab,
+  // mandar los resultados cierra el caso.
+  const casosCerrados = await cerrarCasosAlResponder(req, tenantFromRequest(req), to);
+  return NextResponse.json({ ok: true, id: msgId, casosCerrados });
 }

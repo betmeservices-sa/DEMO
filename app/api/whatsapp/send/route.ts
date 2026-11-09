@@ -3,6 +3,7 @@ import { addOutbound } from "@/lib/wa-store";
 import { enviarTextoWa } from "@/lib/wa-send";
 import { setChatOverride } from "@/lib/ai-store";
 import { tenantFromRequest } from "@/lib/tenants/server";
+import { cerrarCasosAlResponder } from "@/lib/tickets-al-responder";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,5 +41,7 @@ export async function POST(req: Request) {
   if (env.id) {
     await addOutbound({ waId: env.id, to, texto: text, ts: new Date().toISOString(), tenant: tenantFromRequest(req) });
   }
-  return NextResponse.json({ ok: true, id: env.id });
+  // Lo escribió una persona: en el lab eso cierra el caso de este paciente.
+  const casosCerrados = body.manual ? await cerrarCasosAlResponder(req, tenantFromRequest(req), to) : [];
+  return NextResponse.json({ ok: true, id: env.id, casosCerrados });
 }
