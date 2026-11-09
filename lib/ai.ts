@@ -714,7 +714,7 @@ export async function ejecutarHerramienta(
         area: esHospital
           ? areaHospitalPara(t.tipo ?? "otro")
           : tenant === "consultorio"
-            ? "Laboratorio"
+            ? "laboratorio" // el id del área, no la etiqueta: si no, el filtro de Tickets no lo encuentra
             : areaYaliPara(t.tipo ?? "otro", contexto?.sucursal?.id ?? null),
         // En el hospital todo caso nace con dueña: Marielos. Sin esto el
         // ticket cae en "Sin tomar" y nadie lo ve hasta que alguien revise

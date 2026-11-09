@@ -37,7 +37,9 @@ export const consultorioTenant: TenantConfig = {
     jefe: "Jefe de laboratorio",
     admin: "Dirección (todo)",
   },
-  defaultDepartment: "recepcion",
+  // Desde 2026-11-03 la bandeja es el WhatsApp del laboratorio (2247 1141):
+  // con "recepcion" ningún chat salía al filtrar por Laboratorio.
+  defaultDepartment: "laboratorio",
   tags: [
     "Paciente",
     "Cita de consulta",

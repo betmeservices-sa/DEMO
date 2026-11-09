@@ -71,6 +71,12 @@ describe("tenant consultorio", () => {
     expect(TENANTS.consultorio.tags).toContain("Exámenes de laboratorio");
     expect(TENANTS.consultorio.tags).not.toContain("Interés Ginecología");
   });
+
+  it("los chats del WhatsApp del lab (2247 1141) salen al filtrar por Laboratorio", () => {
+    // Con "recepcion" la bandeja quedaba vacía con el filtro Laboratorio.
+    expect(TENANTS.consultorio.defaultDepartment).toBe("laboratorio");
+    expect(TENANTS.consultorio.seed.departments.map((d) => d.id)).toContain("laboratorio");
+  });
 });
 
 describe("quién ve el módulo clínico", () => {
