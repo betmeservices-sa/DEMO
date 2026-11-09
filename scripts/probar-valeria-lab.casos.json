@@ -1,4 +1,5 @@
 [
+  { "nombre": "solo saludo", "turnos": [["hola"]] },
   { "nombre": "precio sin seguro", "turnos": [["buenas cuanto cuesta la tsh"], ["no tengo seguro"]] },
   { "nombre": "precio con seguro", "turnos": [["me cotiza estos examenes porfa", "[imagen]"], ["hemograma, glucosa y perfil lipidico", "tengo asesuiza"]] },
   { "nombre": "ayuno y cafe", "turnos": [["el perfil lipidico es en ayunas? puedo tomar cafe"]] },
