@@ -14,20 +14,20 @@ const ME = "me";
 
 export const consultorioSeed: TenantSeed = {
   ME,
-  departments: [
-    { id: "consulta", nombre: "Consulta", color: "#0e7c6b" },
-    { id: "laboratorio", nombre: "Laboratorio", color: "#0067a8" },
-    { id: "imagenes", nombre: "Imágenes", color: "#7c3aed" },
-    { id: "recepcion", nombre: "Recepción", color: "#64748b" },
-  ],
+  // Desde 2026-11-09 el panel es SOLO del laboratorio (pedido del usuario): un
+  // solo departamento, y el equipo es el de verdad, el de las cuentas del lab
+  // (variable USUARIOS_LAB en Vercel, cada cuenta con su ficha). Verónica es la
+  // encargada: recibe los casos que abre Valeria (RESPONSABLE_LAB).
+  departments: [{ id: "laboratorio", nombre: "Laboratorio", color: "#0067a8" }],
   staff: [
-    { id: ME, nombre: "Administración", rol: "gerente_marketing", departamento: "recepcion", iniciales: "AD" },
-    { id: "s2", nombre: "Dra. Alejandra Morán", rol: "medico", departamento: "consulta", iniciales: "AM" },
-    { id: "s3", nombre: "Dr. Ernesto Rivas", rol: "medico", departamento: "consulta", iniciales: "ER" },
-    { id: "s4", nombre: "Lic. Karla Cruz", rol: "jefe", departamento: "laboratorio", iniciales: "KC" },
-    { id: "s5", nombre: "Lic. Mauricio Solís", rol: "recepcion", departamento: "laboratorio", iniciales: "MS" },
-    { id: "s6", nombre: "Gabriela Menjívar", rol: "recepcion", departamento: "recepcion", iniciales: "GM" },
-    { id: "s7", nombre: "Dr. Iván Zelaya", rol: "medico", departamento: "imagenes", iniciales: "IZ" },
+    { id: ME, nombre: "Administración", rol: "gerente_marketing", departamento: "laboratorio", iniciales: "AD" },
+    { id: "lab-veronica", nombre: "Verónica", rol: "recepcion", departamento: "laboratorio", iniciales: "VE" },
+    { id: "lab-mirna", nombre: "Mirna Paredes", rol: "recepcion", departamento: "laboratorio", iniciales: "MP" },
+    { id: "lab-liliana", nombre: "Liliana", rol: "recepcion", departamento: "laboratorio", iniciales: "LI" },
+    { id: "lab-gabriela", nombre: "Gabriela Pérez", rol: "recepcion", departamento: "laboratorio", iniciales: "GP" },
+    { id: "lab-imelda", nombre: "Imelda Molina", rol: "recepcion", departamento: "laboratorio", iniciales: "IM" },
+    { id: "lab-helen", nombre: "Helen Chicas", rol: "recepcion", departamento: "laboratorio", iniciales: "HC" },
+    { id: "lab-abigail", nombre: "Abigail Cubas", rol: "recepcion", departamento: "laboratorio", iniciales: "AC" },
   ],
   contacts: [
     { id: "c1", nombre: "Marta Elena Guzmán", telefono: "50377124455", correo: "marta.guzman@gmail.com", canal: "whatsapp", notas: "Control de diabetes con la Dra. Morán. Le tocan hemoglobina glicosilada y química cada tres meses.", tags: ["Exámenes de laboratorio"] },

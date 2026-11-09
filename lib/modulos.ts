@@ -127,10 +127,11 @@ export const MODULOS_CLINICA: readonly ModuleId[] = [
 // la bandeja de muestra ("mensajes") deja el menu y entran la bandeja real y
 // los casos que abre Valeria. Sin esto el equipo no veia ni los chats ni los
 // casos, y Valeria le promete al paciente que una compañera le escribe.
+// Desde 2026-11-09 el panel es SOLO del laboratorio (pedido del usuario): sin
+// Consultorio ni Imagenología en el menú. Siguen en MODULOS_CLINICA (para que
+// no aparezcan en otros clientes) y su código no se tocó.
 export const VE_CLINICA: readonly ModuleId[] = [
-  "consultorio",
   "laboratorio",
-  "imagenologia",
   "jefatura",
   "bandeja",
   "tickets",

@@ -241,8 +241,14 @@ describe("el paciente en Contactos", () => {
   it("la clínica ve Contactos, y Contactos sigue siendo de todos", () => {
     expect(VE_CLINICA).toContain("contactos");
     // La bandeja de muestra ("mensajes") dejó el menú cuando el lab tuvo
-    // WhatsApp real: lo demás de la clínica sigue.
-    for (const m of MODULOS_CLINICA.filter((x) => x !== "mensajes")) expect(VE_CLINICA).toContain(m);
+    // WhatsApp real, y desde 2026-11-09 el panel es solo del laboratorio: sin
+    // Consultorio ni Imagenología.
+    for (const m of MODULOS_CLINICA.filter((x) => !["mensajes", "consultorio", "imagenologia"].includes(x))) {
+      expect(VE_CLINICA).toContain(m);
+    }
+    expect(VE_CLINICA).not.toContain("consultorio");
+    expect(VE_CLINICA).not.toContain("imagenologia");
+    expect(VE_CLINICA).toEqual(expect.arrayContaining(["bandeja", "tickets"]));
     // Contactos NO va en la lista que esconde módulos a los demás clientes.
     expect(MODULOS_CLINICA).not.toContain("contactos");
   });

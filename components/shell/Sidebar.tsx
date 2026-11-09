@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, FileText, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
@@ -328,20 +328,8 @@ export function Sidebar({
             <span className="min-w-0 flex-1 truncate">Vista del paciente</span>
           </a>
         )}
-        {/* El portal donde el paciente entra con su correo y ve sus recetas y
-            órdenes. Público como la vista de arriba: se abre aparte. */}
-        {veClinica && (
-          <a
-            href="/portal"
-            target="_blank"
-            rel="noreferrer"
-            onClick={onClose}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[var(--text-2)] transition hover:bg-surface hover:text-[var(--text)]"
-          >
-            <FileText size={18} strokeWidth={2.1} />
-            <span className="min-w-0 flex-1 truncate">Portal del paciente</span>
-          </a>
-        )}
+        {/* El portal del paciente (recetas y órdenes del consultorio) ya no sale:
+            desde 2026-11-09 el panel es solo del laboratorio. /portal sigue. */}
       </nav>
 
       <div className="space-y-3 border-t border-line p-3">

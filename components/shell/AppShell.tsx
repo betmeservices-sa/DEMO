@@ -60,7 +60,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [permitido, esAgencia, def, router]);
 
   // La clinica solo ve lo de su menu (VE_CLINICA): cualquier otra pantalla la
-  // devuelve al consultorio. Desde 2026-11-03 la bandeja real si es suya.
+  // devuelve a la bandeja. Desde 2026-11-09 el panel es solo del laboratorio:
+  // el consultorio ya no es suyo y mandarla ahí sería un ciclo.
   useEffect(() => {
     // Las páginas del paciente NO son del menú: se abren en el teléfono de otra
     // persona y se ven enteras. Sin esta salida, el efecto corría igual (los
@@ -68,7 +69,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     // abría y se devolvía sola al consultorio.
     if (esPublica(pathname) || pathname === RUTA_PANELES) return;
     if (!sesion || activeTenantId() !== "consultorio") return;
-    if (!modulo || !VE_CLINICA.includes(modulo)) router.replace("/consultorio");
+    if (!modulo || !VE_CLINICA.includes(modulo)) router.replace("/");
   }, [sesion, modulo, pathname, router]);
 
   // Aplica el tema del cliente activo en <html data-tenant>. Sin sesión se quita

@@ -134,7 +134,25 @@ const TESORO: ConfigTickets = {
   areaPorDefecto: "reservas",
 };
 
-const POR_TENANT: Record<string, ConfigTickets> = { hospital: HOSPITAL, yaly: YALI, nawi: NAWI, tesoro: TESORO };
+/**
+ * El laboratorio (tenant "consultorio"), desde 2026-11-09 un panel SOLO del
+ * lab: una sola área. Antes usaba la del hospital y en el desplegable salían
+ * Imágenes, Ginecología y Caja, que no son suyas.
+ */
+const LABORATORIO: ConfigTickets = {
+  tipos: HOSPITAL.tipos,
+  areas: [{ id: "laboratorio", label: "Laboratorio" }],
+  horario: HORARIO_HOSPITAL,
+  areaPorDefecto: "laboratorio",
+};
+
+const POR_TENANT: Record<string, ConfigTickets> = {
+  hospital: HOSPITAL,
+  consultorio: LABORATORIO,
+  yaly: YALI,
+  nawi: NAWI,
+  tesoro: TESORO,
+};
 
 /**
  * Quién recibe TODOS los casos que abre Claudia en el hospital.
@@ -144,6 +162,13 @@ const POR_TENANT: Record<string, ConfigTickets> = { hospital: HOSPITAL, yaly: YA
  * seed del tenant (lib/tenants/seeds/hospital.ts) y el staffId de su cuenta.
  */
 export const RESPONSABLE_HOSPITAL = "s2";
+
+/**
+ * Quién recibe los casos que abre Valeria en el WhatsApp del laboratorio
+ * (2247 1141): Verónica, la encargada (pedido del usuario, 2026-11-09). Es su
+ * ficha en lib/tenants/seeds/consultorio.ts y el staffId de su cuenta.
+ */
+export const RESPONSABLE_LAB = "lab-veronica";
 
 /** A qué área cae un caso del hospital según de qué se trata. */
 export function areaHospitalPara(tipo: TipoTicket): string {

@@ -28,7 +28,7 @@ import { sumarUso, USO_CERO, type UsoTokens } from "./tokens-precios";
 import { crearMensajePorOpenAI, modeloOpenAI } from "./ai-cliente-openai";
 import type { MimeImagenIA } from "./wa-media";
 import type { TipoTicket } from "./tickets";
-import { areaHospitalPara, areaYaliPara, RESPONSABLE_HOSPITAL } from "./tickets-tenant";
+import { areaHospitalPara, areaYaliPara, RESPONSABLE_HOSPITAL, RESPONSABLE_LAB } from "./tickets-tenant";
 // Lo que se habló por teléfono con esa persona (solo paneles donde la de voz y
 // la de WhatsApp son la misma agente, ver lib/llamada-contexto.ts).
 import { contextoDeLlamadaPara } from "./llamada-contexto";
@@ -718,8 +718,8 @@ export async function ejecutarHerramienta(
             : areaYaliPara(t.tipo ?? "otro", contexto?.sucursal?.id ?? null),
         // En el hospital todo caso nace con dueña: Marielos. Sin esto el
         // ticket cae en "Sin tomar" y nadie lo ve hasta que alguien revise
-        // la cola.
-        asignadoA: esHospital ? RESPONSABLE_HOSPITAL : undefined,
+        // la cola. En el laboratorio, igual: Verónica, la encargada.
+        asignadoA: esHospital ? RESPONSABLE_HOSPITAL : tenant === "consultorio" ? RESPONSABLE_LAB : undefined,
       });
       // El chat tambien queda a su nombre, para que lo encuentre desde la
       // bandeja. Claudia SIGUE contestando: la IA de ese chat se apaga sola

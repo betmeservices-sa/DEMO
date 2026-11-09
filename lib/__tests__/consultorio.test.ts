@@ -75,7 +75,17 @@ describe("tenant consultorio", () => {
   it("los chats del WhatsApp del lab (2247 1141) salen al filtrar por Laboratorio", () => {
     // Con "recepcion" la bandeja quedaba vacía con el filtro Laboratorio.
     expect(TENANTS.consultorio.defaultDepartment).toBe("laboratorio");
-    expect(TENANTS.consultorio.seed.departments.map((d) => d.id)).toContain("laboratorio");
+    expect(TENANTS.consultorio.seed.departments.map((d) => d.id)).toEqual(["laboratorio"]);
+  });
+
+  it("es un panel solo del lab: su equipo y los casos de Valeria van a Verónica", async () => {
+    const { configTickets, RESPONSABLE_LAB } = await import("@/lib/tickets-tenant");
+    const staff = TENANTS.consultorio.seed.staff;
+    expect(staff.find((s) => s.id === RESPONSABLE_LAB)?.nombre).toBe("Verónica");
+    // Nadie del equipo es de otro departamento (antes había médicos de muestra).
+    expect(staff.every((s) => s.departamento === "laboratorio")).toBe(true);
+    expect(configTickets("consultorio").areas.map((a) => a.id)).toEqual(["laboratorio"]);
+    expect(configTickets("consultorio").areaPorDefecto).toBe("laboratorio");
   });
 });
 
