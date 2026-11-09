@@ -19,7 +19,7 @@
 //
 // Si la variable existe, manda ella y esta lista deja de funcionar por completo.
 
-import { esDelDemo, isTenantId } from "./tenants";
+import { TENANTS, esDelDemo, isTenantId } from "./tenants";
 import type { TenantId } from "./tenants/types";
 import type { RoleId } from "./data/types";
 
@@ -80,6 +80,19 @@ function variablesDeCuentas(): string[] {
   return nombres.map((n) => process.env[n] ?? "").filter((v) => v.trim());
 }
 
+/**
+ * La ficha del equipo que lleva el mismo nombre que la cuenta, si la cuenta no
+ * dice la suya. Las cuentas del laboratorio (USUARIOS_LAB) se crearon sin
+ * ficha, y sin ficha el panel no sabe quién es quién: lo que toma o contesta
+ * Verónica quedaba a nombre de "Administración". Solo con el nombre exacto.
+ */
+function fichaPorNombre(tenant: TenantId, nombre: string): string | undefined {
+  const buscado = nombre.trim().toLocaleLowerCase("es");
+  if (!buscado) return undefined;
+  const seed = TENANTS[tenant]?.seed;
+  return seed?.staff.find((s) => s.id !== seed.ME && s.nombre.trim().toLocaleLowerCase("es") === buscado)?.id;
+}
+
 function desdeEnv(): CuentaUsuario[] | null {
   const raw = variablesDeCuentas().join(",");
   if (!raw) return null;
@@ -100,7 +113,7 @@ function desdeEnv(): CuentaUsuario[] | null {
       tenant: tenantReal,
       rol,
       nombre: nombre || usuario,
-      staffId: staffId || undefined,
+      staffId: staffId || (todos ? undefined : fichaPorNombre(tenantReal, nombre ?? "")),
       todos,
     });
   }

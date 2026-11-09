@@ -189,3 +189,23 @@ describe("lo que ve el rol de atencion", () => {
     }
   });
 });
+
+describe("la ficha de una cuenta del laboratorio", () => {
+  // Las cuentas del lab se crearon sin ficha: sin esto, lo que toma o contesta
+  // Verónica queda a nombre de "Administración".
+  it("sin ficha escrita, toma la del equipo con su mismo nombre", async () => {
+    process.env.USUARIOS_LAB = [
+      "contactcenter2@cegisa.com|clave|consultorio|recepcion|Verónica",
+      "mirna.paredes@cegisa.com|clave|consultorio|recepcion|Mirna Paredes",
+      "alguien@cegisa.com|clave|consultorio|recepcion|Persona Nueva",
+      "otra@cegisa.com|clave|consultorio|recepcion|Verónica|ficha-propia",
+    ].join(",");
+    const { staffDeUsuario } = await import("@/lib/usuarios");
+    expect(staffDeUsuario("contactcenter2@cegisa.com")).toBe("lab-veronica");
+    expect(staffDeUsuario("mirna.paredes@cegisa.com")).toBe("lab-mirna");
+    // Un nombre que no está en el equipo no inventa ficha.
+    expect(staffDeUsuario("alguien@cegisa.com")).toBeNull();
+    // La ficha escrita en la cuenta manda.
+    expect(staffDeUsuario("otra@cegisa.com")).toBe("ficha-propia");
+  });
+});
