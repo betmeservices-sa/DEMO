@@ -105,7 +105,12 @@ describe("ritmo de la simulación", () => {
 
 describe("guion por tenant", () => {
   // El motor de contenido (shell "estudio") no tiene bandeja ni chats que simular.
-  const ids = (Object.keys(TENANTS) as TenantId[]).filter((id) => TENANTS[id].shell !== "estudio");
+  // El laboratorio tampoco: desde el 9/11 es un panel real y sus chats inventados
+  // se confundían con los de verdad (10/11). Ver consultorio-sin-simulacion.
+  const SIN_SIMULACION: TenantId[] = ["consultorio"];
+  const ids = (Object.keys(TENANTS) as TenantId[]).filter(
+    (id) => TENANTS[id].shell !== "estudio" && !SIN_SIMULACION.includes(id),
+  );
 
   it("todos los clientes traen turnos y contactos propios", () => {
     for (const id of ids) {

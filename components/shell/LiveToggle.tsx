@@ -2,9 +2,13 @@
 
 import { cn } from "@/lib/cn";
 import { useLive } from "@/lib/live-context";
+import { activeTenant } from "@/lib/tenants/active";
 
 export function LiveToggle() {
   const { enabled, toggle } = useLive();
+  // Un panel sin simulación (los que atienden gente de verdad, como el lab) no
+  // muestra el botón: prenderlo metía chats inventados entre los reales.
+  if (activeTenant().simulacion.turnos.length === 0) return null;
   return (
     <button
       type="button"

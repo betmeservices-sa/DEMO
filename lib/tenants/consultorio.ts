@@ -7,7 +7,6 @@
 
 import type { TenantConfig } from "./types";
 import { consultorioSeed } from "./seeds/consultorio";
-import { consultorioSimulacion } from "./simulacion/consultorio";
 import { VALERIA_LAB } from "../consultorio/valeria-guion";
 
 export const consultorioTenant: TenantConfig = {
@@ -50,7 +49,11 @@ export const consultorioTenant: TenantConfig = {
     "Precios",
   ],
   seed: consultorioSeed,
-  simulacion: consultorioSimulacion,
+  // Sin simulación: desde el 9/11 este es el panel REAL del laboratorio. El
+  // botón "En vivo" metía chats inventados (otras sucursales, hemograma a $12,
+  // un "Facebook" que el lab no tiene) y el 10/11 se confundieron con chats de
+  // verdad. El guion viejo sigue en simulacion/consultorio.ts, sin usar.
+  simulacion: { turnos: [], contactos: [] },
   // Valeria del laboratorio, con luna como los demás agentes: guion de reglas
   // (consultorio/valeria-guion.ts) y los datos en la base del lab (kb_buscar).
   // Desde 2026-11-03 contesta el WhatsApp real del lab (2247 1141). Ve las
