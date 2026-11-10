@@ -94,10 +94,16 @@ export interface ImagenParaIA {
  * Baja una imagen y la deja lista para el bloque `image` de la API de Claude.
  * Devuelve null (y lo deja en el log) si el formato no sirve, si pesa de más o
  * si Meta no la entregó: el agente sigue respondiendo, solo que sin verla.
+ *
+ * CON EL TOKEN DEL CLIENTE (`tenant`). Hasta el 10/11/2026 se bajaba sin
+ * tenant, o sea con el token del número de la demo, y Meta no le entrega a ese
+ * token los archivos de otro número: en el lab (2247 1141) Valeria nunca vio
+ * una foto y contestaba "no puedo leer los exámenes de la imagen". El panel sí
+ * las mostraba porque su proxy ya pasaba el tenant. Mismo arreglo que hub.
  */
-export async function descargarImagenParaIA(id: string): Promise<ImagenParaIA | null> {
+export async function descargarImagenParaIA(id: string, tenant?: string): Promise<ImagenParaIA | null> {
   try {
-    const r = await abrirMediaWa(id);
+    const r = await abrirMediaWa(id, null, tenant);
     if (!r.ok) {
       console.error("IA imagen:", r.error);
       return null;

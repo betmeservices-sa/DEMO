@@ -13,7 +13,7 @@
 import { addOutbound, mensajesAnteriores, type WaInbound } from "./wa-store";
 import { getChatAiActiva, setChatOverride } from "./ai-store";
 import { upsertContacto } from "./contacts-store";
-import { generarRespuesta, type ImagenIA, type TurnoIA } from "./ai";
+import { generarRespuesta, type TurnoIA } from "./ai";
 import { enviarTextoWa, mostrarEscribiendo, enviarReaccion } from "./wa-send";
 import { descargarImagenParaIA } from "./wa-media";
 import { decidirTurno, limiteDe } from "./sucursal-gate";
@@ -239,8 +239,14 @@ export async function programarRespuestaIA(opts: {
         return;
       }
     }
-    const imagenes = await imagenesDelUltimo(ultimo, cfg.ai.imagenes === true);
-    if (imagenes.length) historial[historial.length - 1].imagenes = imagenes;
+    // Cada foto va en su propio turno, para que el modelo sepa qué dijo la
+    // persona antes y después de mandarla.
+    if (cfg.ai.imagenes === true) {
+      for (const i of fotosSinContestar(sesion)) {
+        const img = await descargarImagenParaIA(sesion[i].media!.id, tenantId);
+        if (img) historial[i].imagenes = [{ base64: img.base64, mime: img.mime }];
+      }
+    }
 
     const respuesta = await generarRespuesta(
       historial,
@@ -336,8 +342,23 @@ async function enviarYGuardar(
   }
 }
 
-async function imagenesDelUltimo(ultimo: WaInbound, habilitado: boolean): Promise<ImagenIA[]> {
-  if (!habilitado || ultimo.media?.tipo !== "image" || !ultimo.media.id) return [];
-  const img = await descargarImagenParaIA(ultimo.media.id);
-  return img ? [{ base64: img.base64, mime: img.mime }] : [];
+/** Cuántas fotos sin contestar se le pasan al modelo, como mucho, en un turno. */
+export const MAX_FOTOS_POR_TURNO = 3;
+
+/**
+ * Las fotos que mandó la persona DESPUÉS de la última respuesta: los índices,
+ * dentro de la sesión, de las que se le pasan al modelo en este turno.
+ *
+ * Antes era solo la del ÚLTIMO mensaje. Pero lo normal es mandar la foto y
+ * escribir enseguida ("¿cuánto cuesta esto?"): el turno lo dispara el texto y
+ * la foto se perdía. Las que ya se contestaron no se vuelven a mandar, porque
+ * cada imagen cuesta en cada turno; lo que se vio queda en la respuesta.
+ */
+export function fotosSinContestar(sesion: Pick<WaInbound, "direccion" | "media">[]): number[] {
+  const out: number[] = [];
+  for (let i = sesion.length - 1; i >= 0 && sesion[i].direccion !== "out"; i--) {
+    const m = sesion[i].media;
+    if (m?.tipo === "image" && m.id) out.unshift(i);
+  }
+  return out.slice(-MAX_FOTOS_POR_TURNO);
 }

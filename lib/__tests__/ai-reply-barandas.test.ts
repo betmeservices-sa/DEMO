@@ -80,8 +80,8 @@ vi.mock("@/lib/contacts-store", () => ({ upsertContacto: async () => null }));
 
 const imagenDescargada = vi.fn();
 vi.mock("@/lib/wa-media", () => ({
-  descargarImagenParaIA: async (id: string) => {
-    imagenDescargada(id);
+  descargarImagenParaIA: async (id: string, tenant?: string) => {
+    imagenDescargada(id, tenant);
     return { base64: "ZmFrZQ==", mime: "image/jpeg", bytes: 5 };
   },
 }));
@@ -256,7 +256,9 @@ describe("imágenes", () => {
     await turno("A");
     await turno("[imagen] ¿tienen esta habitación?", foto);
 
-    expect(imagenDescargada).toHaveBeenCalledWith("media-123");
+    // Con el token del cliente: con el de la demo, Meta no entrega los archivos
+    // de otro número (lab CEGISA, 10/11).
+    expect(imagenDescargada).toHaveBeenCalledWith("media-123", "yaly");
     const ultima = llamadasIA.at(-1)!;
     const turnoConFoto = ultima.historial.at(-1)!;
     expect(turnoConFoto.imagenes).toHaveLength(1);
@@ -274,6 +276,34 @@ describe("imágenes", () => {
     const conImagen = ultima.historial.filter((t) => t.imagenes?.length);
     expect(conImagen).toHaveLength(1);
     expect(ultima.historial.at(-1)!.imagenes).toHaveLength(1);
+  });
+
+  // REGRESIÓN 10/11, lab CEGISA: la persona manda la foto de la orden y
+  // enseguida escribe. El turno lo dispara el texto, y antes solo viajaba la
+  // foto del último mensaje: Valeria nunca la veía.
+  it("una foto seguida de texto: el turno del texto lleva la foto", async () => {
+    await turno("Hola");
+    await turno("A");
+    entra("[imagen]", foto);
+    await turno("¿cuánto cuestan estos exámenes?");
+
+    const ultima = llamadasIA.at(-1)!;
+    const conFoto = ultima.historial.filter((t) => t.imagenes?.length);
+    expect(conFoto).toHaveLength(1);
+    expect(conFoto[0].texto).toBe("[imagen]");
+    expect(ultima.historial.at(-1)!.texto).toBe("¿cuánto cuestan estos exámenes?");
+    expect(imagenDescargada).toHaveBeenCalledWith("media-123", "yaly");
+  });
+
+  it("varias fotos seguidas sin contestar viajan todas, con tope", async () => {
+    await turno("Hola");
+    await turno("A");
+    for (const id of ["f1", "f2", "f3", "f4"]) entra("[imagen]", { ...foto, id });
+    await turno("cotíceme esto");
+
+    const conFoto = llamadasIA.at(-1)!.historial.filter((t) => t.imagenes?.length);
+    expect(conFoto).toHaveLength(3);
+    expect(imagenDescargada.mock.calls.map((c) => c[0])).toEqual(["f2", "f3", "f4"]);
   });
 
   it("el consumo del turno con foto separa los tokens de imagen", async () => {
