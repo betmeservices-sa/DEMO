@@ -130,7 +130,11 @@ export const MODULOS_CLINICA: readonly ModuleId[] = [
 // Desde 2026-11-09 el panel es SOLO del laboratorio (pedido del usuario): sin
 // Consultorio ni Imagenología en el menú. Siguen en MODULOS_CLINICA (para que
 // no aparezcan en otros clientes) y su código no se tocó.
+// Desde 2026-11-10, el Dashboard del WhatsApp del lab. Lo ven los perfiles que
+// tienen "dashboard" en VE (dirección y jefatura); la recepción del lab no,
+// hasta que el usuario diga quién más.
 export const VE_CLINICA: readonly ModuleId[] = [
+  "dashboard",
   "laboratorio",
   "jefatura",
   "bandeja",

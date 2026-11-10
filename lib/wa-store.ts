@@ -6,6 +6,7 @@
 // vivo, un switch global decide a qué cliente entran los mensajes. Así cada
 // dashboard filtra y muestra solo lo suyo, y la IA usa el guion de ese cliente.
 import { getSupabase } from "./supabase";
+import { columnaFaltante } from "./tabla-faltante";
 import { borrarConsumo } from "./tokens-store";
 
 export type Direccion = "in" | "out"; // in = del cliente, out = de la empresa
@@ -27,6 +28,9 @@ export interface WaInbound {
   direccion: Direccion;
   tenant?: string; // cliente al que entró el número en vivo (hospital | grupoq)
   media?: WaMedia;
+  /** Quién lo escribió desde el panel (solo salientes manuales). */
+  staffId?: string;
+  staffNombre?: string;
 }
 
 // Fallback en memoria.
@@ -37,22 +41,33 @@ const MAX = 500;
 async function guardar(m: Omit<WaInbound, "seq">): Promise<void> {
   const sb = getSupabase(m.tenant);
   if (sb) {
-    const { error } = await sb.from("wa_messages").upsert(
-      {
-        wa_id: m.waId,
-        wa_from: m.from,
-        nombre: m.nombre ?? null,
-        texto: m.texto,
-        ts: m.ts,
-        direccion: m.direccion,
-        tenant: m.tenant ?? "hospital",
-        media_id: m.media?.id ?? null,
-        media_tipo: m.media?.tipo ?? null,
-        media_mime: m.media?.mime ?? null,
-        media_filename: m.media?.filename ?? null,
-      },
-      { onConflict: "wa_id", ignoreDuplicates: true },
-    );
+    const fila: Record<string, unknown> = {
+      wa_id: m.waId,
+      wa_from: m.from,
+      nombre: m.nombre ?? null,
+      texto: m.texto,
+      ts: m.ts,
+      direccion: m.direccion,
+      tenant: m.tenant ?? "hospital",
+      media_id: m.media?.id ?? null,
+      media_tipo: m.media?.tipo ?? null,
+      media_mime: m.media?.mime ?? null,
+      media_filename: m.media?.filename ?? null,
+    };
+    // Quién escribió, solo si se sabe: separa en el dashboard lo que contestó
+    // el equipo de lo que contestó el agente, y por persona.
+    if (m.staffId || m.staffNombre) {
+      fila.staff_id = m.staffId ?? null;
+      fila.staff_nombre = m.staffNombre ?? null;
+    }
+    const opciones = { onConflict: "wa_id", ignoreDuplicates: true };
+    let { error } = await sb.from("wa_messages").upsert(fila, opciones);
+    // Una base sin esas columnas no puede perder el mensaje por eso.
+    if (error && "staff_id" in fila && columnaFaltante(error)) {
+      delete fila.staff_id;
+      delete fila.staff_nombre;
+      ({ error } = await sb.from("wa_messages").upsert(fila, opciones));
+    }
     if (error) console.error("Supabase insert WA:", error.message);
     return;
   }
@@ -75,6 +90,9 @@ export async function addOutbound(m: {
   texto: string;
   ts: string;
   tenant?: string;
+  /** Si lo escribió una persona desde el panel: quién. */
+  staffId?: string;
+  staffNombre?: string;
 }): Promise<void> {
   return guardar({
     waId: m.waId,
@@ -83,6 +101,8 @@ export async function addOutbound(m: {
     ts: m.ts,
     direccion: "out",
     tenant: m.tenant,
+    staffId: m.staffId,
+    staffNombre: m.staffNombre,
   });
 }
 

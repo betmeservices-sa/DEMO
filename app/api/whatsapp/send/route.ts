@@ -4,6 +4,7 @@ import { enviarTextoWa } from "@/lib/wa-send";
 import { setChatOverride } from "@/lib/ai-store";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { cerrarCasosAlResponder } from "@/lib/tickets-al-responder";
+import { quienResponde } from "@/lib/staff-de-sesion";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,7 +40,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: env.error }, { status: 502 });
   }
   if (env.id) {
-    await addOutbound({ waId: env.id, to, texto: text, ts: new Date().toISOString(), tenant: tenantFromRequest(req) });
+    // Lo que escribe una persona queda a su nombre (dashboard: Valeria o equipo).
+    const quien = body.manual ? await quienResponde(req, tenantFromRequest(req)) : null;
+    await addOutbound({
+      waId: env.id,
+      to,
+      texto: text,
+      ts: new Date().toISOString(),
+      tenant: tenantFromRequest(req),
+      staffId: quien?.staffId,
+      staffNombre: quien?.nombre,
+    });
   }
   // Lo escribió una persona: en el lab eso cierra el caso de este paciente.
   const casosCerrados = body.manual ? await cerrarCasosAlResponder(req, tenantFromRequest(req), to) : [];

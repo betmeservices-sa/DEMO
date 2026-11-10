@@ -4,6 +4,7 @@ import { enviarPlantilla } from "@/lib/wa-send";
 import { setChatOverride } from "@/lib/ai-store";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { cerrarCasosAlResponder } from "@/lib/tickets-al-responder";
+import { quienResponde } from "@/lib/staff-de-sesion";
 import { normalizarDestinoSV } from "@/lib/phone";
 
 export const runtime = "nodejs";
@@ -48,7 +49,16 @@ export async function POST(req: Request) {
   await setChatOverride(tenantFromRequest(req), normalizarDestinoSV(to)?.replace(/\D/g, "") ?? to, true);
   if (env.id) {
     const texto = body.texto?.trim() || `[plantilla: ${name}]`;
-    await addOutbound({ waId: env.id, to, texto, ts: new Date().toISOString(), tenant: tenantFromRequest(req) });
+    const quien = await quienResponde(req, tenantFromRequest(req));
+    await addOutbound({
+      waId: env.id,
+      to,
+      texto,
+      ts: new Date().toISOString(),
+      tenant: tenantFromRequest(req),
+      staffId: quien.staffId,
+      staffNombre: quien.nombre,
+    });
   }
   // Pasadas las 24 horas, la plantilla es la forma de contestarle: en el lab
   // también cierra el caso.

@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // envío sale "bien" sin tocar Meta.
 vi.mock("@/lib/supabase", () => ({ getSupabase: () => null, todosLosClientes: () => [] }));
 vi.mock("@/lib/wa-send", () => ({ enviarTextoWa: vi.fn(async () => ({ ok: true, id: "wamid.prueba" })) }));
-vi.mock("@/lib/wa-store", () => ({ addOutbound: vi.fn(async () => {}) }));
+const { addOutbound } = vi.hoisted(() => ({ addOutbound: vi.fn(async (_m: Record<string, unknown>) => {}) }));
+vi.mock("@/lib/wa-store", () => ({ addOutbound }));
 vi.mock("@/lib/ai-store", () => ({ setChatOverride: vi.fn(async () => {}) }));
 
 import { POST } from "@/app/api/whatsapp/send/route";
@@ -66,6 +67,8 @@ describe("contestar desde el panel del lab", () => {
     expect(ahora.estado).toBe("resuelto");
     expect(ahora.resuelto).toBeTruthy();
     expect(ahora.notas.at(-1)).toMatchObject({ autor: "Verónica", texto: "Se le respondió en el chat." });
+    // Y el mensaje queda a su nombre: el dashboard separa a Valeria del equipo.
+    expect(addOutbound.mock.calls.at(-1)![0]).toMatchObject({ to: TEL, staffNombre: "Verónica" });
   });
 
   it("no toca los casos de otra persona", async () => {

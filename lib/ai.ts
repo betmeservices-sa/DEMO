@@ -34,6 +34,7 @@ import { areaHospitalPara, areaYaliPara, RESPONSABLE_HOSPITAL, RESPONSABLE_LAB }
 import { contextoDeLlamadaPara } from "./llamada-contexto";
 import { pasarAPersona, type Motivo, type Traspaso } from "./pasar-a-persona";
 import { respuestaDeBusqueda } from "./consultorio/lab-kb";
+import { registrarBusqueda, resultadosDeRespuesta } from "./ia-busquedas";
 import { BASE_LAB } from "./consultorio/lab-kb-datos";
 import { cierreDeCaso } from "./consultorio/valeria";
 
@@ -600,7 +601,14 @@ export async function ejecutarHerramienta(
   },
 ): Promise<string> {
   if (nombre === "kb_buscar" && contexto?.tenantId === "consultorio") {
-    return respuestaDeBusqueda(BASE_LAB, (input as { consulta?: unknown }).consulta, hoyDeTenant(contexto.tenantId));
+    const consulta = (input as { consulta?: unknown }).consulta;
+    const respuesta = respuestaDeBusqueda(BASE_LAB, consulta, hoyDeTenant(contexto.tenantId));
+    // Para el dashboard del lab ("de qué preguntan"). Solo chats reales: las
+    // pruebas ("prueba:...") y Probar a Valeria no traen teléfono o lo marcan.
+    if (contexto.telefono && !contexto.clave?.startsWith("prueba:")) {
+      await registrarBusqueda(contexto.tenantId, contexto.telefono, String(consulta ?? ""), resultadosDeRespuesta(respuesta));
+    }
+    return respuesta;
   }
   if (nombre === "guardar_datos_contacto") {
     await acciones?.onGuardarContacto?.(

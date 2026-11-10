@@ -3,6 +3,7 @@ import { addOutbound } from "@/lib/wa-store";
 import { addAdjunto } from "@/lib/contacts-store";
 import { tenantFromRequest } from "@/lib/tenants/server";
 import { cerrarCasosAlResponder } from "@/lib/tickets-al-responder";
+import { quienResponde } from "@/lib/staff-de-sesion";
 import { credencialesWa } from "@/lib/wa-credenciales";
 
 export const runtime = "nodejs";
@@ -151,12 +152,15 @@ export async function POST(req: Request) {
   const textoFallback = esImagen ? "[imagen enviada]" : "[documento enviado]";
 
   // 3. Persistir en stores.
+  const quien = await quienResponde(req, tenantFromRequest(req));
   await addOutbound({
     waId: msgId,
     to,
     texto: caption ?? textoFallback,
     ts,
     tenant: tenantFromRequest(req),
+    staffId: quien.staffId,
+    staffNombre: quien.nombre,
   });
 
   await addAdjunto({

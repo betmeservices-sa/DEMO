@@ -36,6 +36,7 @@ import { ShopusaDashboard } from "@/components/shopusa/ShopusaDashboard";
 import { HotelMuestraDashboard } from "@/components/hotel-muestra/HotelMuestraDashboard";
 import { esHotelMuestra } from "@/lib/hotel-muestra/registro";
 import { HospitalDashboard } from "@/components/dashboard/HospitalDashboard";
+import { LabDashboard } from "@/components/dashboard/LabDashboard";
 import { OrigenCanales } from "@/components/dashboard/OrigenCanales";
 import { ConsumoIA } from "@/components/dashboard/ConsumoIA";
 import { RedesResumen } from "@/components/dashboard/RedesResumen";
@@ -113,6 +114,9 @@ export default function DashboardPage() {
   // El hospital atiende pacientes reales desde su propio numero: su tablero
   // sale de la base (WhatsApp y tickets), no de las tarjetas de muestra.
   if (activeTenantId() === "hospital") return <HospitalDashboard />;
+  // El laboratorio (2247 1141) mira su WhatsApp con Valeria: conversaciones,
+  // respuestas, temas y cuándo escriben, de la base (pedido del 10/11/2026).
+  if (activeTenantId() === "consultorio") return <LabDashboard />;
 
   return (
     <div className="flex h-full flex-col">
