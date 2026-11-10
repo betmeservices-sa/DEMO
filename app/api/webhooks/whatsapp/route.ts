@@ -21,8 +21,13 @@ import { enProduccion } from "@/lib/entorno";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 // La respuesta de la IA corre en `after` (después de responder 200 a Meta). En
-// Vercel usa waitUntil; subimos el límite para que quepa el debounce + Claude.
-export const maxDuration = 60;
+// Vercel usa waitUntil; subimos el límite para que quepa el debounce + el modelo.
+// 300 desde el 10/11/2026: con 60, si el turno se pasaba (el lab ahora lee la
+// foto de la orden y busca cada examen: ~18 s de modelo con 10 exámenes, más
+// los 5 a 12 s de espera, más un proveedor lento), Vercel cortaba la función y
+// la persona se quedaba sin respuesta y sin rastro. El 3/11 una paciente del
+// lab mandó su orden y nunca le contestaron.
+export const maxDuration = 300;
 
 // 1) Verificación: Meta hace un GET al configurar la Callback URL.
 export async function GET(req: Request) {

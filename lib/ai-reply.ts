@@ -54,8 +54,8 @@ import type { TenantId } from "./tenants/types";
 //
 // Dos techos que este reparto respeta: el "escribiendo..." de Meta se cae solo
 // a los 25s, y aqui vive como mucho (MAX - MIN) mas lo que tarde Claude, o sea
-// ~7s mas unos pocos; y la funcion del webhook en Vercel Pro corre hasta 60s
-// (maxDuration=60), donde MAX + consultas + Claude + envio caben de sobra.
+// ~7s mas unos pocos; y la funcion del webhook en Vercel corre hasta 300s
+// (maxDuration=300 desde el 10/11/2026; antes 60 y un turno largo se cortaba).
 const DELAY_MIN_MS = Number(process.env.AI_DELAY_MIN_MS) || 5000;
 const DELAY_MAX_MS = Number(process.env.AI_DELAY_MAX_MS) || 12000;
 
