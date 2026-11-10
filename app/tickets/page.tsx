@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  Check,
   CheckCircle2,
   Clock,
   Inbox,
@@ -22,6 +23,7 @@ import {
   MessageCircle,
   Plus,
   Timer,
+  Undo2,
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -472,6 +474,23 @@ function Fila({
           <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold", COLOR_ESTADO[t.estado])}>
             {etiquetaEstado(t.estado)}
           </span>
+          {/* Cerrar el caso sin abrirlo. Antes el estado vivía solo en un
+              desplegable dentro del caso, y en el lab nadie lo encontraba
+              (10/11). Mismo botón que el tablero del hospital en hub. */}
+          <button
+            type="button"
+            onClick={() => onCambio({ estado: t.estado === "resuelto" ? "asignado" : "resuelto" })}
+            title={t.estado === "resuelto" ? "Volver a abrirlo" : "Marcarlo resuelto"}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11.5px] font-semibold transition",
+              t.estado === "resuelto"
+                ? "border-line text-[var(--text-3)] hover:border-[var(--warn-line,#fcd34d)] hover:text-[var(--warn-fg,#92400e)]"
+                : "border-line text-[#2f9e2f] hover:border-[#2f9e2f] hover:bg-emerald-50",
+            )}
+          >
+            {t.estado === "resuelto" ? <Undo2 size={13} /> : <Check size={13} />}
+            {t.estado === "resuelto" ? "Reabrir" : "Resolver"}
+          </button>
           {/* El chat a un clic: es lo primero que se hace con un caso. En el
               lab, contestarle desde ahí lo deja resuelto (cerrarAlResponder). */}
           {chat && (
