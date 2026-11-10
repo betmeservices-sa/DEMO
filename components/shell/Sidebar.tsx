@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Smartphone, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
@@ -316,18 +316,8 @@ export function Sidebar({
           );
         })}
 
-        {veClinica && (
-          <a
-            href="/paciente"
-            target="_blank"
-            rel="noreferrer"
-            onClick={onClose}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[var(--text-2)] transition hover:bg-surface hover:text-[var(--text)]"
-          >
-            <Smartphone size={18} strokeWidth={2.1} />
-            <span className="min-w-0 flex-1 truncate">Vista del paciente</span>
-          </a>
-        )}
+        {/* "Vista del paciente" ya no sale (10/11): abría la página pública de la
+            sucursal inventada de la demo, con dirección, horario y precios falsos. */}
         {/* El portal del paciente (recetas y órdenes del consultorio) ya no sale:
             desde 2026-11-09 el panel es solo del laboratorio. /portal sigue. */}
       </nav>

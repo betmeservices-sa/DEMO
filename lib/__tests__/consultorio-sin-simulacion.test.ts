@@ -10,6 +10,10 @@ describe("el panel del laboratorio", () => {
     expect(TENANTS.consultorio.simulacion.contactos).toEqual([]);
   });
 
+  it("no trae contactos inventados (la bandeja les ponía su nombre a pacientes reales)", () => {
+    expect(TENANTS.consultorio.seed.contacts).toEqual([]);
+  });
+
   it("los demos de venta siguen con su simulación", () => {
     expect(TENANTS.nissan.simulacion.turnos.length).toBeGreaterThan(0);
   });

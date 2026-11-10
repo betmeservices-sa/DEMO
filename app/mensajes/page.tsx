@@ -23,7 +23,7 @@ export default async function PaginaMensajes() {
       : (seed.staff.find((s) => s.id === id)?.nombre ?? "Equipo");
 
   const chats: ChatDemo[] = bandejaDeMuestra.conversations.map((c) => {
-    const contacto = seed.contacts.find((x) => x.id === c.contactId);
+    const contacto = bandejaDeMuestra.contacts.find((x) => x.id === c.contactId);
     return {
       id: c.id,
       nombre: contacto?.nombre ?? "Sin nombre",

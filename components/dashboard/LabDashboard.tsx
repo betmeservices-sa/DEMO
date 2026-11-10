@@ -408,7 +408,7 @@ export function LabDashboard() {
                 detalle={`${num(r.respuestasEquipo)} del equipo, en ${pl(r.conversacionesConEquipo, "conversación", "conversaciones")}`}
               />
               <Cifra
-                label="Resueltas solo por Valeria"
+                label="Atendidas solo por Valeria"
                 valor={r.pctSoloValeria === null ? "—" : `${r.pctSoloValeria}%`}
                 detalle={`${num(r.resueltasSoloValeria)} de ${num(r.conversaciones)}, sin caso ni respuesta del equipo`}
               />

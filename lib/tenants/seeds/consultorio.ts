@@ -29,19 +29,11 @@ export const consultorioSeed: TenantSeed = {
     { id: "lab-helen", nombre: "Helen Chicas", rol: "recepcion", departamento: "laboratorio", iniciales: "HC" },
     { id: "lab-abigail", nombre: "Abigail Cubas", rol: "recepcion", departamento: "laboratorio", iniciales: "AC" },
   ],
-  contacts: [
-    { id: "c1", nombre: "Marta Elena Guzmán", telefono: "50377124455", correo: "marta.guzman@gmail.com", canal: "whatsapp", notas: "Control de diabetes con la Dra. Morán. Le tocan hemoglobina glicosilada y química cada tres meses.", tags: ["Exámenes de laboratorio"] },
-    { id: "c2", nombre: "Rodrigo Peña", telefono: "50370338891", correo: "rodrigo.pena@outlook.com", canal: "whatsapp", notas: "Chequeo anual de la empresa. Pidió que le manden los resultados por correo.", tags: ["Chequeo anual"] },
-    { id: "c3", nombre: "Silvia Menjívar de Cruz", telefono: "50360882210", correo: "silvia.menjivar@gmail.com", canal: "whatsapp", notas: "Vino con orden del cardiólogo. Solo se hizo cinco de los siete exámenes, le falta el perfil lipídico.", tags: ["Exámenes pendientes"] },
-    { id: "c4", nombre: "Ana Cecilia Portillo", handle: "@anace.portillo", canal: "instagram", notas: "Preguntó por el chequeo prenatal. Se le pasó el número de recepción.", tags: ["Cita de consulta"] },
-    { id: "c5", nombre: "Julio Barahona", handle: "Julio Barahona", canal: "facebook", notas: "Consultó precio del hemograma y si necesita ayuno.", tags: ["Precios"] },
-    { id: "c6", nombre: "Nelson Cruz Aguilar", telefono: "50371193358", correo: "nelson.cruz@gmail.com", canal: "whatsapp", notas: "Resultados listos desde el martes, no ha pasado a recogerlos.", tags: ["Resultados"] },
-
-    { id: "c7", nombre: "Xiomara Alfaro", telefono: "50374882031", canal: "whatsapp", notas: "Paciente de la Dra. Morán desde hace años. Siempre agenda por WhatsApp.", tags: ["Cita de consulta"] },
-    { id: "c8", nombre: "Carlos Ernesto Sibrián", telefono: "50372338814", correo: "csibrian@gmail.com", canal: "whatsapp", notas: "Le corresponde control de presión con el Dr. Rivas cada seis meses.", tags: ["Cita de consulta"] },
-    { id: "c9", nombre: "Doris Quintanilla", telefono: "50378112360", canal: "whatsapp", notas: "Pregunta seguido por preparación de exámenes. Prefiere que le expliquen por audio.", tags: ["Exámenes de laboratorio"] },
-    { id: "c10", nombre: "Fernando Aguirre", telefono: "50376990412", correo: "faguirre@pymesv.com", canal: "whatsapp", notas: "Trae al personal de su empresa a chequeo. Pide factura a nombre de la empresa.", tags: ["Chequeo anual"] },
-  ],
+  // Sin contactos inventados: desde el 10/11 este es el panel REAL del lab y
+  // la bandeja busca el nombre de quien escribe en esta lista por teléfono; un
+  // paciente real con uno de esos números salía con nombre y notas de mentira.
+  // Los de muestra viven en bandejaDeMuestra.contacts.
+  contacts: [],
   // Sin chats de muestra: desde 2026-11-03 la bandeja es la del WhatsApp real
   // del laboratorio (2247 1141). Los de muestra viven en bandejaDeMuestra.
   conversations: [],
@@ -83,7 +75,20 @@ export const consultorioSeed: TenantSeed = {
 // La bandeja de muestra (/mensajes): conversaciones inventadas con la misma
 // gente de la semilla. Ya no sale en el menu de la clinica, que ahora tiene la
 // bandeja real, pero la pagina sigue existiendo.
-export const bandejaDeMuestra: Pick<TenantSeed, "conversations" | "messages"> = {
+export const bandejaDeMuestra: Pick<TenantSeed, "contacts" | "conversations" | "messages"> = {
+  contacts: [
+    { id: "c1", nombre: "Marta Elena Guzmán", telefono: "50377124455", correo: "marta.guzman@gmail.com", canal: "whatsapp", notas: "Control de diabetes con la Dra. Morán. Le tocan hemoglobina glicosilada y química cada tres meses.", tags: ["Exámenes de laboratorio"] },
+    { id: "c2", nombre: "Rodrigo Peña", telefono: "50370338891", correo: "rodrigo.pena@outlook.com", canal: "whatsapp", notas: "Chequeo anual de la empresa. Pidió que le manden los resultados por correo.", tags: ["Chequeo anual"] },
+    { id: "c3", nombre: "Silvia Menjívar de Cruz", telefono: "50360882210", correo: "silvia.menjivar@gmail.com", canal: "whatsapp", notas: "Vino con orden del cardiólogo. Solo se hizo cinco de los siete exámenes, le falta el perfil lipídico.", tags: ["Exámenes pendientes"] },
+    { id: "c4", nombre: "Ana Cecilia Portillo", handle: "@anace.portillo", canal: "instagram", notas: "Preguntó por el chequeo prenatal. Se le pasó el número de recepción.", tags: ["Cita de consulta"] },
+    { id: "c5", nombre: "Julio Barahona", handle: "Julio Barahona", canal: "facebook", notas: "Consultó precio del hemograma y si necesita ayuno.", tags: ["Precios"] },
+    { id: "c6", nombre: "Nelson Cruz Aguilar", telefono: "50371193358", correo: "nelson.cruz@gmail.com", canal: "whatsapp", notas: "Resultados listos desde el martes, no ha pasado a recogerlos.", tags: ["Resultados"] },
+
+    { id: "c7", nombre: "Xiomara Alfaro", telefono: "50374882031", canal: "whatsapp", notas: "Paciente de la Dra. Morán desde hace años. Siempre agenda por WhatsApp.", tags: ["Cita de consulta"] },
+    { id: "c8", nombre: "Carlos Ernesto Sibrián", telefono: "50372338814", correo: "csibrian@gmail.com", canal: "whatsapp", notas: "Le corresponde control de presión con el Dr. Rivas cada seis meses.", tags: ["Cita de consulta"] },
+    { id: "c9", nombre: "Doris Quintanilla", telefono: "50378112360", canal: "whatsapp", notas: "Pregunta seguido por preparación de exámenes. Prefiere que le expliquen por audio.", tags: ["Exámenes de laboratorio"] },
+    { id: "c10", nombre: "Fernando Aguirre", telefono: "50376990412", correo: "faguirre@pymesv.com", canal: "whatsapp", notas: "Trae al personal de su empresa a chequeo. Pide factura a nombre de la empresa.", tags: ["Chequeo anual"] },
+  ],
   conversations: [
     { id: "v1", canal: "whatsapp", contactId: "c1", departamento: "laboratorio", estado: "en_progreso", asignadoA: "s4", noLeidos: 1, ultimoMensajeTs: "2026-09-08T09:34:00" },
     { id: "v2", canal: "whatsapp", contactId: "c2", departamento: "recepcion", estado: "en_progreso", asignadoA: "s6", noLeidos: 0, ultimoMensajeTs: "2026-09-08T09:05:00" },

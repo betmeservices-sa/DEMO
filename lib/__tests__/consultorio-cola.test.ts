@@ -243,11 +243,14 @@ describe("el paciente en Contactos", () => {
     // La bandeja de muestra ("mensajes") dejó el menú cuando el lab tuvo
     // WhatsApp real, y desde 2026-11-09 el panel es solo del laboratorio: sin
     // Consultorio ni Imagenología.
-    for (const m of MODULOS_CLINICA.filter((x) => !["mensajes", "consultorio", "imagenologia"].includes(x))) {
+    // Desde 2026-11-10 tampoco Laboratorio ni Jefatura: eran datos inventados
+    // de la demo (sucursales, precios, cifras) en un panel real.
+    for (const m of MODULOS_CLINICA.filter((x) => !["mensajes", "consultorio", "imagenologia", "laboratorio", "jefatura"].includes(x))) {
       expect(VE_CLINICA).toContain(m);
     }
-    expect(VE_CLINICA).not.toContain("consultorio");
-    expect(VE_CLINICA).not.toContain("imagenologia");
+    for (const fuera of ["consultorio", "imagenologia", "laboratorio", "jefatura"]) {
+      expect(VE_CLINICA).not.toContain(fuera);
+    }
     expect(VE_CLINICA).toEqual(expect.arrayContaining(["bandeja", "tickets"]));
     // Contactos NO va en la lista que esconde módulos a los demás clientes.
     expect(MODULOS_CLINICA).not.toContain("contactos");

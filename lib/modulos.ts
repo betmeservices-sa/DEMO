@@ -133,10 +133,12 @@ export const MODULOS_CLINICA: readonly ModuleId[] = [
 // Desde 2026-11-10, el Dashboard del WhatsApp del lab. Lo ven los perfiles que
 // tienen "dashboard" en VE (dirección y jefatura); la recepción del lab no,
 // hasta que el usuario diga quién más.
+// Desde 2026-11-10, sin Laboratorio ni Jefatura: eran la escenografía de la
+// demo (sucursales inventadas, una "Santa Tecla" que no existe, precios viejos,
+// cifras de Jefatura inventadas incluso las de hoy) y el lab nunca los usó
+// (cero turnos desde que entró en vivo). Siguen en MODULOS_CLINICA.
 export const VE_CLINICA: readonly ModuleId[] = [
   "dashboard",
-  "laboratorio",
-  "jefatura",
   "bandeja",
   "tickets",
   "valeria",
