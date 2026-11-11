@@ -80,7 +80,7 @@ export function CampanaDashboard() {
               <Proporcion Icono={Store} rotulo="Retiro en sucursal" pct={p.entrega.retiro} />
             </div>
             <div className="mt-6">
-              <p className="mb-2 text-[12px] font-semibold text-[var(--text-3)]">Pedidos por canal</p>
+              <p className="mb-2 text-[12px] font-semibold text-[var(--text-3)]">Todos por WhatsApp · dónde empezó la conversación</p>
               <Barras
                 datos={p.porCanal.map((c) => ({ etiqueta: c.canal, valor: c.pedidos, texto: c.pedidos.toLocaleString("en-US") }))}
               />

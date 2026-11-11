@@ -102,12 +102,12 @@ export function panelCampana(dias: PeriodoCampana): PanelCampana {
     return { id: plato.id, nombre: plato.nombre, foto: plato.foto, unidades, ventas: unidades * plato.precio };
   }).sort((a, b) => b.unidades - a.unidades);
 
+  // Todos los pedidos se toman por WhatsApp; esto es dónde EMPEZÓ la
+  // conversación (Sofía pasa a WhatsApp a quien pide por Instagram o Facebook).
   const canales: Array<[string, number]> = [
-    ["WhatsApp", 0.46],
-    ["Sitio web", 0.27],
-    ["Instagram", 0.15],
-    ["Facebook", 0.08],
-    ["Llamada", 0.04],
+    ["Directo a WhatsApp", 0.64],
+    ["Desde Instagram", 0.24],
+    ["Desde Facebook", 0.12],
   ];
   const porCanal = canales.map(([canal, w]) => ({ canal, pedidos: Math.round(pedidos * w) }));
 

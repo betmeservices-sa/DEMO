@@ -2,8 +2,9 @@
 
 // Pedidos de La Campana: la cola de cocina de cada sucursal.
 //
-// Los pedidos que toma Sofía por WhatsApp, Instagram o Facebook (y los del
-// sitio web o por llamada) entran a la cola de su sucursal. La cocina prepara
+// Los pedidos se toman SOLO por WhatsApp: si alguien pide por Instagram o
+// Facebook, Sofía le pasa el enlace y el pedido se arma en WhatsApp. Cada uno
+// entra a la cola de su sucursal. La cocina prepara
 // hasta CAPACIDAD_COCINA a la vez; el resto espera su turno con un tiempo
 // estimado. Ningún pedido ocupa la agenda: esa queda para reservaciones y
 // eventos.
@@ -11,7 +12,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Bike, Bot, CalendarHeart, ChefHat, Clock, Inbox, Plus, RotateCcw, Store, X } from "lucide-react";
+import { ArrowRight, Bike, Bot, CalendarHeart, ChefHat, Clock, CornerDownRight, Inbox, Plus, RotateCcw, Store, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { platoPorId, precio } from "@/lib/lacampana/menu";
 import { SUCURSALES_CAMPANA, sucursalPorId } from "@/lib/lacampana/sucursales";
@@ -19,6 +20,7 @@ import {
   CAPACIDAD_COCINA,
   ETAPAS,
   MINUTOS_POR_TURNO,
+  ORIGEN_NOMBRE,
   colaDe,
   enCocina,
   esperaEstimada,
@@ -109,7 +111,7 @@ export function PedidosVista() {
           <div>
             <h1 className="text-[17px] font-extrabold tracking-tight text-brand">Pedidos</h1>
             <p className="text-[12.5px] text-[var(--text-3)]">
-              Cola de cocina por sucursal · los pedidos no ocupan la agenda de reservas y eventos
+              Solo por WhatsApp · cola de cocina por sucursal · los pedidos no ocupan la agenda de reservas y eventos
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -121,7 +123,7 @@ export function PedidosVista() {
               type="button"
               onClick={() => {
                 const p = simularEntrante();
-                setAviso(`Entró el #${p.numero} por ${p.canal === "whatsapp" ? "WhatsApp" : p.canal === "instagram" ? "Instagram" : "Facebook"}: va a la cola de ${sucursalPorId(p.sucursalId)?.nombre}.`);
+                setAviso(`Entró el #${p.numero} por WhatsApp${p.origen !== "whatsapp" ? ` (Sofía lo pasó desde ${ORIGEN_NOMBRE[p.origen]})` : ""}: va a la cola de ${sucursalPorId(p.sucursalId)?.nombre}.`);
               }}
               className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-[12px] font-semibold text-white transition hover:opacity-90"
             >
@@ -305,7 +307,7 @@ function Tarjeta({ p, pedidos, ahora, onAbrir, onMover }: { p: Pedido; pedidos: 
       <button type="button" onClick={onAbrir} className="block w-full text-left">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[13px] font-extrabold text-[var(--text)]">#{p.numero}</span>
-          <CanalChip canal={p.canal} />
+          <CanalChip canal="whatsapp" />
         </div>
         <p className="mt-1 truncate text-[12.5px] font-semibold text-[var(--text)]">{p.cliente}</p>
         <p className="truncate text-[11.5px] text-[var(--text-3)]">{suc}</p>
@@ -318,6 +320,11 @@ function Tarjeta({ p, pedidos, ahora, onAbrir, onMover }: { p: Pedido; pedidos: 
           {p.porSofia && (
             <Pill tono="neutro">
               <Bot size={11} /> Sofía
+            </Pill>
+          )}
+          {p.origen !== "whatsapp" && (
+            <Pill tono="neutro">
+              <CornerDownRight size={11} /> Desde {ORIGEN_NOMBRE[p.origen]}
             </Pill>
           )}
           {p.programado && <Pill tono="cola">Para {hora(p.programado)}</Pill>}
@@ -362,7 +369,12 @@ function Ficha({ p, pedidos, ahora, onCerrar, onMover }: { p: Pedido; pedidos: P
             <h2 className="text-[20px] font-extrabold text-[var(--text)]">#{p.numero}</h2>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               <Pill tono={TONO[p.etapa]}>{etapa?.nombre}</Pill>
-              <CanalChip canal={p.canal} conNombre />
+              <CanalChip canal="whatsapp" conNombre />
+              {p.origen !== "whatsapp" && (
+                <Pill tono="neutro">
+                  <CornerDownRight size={11} /> Empezó en {ORIGEN_NOMBRE[p.origen]}
+                </Pill>
+              )}
               {p.porSofia && (
                 <Pill tono="neutro">
                   <Bot size={11} /> Tomado por Sofía
@@ -438,7 +450,7 @@ function Ficha({ p, pedidos, ahora, onCerrar, onMover }: { p: Pedido; pedidos: P
           </section>
 
           <Link href="/" className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-brand underline">
-            Ver la conversación en la bandeja
+            Ver el chat de WhatsApp en la bandeja
           </Link>
         </div>
 

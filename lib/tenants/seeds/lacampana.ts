@@ -1,5 +1,8 @@
 // Datos de ejemplo del demo de Restaurante La Campana.
 //
+// Los pedidos se toman SOLO por WhatsApp: en Instagram y Facebook, Sofía
+// responde lo que pregunten y, si quieren pedir, los pasa a WhatsApp.
+//
 // Platos, precios y sucursales son los del sitio del cliente
 // (lib/lacampana/). Clientes, teléfonos, pedidos y conversaciones son
 // inventados. Las horas se calculan desde el momento en que se abre el panel,
@@ -50,10 +53,10 @@ const LINEAS: Linea[] = [
   ["v1", 5, "ia", "¡Buena elección! Su orden: Parrillada para 4 ($33.95), Taquiza de birria ($27.95) y 2 Horchatas de 32 oz ($4.50). Total $66.40 más envío. ¿A qué dirección se la enviamos, con un punto de referencia?"],
   ["v1", 2, "c", "Col. Escalón, pasaje Los Pinos #14, frente al parque. Pago con tarjeta"],
   ["v2", 28, "c", "Hola! la promo de burritos sigue hoy?"],
-  ["v2", 27, "ia", "¡Hola! Sí, la Promo Burritos sigue: 2 burritos con frijoles, guacamole, carne, arroz, quesillo, chimol y cilantro por $9.75 🌯 ¿La quiere a domicilio o para retirar en sucursal?"],
-  ["v2", 18, "c", "Para retirar en Plaza Mundo Soyapango"],
-  ["v2", 17, "ia", "Perfecto, se la dejo lista en Plaza Mundo Soyapango. ¿A nombre de quién la anoto y a qué hora pasa por ella?"],
-  ["v2", 11, "c", "Daniela, como a las 12:30 🙌"],
+  ["v2", 27, "ia", "¡Hola! Sí, la Promo Burritos sigue: 2 burritos con frijoles, guacamole, carne, arroz, quesillo, chimol y cilantro por $9.75 🌯 ¿Se la preparamos?"],
+  ["v2", 18, "c", "Sí! para retirar en Plaza Mundo Soyapango"],
+  ["v2", 17, "ia", "¡Con gusto! Los pedidos los tomamos por WhatsApp, así le confirmamos y le avisamos cuando esté listo. Escríbame aquí y lo dejamos hecho: wa.me/50370399814 📲"],
+  ["v2", 11, "c", "Listo, ya le escribí al WhatsApp 🙌"],
   ["v3", 60, "c", "Buenas tardes, quiero hacer el cumpleaños de mi papá en La Campana, seríamos unas 30 personas"],
   ["v3", 59, "ia", "¡Qué bonita celebración! Para grupos de 30 un asesor de eventos le arma la propuesta. ¿Me confirma la fecha y en qué sucursal le gustaría?"],
   ["v3", 50, "c", "Sábado 28 de noviembre en Unicentro Metrópolis, al mediodía"],
@@ -79,16 +82,18 @@ const LINEAS: Linea[] = [
   ["v7", 129, "ia", "Los pedidos en línea se reciben desde las 11:00 a.m. ¿Le dejo algo listo para retirar en Lourdes?"],
   ["v7", 115, "c", "Sí, unos Nachos Campana de birria para las 11:30"],
   ["v8", 200, "c", "Tienen algo para 2 que no sea tan caro?"],
-  ["v8", 199, "ia", "¡Sí! Mi Media Campana ($13.50) trae dos típicos mexicanos, una entrada de nachos y dos bebidas de 16 oz. O la Parrillada para 2 ($19.95). ¿Cuál le preparo?"],
-  ["v8", 170, "c", "La Media Campana, para Valle Dulce"],
+  ["v8", 199, "ia", "¡Sí! Mi Media Campana ($13.50) trae dos típicos mexicanos, una entrada de nachos y dos bebidas de 16 oz. O la Parrillada para 2 ($19.95). ¿Cuál le gusta?"],
+  ["v8", 185, "c", "La Media Campana, para Valle Dulce"],
+  ["v8", 184, "ia", "¡Buena elección! Para tomar su pedido le atiendo por WhatsApp, ahí le confirmo el total y le aviso cuando vaya en camino: wa.me/50370399814"],
+  ["v8", 170, "c", "Ok ya le escribo por ahí"],
   ["v9", 245, "c", "Hola, soy de RRHH de una empresa en Santa Elena. Queremos cotizar almuerzo para 60 personas para el convivio de fin de año"],
   ["v9", 244, "ia", "¡Con mucho gusto! Para 60 personas un asesor de eventos le prepara la cotización. ¿Para qué fecha sería y prefieren venir a una sucursal o que se lo llevemos a la empresa?"],
   ["v9", 235, "c", "18 de diciembre, que lo lleven a la empresa"],
   ["v9", 234, "ia", "Anotado: 60 personas, 18 de diciembre, servicio en su empresa. Ya le dejé el caso a Carlos, de eventos, y le contacta hoy mismo."],
   ["v9", 230, "c", "Perfecto, quedo pendiente"],
   ["v10", 330, "c", "Vi en Insta lo de los Campacheros 😍 cuánto es?"],
-  ["v10", 329, "ia", "¡Los Campacheros son ideales para compartir! $25.99: cuatro típicos mexicanos, una entrada de nachos y cuatro bebidas de 16 oz. ¿Se los mando a domicilio?"],
-  ["v10", 300, "c", "Siii, ya hice el pedido en la página. Gracias!"],
+  ["v10", 329, "ia", "¡Los Campacheros son ideales para compartir! $25.99: cuatro típicos mexicanos, una entrada de nachos y cuatro bebidas de 16 oz. Si los quiere pedir, le atiendo por WhatsApp en un momento: wa.me/50370399814 📲"],
+  ["v10", 300, "c", "Siii, ya le escribí por WhatsApp. Gracias!"],
 ];
 
 const NOMBRES: Record<string, string> = { s2: "Daniela Flores", s3: "Carlos Rivera", s4: "Andrés Molina" };

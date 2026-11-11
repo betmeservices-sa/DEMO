@@ -2,9 +2,20 @@
 import type { TenantSimulacion } from "../types";
 
 export const lacampanaSimulacion: TenantSimulacion = {
+  // La bandeja recibe WhatsApp, Instagram y Facebook para todo (menú, promos,
+  // eventos, quejas). Lo único que no se toma en Instagram ni Facebook es el
+  // pedido de comida: Sofía lo pasa a WhatsApp. Los turnos que arman un pedido
+  // llevan `canales: ["whatsapp"]` y la simulación nunca los pone en otra red.
   turnos: [
     {
+      entra: "Hola! quiero pedir unos tacos de birria a domicilio",
+      responde:
+        "¡Con gusto! Los pedidos los tomamos por WhatsApp para confirmarle y avisarle cuando vaya en camino. Escríbame aquí y lo dejamos listo: wa.me/50370399814 📲",
+      canales: ["instagram", "facebook"],
+    },
+    {
       entra: "Buenas, quiero hacer un pedido a domicilio",
+      canales: ["whatsapp"],
       responde: "¡Hola! Le saluda Sofía, de La Campana 🔔 Con gusto. ¿Qué le preparamos hoy? Si quiere le recomiendo las promos del día.",
     },
     {
@@ -17,11 +28,12 @@ export const lacampanaSimulacion: TenantSimulacion = {
     },
     {
       entra: "Para retirar en Plaza Mundo Soyapango",
+      canales: ["whatsapp"],
       responde: "Perfecto, se lo dejo listo en Plaza Mundo Soyapango. ¿A nombre de quién y a qué hora pasa?",
     },
     {
       entra: "Le mando foto de la promo que vi en Instagram",
-      responde: "Ya la vi, son los Campacheros: cuatro típicos mexicanos, nachos y cuatro bebidas por $25.99. ¿Se los preparo?",
+      responde: "Ya la vi, son los Campacheros: cuatro típicos mexicanos, nachos y cuatro bebidas por $25.99. ¿Se los preparo a domicilio o para retirar?",
     },
     {
       entra: "Queremos cotizar comida para 40 personas",
@@ -29,6 +41,7 @@ export const lacampanaSimulacion: TenantSimulacion = {
     },
     {
       entra: "Mi pedido va tarde, lo pedí hace una hora",
+      canales: ["whatsapp"],
       responde: "Lamento la espera. ¿Me da su número de orden o el nombre del pedido? Lo reviso de inmediato con la sucursal.",
     },
     {
@@ -41,6 +54,7 @@ export const lacampanaSimulacion: TenantSimulacion = {
     },
     {
       entra: "Listo, ese es todo mi pedido",
+      canales: ["whatsapp"],
       responde: "¡Gracias! Su pedido ya pasó a la sucursal y le avisamos cuando vaya en camino 🛵",
     },
   ],

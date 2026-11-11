@@ -9,13 +9,19 @@
 // capacidad. Un pedido programado ("para el domingo a las 7") espera en la cola
 // hasta su hora, también sin tocar la agenda.
 //
+// LOS PEDIDOS SE TOMAN SOLO POR WHATSAPP. Si alguien quiere pedir por
+// Instagram o Facebook, Sofía no lo toma ahí: le manda el enlace a WhatsApp y
+// el pedido se arma en ese chat. `origen` guarda dónde empezó la conversación,
+// para saber cuánto trae cada red, pero el pedido siempre es de WhatsApp.
+//
 // La lógica de la cola es pura (sin red ni navegador) para poder probarla:
 // lib/__tests__/lacampana-pedidos.test.ts.
 
 import { platoPorId } from "./menu";
 
 export type EtapaPedido = "cola" | "cocina" | "listo" | "camino" | "entregado";
-export type CanalPedido = "whatsapp" | "instagram" | "facebook" | "web" | "llamada";
+/** Dónde empezó la conversación. El pedido siempre se toma en WhatsApp. */
+export type OrigenPedido = "whatsapp" | "instagram" | "facebook";
 export type TipoEntrega = "domicilio" | "retiro";
 
 export interface LineaPedido {
@@ -29,7 +35,8 @@ export interface Pedido {
   numero: number;
   cliente: string;
   telefono: string;
-  canal: CanalPedido;
+  /** Dónde escribió primero el cliente: si fue Instagram o Facebook, Sofía lo pasó a WhatsApp. */
+  origen: OrigenPedido;
   sucursalId: string;
   tipo: TipoEntrega;
   direccion?: string;
@@ -54,12 +61,10 @@ export const ETAPAS: Array<{ id: EtapaPedido; nombre: string; ayuda: string }> =
   { id: "entregado", nombre: "Entregado", ayuda: "Cerrado" },
 ];
 
-export const CANAL_NOMBRE: Record<CanalPedido, string> = {
+export const ORIGEN_NOMBRE: Record<OrigenPedido, string> = {
   whatsapp: "WhatsApp",
   instagram: "Instagram",
   facebook: "Facebook",
-  web: "Sitio web",
-  llamada: "Llamada",
 };
 
 /** Cuántos pedidos prepara a la vez la cocina de una sucursal (demo). */
@@ -178,33 +183,33 @@ type Semilla = Omit<Pedido, "id" | "recibido" | "desde" | "programado"> & {
 
 const SEMILLA: Semilla[] = [
   // Plaza Mundo Soyapango: la cocina llena y cola larga, para enseñar la cola.
-  { numero: 4821, cliente: "Daniela Rivas", telefono: "+503 7311 0420", canal: "instagram", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "promo-burritos", cantidad: 1 }], pago: "tarjeta", etapa: "cola", hace: 9, porSofia: true },
-  { numero: 4816, cliente: "José Martínez", telefono: "+503 7720 1184", canal: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Res. Los Ángeles, pje. 3 #12, Soyapango", lineas: [{ platoId: "parrillada-para-2", cantidad: 1 }, { platoId: "horchata-de-32-oz", cantidad: 2 }], pago: "efectivo", etapa: "cocina", hace: 21, enEtapaHace: 8, porSofia: true },
-  { numero: 4817, cliente: "Ana Lucía Pérez", telefono: "+503 7055 2290", canal: "web", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "taquiza", cantidad: 1 }], pago: "tarjeta", etapa: "cocina", hace: 19, enEtapaHace: 6, porSofia: false },
-  { numero: 4818, cliente: "Mario Henríquez", telefono: "+503 7612 0031", canal: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Col. Guadalupe, calle principal #45", lineas: [{ platoId: "churrasco-campana", cantidad: 2 }, { platoId: "soda-lata", cantidad: 2 }], pago: "tarjeta", etapa: "cocina", hace: 17, enEtapaHace: 5, porSofia: true },
-  { numero: 4819, cliente: "Claudia Ramos", telefono: "+503 7488 9012", canal: "facebook", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Urb. Montes de San Bartolo IV, senda 7", lineas: [{ platoId: "tacos-de-birria", cantidad: 3 }], pago: "efectivo", etapa: "cocina", hace: 14, enEtapaHace: 3, porSofia: true },
-  { numero: 4822, cliente: "Óscar Mejía", telefono: "+503 7901 3345", canal: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Col. Santa Lucía, av. B #9", lineas: [{ platoId: "campacheros", cantidad: 1 }], pago: "tarjeta", etapa: "cola", hace: 7, porSofia: true },
-  { numero: 4824, cliente: "Brenda Castillo", telefono: "+503 7166 8820", canal: "llamada", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "hamburguesa-la-mexicana", cantidad: 2 }, { platoId: "entrada-orden-de-papas", cantidad: 1 }], pago: "efectivo", etapa: "cola", hace: 4, porSofia: false },
-  { numero: 4825, cliente: "Iglesia Vida Nueva", telefono: "+503 7023 5521", canal: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "el-tipico", cantidad: 12 }], pago: "tarjeta", etapa: "cola", hace: 40, programadoEn: 18 * 60, porSofia: true },
+  { numero: 4821, cliente: "Daniela Rivas", telefono: "+503 7311 0420", origen: "instagram", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "promo-burritos", cantidad: 1 }], pago: "tarjeta", etapa: "cola", hace: 9, porSofia: true },
+  { numero: 4816, cliente: "José Martínez", telefono: "+503 7720 1184", origen: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Res. Los Ángeles, pje. 3 #12, Soyapango", lineas: [{ platoId: "parrillada-para-2", cantidad: 1 }, { platoId: "horchata-de-32-oz", cantidad: 2 }], pago: "efectivo", etapa: "cocina", hace: 21, enEtapaHace: 8, porSofia: true },
+  { numero: 4817, cliente: "Ana Lucía Pérez", telefono: "+503 7055 2290", origen: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "taquiza", cantidad: 1 }], pago: "tarjeta", etapa: "cocina", hace: 19, enEtapaHace: 6, porSofia: false },
+  { numero: 4818, cliente: "Mario Henríquez", telefono: "+503 7612 0031", origen: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Col. Guadalupe, calle principal #45", lineas: [{ platoId: "churrasco-campana", cantidad: 2 }, { platoId: "soda-lata", cantidad: 2 }], pago: "tarjeta", etapa: "cocina", hace: 17, enEtapaHace: 5, porSofia: true },
+  { numero: 4819, cliente: "Claudia Ramos", telefono: "+503 7488 9012", origen: "facebook", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Urb. Montes de San Bartolo IV, senda 7", lineas: [{ platoId: "tacos-de-birria", cantidad: 3 }], pago: "efectivo", etapa: "cocina", hace: 14, enEtapaHace: 3, porSofia: true },
+  { numero: 4822, cliente: "Óscar Mejía", telefono: "+503 7901 3345", origen: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Col. Santa Lucía, av. B #9", lineas: [{ platoId: "campacheros", cantidad: 1 }], pago: "tarjeta", etapa: "cola", hace: 7, porSofia: true },
+  { numero: 4824, cliente: "Brenda Castillo", telefono: "+503 7166 8820", origen: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "hamburguesa-la-mexicana", cantidad: 2 }, { platoId: "entrada-orden-de-papas", cantidad: 1 }], pago: "efectivo", etapa: "cola", hace: 4, porSofia: false },
+  { numero: 4825, cliente: "Iglesia Vida Nueva", telefono: "+503 7023 5521", origen: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "el-tipico", cantidad: 12 }], pago: "tarjeta", etapa: "cola", hace: 40, programadoEn: 18 * 60, porSofia: true },
 
   // Plaza Centro: el pedido de Karla, de la bandeja.
-  { numero: 4823, cliente: "Karla Villalta", telefono: "+503 7622 1190", canal: "whatsapp", sucursalId: "plaza-centro", tipo: "domicilio", direccion: "Col. Escalón, pje. Los Pinos #14, frente al parque", lineas: [{ platoId: "parrillada-para-4", cantidad: 1 }, { platoId: "taquiza-de-birria", cantidad: 1 }, { platoId: "horchata-de-32-oz", cantidad: 2 }], pago: "tarjeta", etapa: "cola", hace: 2, porSofia: true },
-  { numero: 4812, cliente: "Luis Alvarado", telefono: "+503 7845 6610", canal: "web", sucursalId: "plaza-centro", tipo: "retiro", lineas: [{ platoId: "nachos-campana", cantidad: 1 }, { platoId: "quesadillas-mexicanas", cantidad: 1 }], pago: "tarjeta", etapa: "cocina", hace: 16, enEtapaHace: 9, porSofia: false },
+  { numero: 4823, cliente: "Karla Villalta", telefono: "+503 7622 1190", origen: "whatsapp", sucursalId: "plaza-centro", tipo: "domicilio", direccion: "Col. Escalón, pje. Los Pinos #14, frente al parque", lineas: [{ platoId: "parrillada-para-4", cantidad: 1 }, { platoId: "taquiza-de-birria", cantidad: 1 }, { platoId: "horchata-de-32-oz", cantidad: 2 }], pago: "tarjeta", etapa: "cola", hace: 2, porSofia: true },
+  { numero: 4812, cliente: "Luis Alvarado", telefono: "+503 7845 6610", origen: "whatsapp", sucursalId: "plaza-centro", tipo: "retiro", lineas: [{ platoId: "nachos-campana", cantidad: 1 }, { platoId: "quesadillas-mexicanas", cantidad: 1 }], pago: "tarjeta", etapa: "cocina", hace: 16, enEtapaHace: 9, porSofia: false },
 
   // Metrocentro Santa Ana: el de Fernando ya listo para retirar.
-  { numero: 4808, cliente: "Fernando Ayala", telefono: "+503 6144 7752", canal: "whatsapp", sucursalId: "metrocentro-santa-ana", tipo: "retiro", lineas: [{ platoId: "churrasco-campana", cantidad: 2, nota: "Corte puyazo" }, { platoId: "te-de-limon-de-32-oz", cantidad: 2 }], pago: "tarjeta", etapa: "listo", hace: 46, enEtapaHace: 6, porSofia: true },
-  { numero: 4814, cliente: "Rocío Lemus", telefono: "+503 7290 4471", canal: "instagram", sucursalId: "metrocentro-santa-ana", tipo: "domicilio", direccion: "Col. IVU, calle 2 #18, Santa Ana", lineas: [{ platoId: "mi-media-campana", cantidad: 1 }], pago: "efectivo", etapa: "cocina", hace: 12, enEtapaHace: 4, porSofia: true },
+  { numero: 4808, cliente: "Fernando Ayala", telefono: "+503 6144 7752", origen: "whatsapp", sucursalId: "metrocentro-santa-ana", tipo: "retiro", lineas: [{ platoId: "churrasco-campana", cantidad: 2, nota: "Corte puyazo" }, { platoId: "te-de-limon-de-32-oz", cantidad: 2 }], pago: "tarjeta", etapa: "listo", hace: 46, enEtapaHace: 6, porSofia: true },
+  { numero: 4814, cliente: "Rocío Lemus", telefono: "+503 7290 4471", origen: "instagram", sucursalId: "metrocentro-santa-ana", tipo: "domicilio", direccion: "Col. IVU, calle 2 #18, Santa Ana", lineas: [{ platoId: "mi-media-campana", cantidad: 1 }], pago: "efectivo", etapa: "cocina", hace: 12, enEtapaHace: 4, porSofia: true },
 
   // Lourdes y Valle Dulce, de la bandeja.
-  { numero: 4810, cliente: "Gabriela Menjívar", telefono: "+503 7811 4520", canal: "instagram", sucursalId: "lourdes", tipo: "retiro", lineas: [{ platoId: "nachos-campana-de-birria", cantidad: 1 }], pago: "efectivo", etapa: "cocina", hace: 25, enEtapaHace: 10, porSofia: true },
-  { numero: 4820, cliente: "Ricardo Portillo", telefono: "+503 7533 1290", canal: "facebook", sucursalId: "valle-dulce", tipo: "domicilio", direccion: "Res. Valle Dulce, pol. F #23, Apopa", lineas: [{ platoId: "mi-media-campana", cantidad: 1 }], pago: "efectivo", etapa: "cola", hace: 11, porSofia: true },
+  { numero: 4810, cliente: "Gabriela Menjívar", telefono: "+503 7811 4520", origen: "instagram", sucursalId: "lourdes", tipo: "retiro", lineas: [{ platoId: "nachos-campana-de-birria", cantidad: 1 }], pago: "efectivo", etapa: "cocina", hace: 25, enEtapaHace: 10, porSofia: true },
+  { numero: 4820, cliente: "Ricardo Portillo", telefono: "+503 7533 1290", origen: "facebook", sucursalId: "valle-dulce", tipo: "domicilio", direccion: "Res. Valle Dulce, pol. F #23, Apopa", lineas: [{ platoId: "mi-media-campana", cantidad: 1 }], pago: "efectivo", etapa: "cola", hace: 11, porSofia: true },
 
   // En camino y entregados.
-  { numero: 4805, cliente: "Wilfredo Chacón", telefono: "+503 7208 9943", canal: "whatsapp", sucursalId: "san-martin", tipo: "domicilio", direccion: "Col. San Martín, calle al lago #7", lineas: [{ platoId: "hamburguesa-la-texana", cantidad: 2 }, { platoId: "entrada-orden-de-papas", cantidad: 1 }], pago: "efectivo", etapa: "camino", hace: 52, enEtapaHace: 12, porSofia: true },
-  { numero: 4809, cliente: "Andrea Cáceres", telefono: "+503 7622 9001", canal: "whatsapp", sucursalId: "unicentro-metropolis", tipo: "domicilio", direccion: "Col. Zacamil, edif. 14, apto 3", lineas: [{ platoId: "parrillada-para-2", cantidad: 1 }], pago: "tarjeta", etapa: "camino", hace: 38, enEtapaHace: 7, porSofia: true },
-  { numero: 4801, cliente: "Mauricio Rosales", telefono: "+503 7400 2231", canal: "web", sucursalId: "unicentro-metropolis", tipo: "domicilio", direccion: "Col. Metrópolis, calle 4 #31", lineas: [{ platoId: "campacheros", cantidad: 1 }], pago: "tarjeta", etapa: "entregado", hace: 95, enEtapaHace: 40, porSofia: false },
-  { numero: 4803, cliente: "Kevin Bonilla", telefono: "+503 7311 8890", canal: "instagram", sucursalId: "apopa", tipo: "retiro", lineas: [{ platoId: "tacos-de-birria", cantidad: 2 }, { platoId: "jamaica-de-32-oz", cantidad: 2 }], pago: "efectivo", etapa: "entregado", hace: 80, enEtapaHace: 35, porSofia: true },
-  { numero: 4806, cliente: "Valeria Zelaya", telefono: "+503 7199 2210", canal: "facebook", sucursalId: "metrocentro-sonsonate", tipo: "domicilio", direccion: "Col. Sensunapán, calle 5, Sonsonate", lineas: [{ platoId: "carne-tipica-campana", cantidad: 2 }], pago: "tarjeta", etapa: "entregado", hace: 70, enEtapaHace: 15, porSofia: true },
+  { numero: 4805, cliente: "Wilfredo Chacón", telefono: "+503 7208 9943", origen: "whatsapp", sucursalId: "san-martin", tipo: "domicilio", direccion: "Col. San Martín, calle al lago #7", lineas: [{ platoId: "hamburguesa-la-texana", cantidad: 2 }, { platoId: "entrada-orden-de-papas", cantidad: 1 }], pago: "efectivo", etapa: "camino", hace: 52, enEtapaHace: 12, porSofia: true },
+  { numero: 4809, cliente: "Andrea Cáceres", telefono: "+503 7622 9001", origen: "whatsapp", sucursalId: "unicentro-metropolis", tipo: "domicilio", direccion: "Col. Zacamil, edif. 14, apto 3", lineas: [{ platoId: "parrillada-para-2", cantidad: 1 }], pago: "tarjeta", etapa: "camino", hace: 38, enEtapaHace: 7, porSofia: true },
+  { numero: 4801, cliente: "Mauricio Rosales", telefono: "+503 7400 2231", origen: "whatsapp", sucursalId: "unicentro-metropolis", tipo: "domicilio", direccion: "Col. Metrópolis, calle 4 #31", lineas: [{ platoId: "campacheros", cantidad: 1 }], pago: "tarjeta", etapa: "entregado", hace: 95, enEtapaHace: 40, porSofia: false },
+  { numero: 4803, cliente: "Kevin Bonilla", telefono: "+503 7311 8890", origen: "instagram", sucursalId: "apopa", tipo: "retiro", lineas: [{ platoId: "tacos-de-birria", cantidad: 2 }, { platoId: "jamaica-de-32-oz", cantidad: 2 }], pago: "efectivo", etapa: "entregado", hace: 80, enEtapaHace: 35, porSofia: true },
+  { numero: 4806, cliente: "Valeria Zelaya", telefono: "+503 7199 2210", origen: "facebook", sucursalId: "metrocentro-sonsonate", tipo: "domicilio", direccion: "Col. Sensunapán, calle 5, Sonsonate", lineas: [{ platoId: "carne-tipica-campana", cantidad: 2 }], pago: "tarjeta", etapa: "entregado", hace: 70, enEtapaHace: 15, porSofia: true },
 ];
 
 export function semillaPedidos(ahora: number): Pedido[] {
@@ -220,16 +225,16 @@ export function semillaPedidos(ahora: number): Pedido[] {
 
 // ───────────────────── Un pedido nuevo (simulado) ─────────────────────
 
-const ENTRANTES: Array<Pick<Pedido, "cliente" | "telefono" | "canal" | "sucursalId" | "tipo" | "direccion" | "lineas" | "pago">> = [
-  { cliente: "Sofía Navarrete", telefono: "+503 7650 2208", canal: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Col. Prados de Venecia, senda 2 #8", lineas: [{ platoId: "parrillada-para-2", cantidad: 1 }, { platoId: "horchata-de-21-oz", cantidad: 2 }], pago: "tarjeta" },
-  { cliente: "Diego Cornejo", telefono: "+503 7208 3311", canal: "instagram", sucursalId: "plaza-centro", tipo: "retiro", lineas: [{ platoId: "promo-tortas", cantidad: 1 }], pago: "efectivo" },
-  { cliente: "Emily Carter", telefono: "+503 7444 0102", canal: "facebook", sucursalId: "metrocentro-santa-ana", tipo: "domicilio", direccion: "Col. El Palmar, calle 1 #3, Santa Ana", lineas: [{ platoId: "quesobirria", cantidad: 1 }], pago: "tarjeta" },
-  { cliente: "Óscar Peña", telefono: "+503 6144 0055", canal: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "tacos-de-birria", cantidad: 2 }, { platoId: "soda-lata", cantidad: 2 }], pago: "efectivo" },
+const ENTRANTES: Array<Pick<Pedido, "cliente" | "telefono" | "origen" | "sucursalId" | "tipo" | "direccion" | "lineas" | "pago">> = [
+  { cliente: "Sofía Navarrete", telefono: "+503 7650 2208", origen: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "domicilio", direccion: "Col. Prados de Venecia, senda 2 #8", lineas: [{ platoId: "parrillada-para-2", cantidad: 1 }, { platoId: "horchata-de-21-oz", cantidad: 2 }], pago: "tarjeta" },
+  { cliente: "Diego Cornejo", telefono: "+503 7208 3311", origen: "instagram", sucursalId: "plaza-centro", tipo: "retiro", lineas: [{ platoId: "promo-tortas", cantidad: 1 }], pago: "efectivo" },
+  { cliente: "Emily Carter", telefono: "+503 7444 0102", origen: "facebook", sucursalId: "metrocentro-santa-ana", tipo: "domicilio", direccion: "Col. El Palmar, calle 1 #3, Santa Ana", lineas: [{ platoId: "quesobirria", cantidad: 1 }], pago: "tarjeta" },
+  { cliente: "Óscar Peña", telefono: "+503 6144 0055", origen: "whatsapp", sucursalId: "plaza-mundo-soyapango", tipo: "retiro", lineas: [{ platoId: "tacos-de-birria", cantidad: 2 }, { platoId: "soda-lata", cantidad: 2 }], pago: "efectivo" },
 ];
 
 export function pedidoEntrante(pedidos: Pedido[], ahora: number): Pedido {
   const numero = Math.max(4800, ...pedidos.map((p) => p.numero)) + 1;
   const base = ENTRANTES[numero % ENTRANTES.length];
   const iso = new Date(ahora).toISOString();
-  return { ...base, id: `P-${numero}`, numero, etapa: "cola", recibido: iso, desde: iso, porSofia: base.canal !== "web" };
+  return { ...base, id: `P-${numero}`, numero, etapa: "cola", recibido: iso, desde: iso, porSofia: true };
 }

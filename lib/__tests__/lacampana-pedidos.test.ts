@@ -26,7 +26,7 @@ function pedido(id: string, extra: Partial<Pedido> = {}): Pedido {
     numero: Number(id.replace(/\D/g, "")) || 1,
     cliente: "Prueba",
     telefono: "+503 0000 0000",
-    canal: "whatsapp",
+    origen: "whatsapp",
     sucursalId: "apopa",
     tipo: "domicilio",
     lineas: [{ platoId: "promo-burritos", cantidad: 1 }],
@@ -50,6 +50,14 @@ describe("La Campana · la muestra", () => {
   it("ninguna cocina arranca por encima de su capacidad", () => {
     const ps = semillaPedidos(AHORA);
     for (const s of SUCURSALES_CAMPANA) expect(enCocina(ps, s.id), s.id).toBeLessThanOrEqual(CAPACIDAD_COCINA);
+  });
+
+  it("los pedidos se toman solo por WhatsApp: el resto es dónde empezó la conversación", () => {
+    const ps = [...semillaPedidos(AHORA), pedidoEntrante(semillaPedidos(AHORA), AHORA)];
+    for (const p of ps) {
+      expect(["whatsapp", "instagram", "facebook"], p.id).toContain(p.origen);
+      expect(p, p.id).not.toHaveProperty("canal");
+    }
   });
 
   it("la agenda no lleva pedidos: solo reservaciones y eventos", () => {

@@ -147,3 +147,26 @@ describe("guion por tenant", () => {
     }
   });
 });
+
+describe("turnos con canales propios", () => {
+  it("un turno de solo WhatsApp nunca cae en Instagram ni Facebook", async () => {
+    const { siguientePaso } = await import("@/lib/data/live-engine");
+    const simulacion = {
+      turnos: [{ entra: "Quiero pedir", responde: "Va", canales: ["whatsapp" as const] }],
+      contactos: [
+        { nombre: "I", canal: "instagram" as const, handle: "@i" },
+        { nombre: "W", canal: "whatsapp" as const, telefono: "503" },
+      ],
+    };
+    const conversaciones = [
+      { id: "a", canal: "instagram" as const },
+      { id: "b", canal: "whatsapp" as const },
+      { id: "c", canal: "facebook" as const },
+    ];
+    for (let tick = 0; tick < 30; tick++) {
+      const paso = siguientePaso({ tick, simulacion, conversaciones, azar: () => 0.99 });
+      if (paso?.nueva) expect(paso.nueva.canal).toBe("whatsapp");
+      else expect(paso?.conversationId).toBe("b");
+    }
+  });
+});

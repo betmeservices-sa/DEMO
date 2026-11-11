@@ -85,7 +85,10 @@ export function siguientePaso({
   if (abrirNueva) {
     // Cuántas abrió ya la simulación: sirve de índice y de número de hilo.
     const abiertas = conversaciones.filter((c) => c.id.startsWith(SIM_PREFIJO)).length;
-    const contacto = contactos[abiertas % contactos.length];
+    // Si el turno solo cabe en ciertos canales, el contacto nuevo sale de esos.
+    const aptos = turno.canales ? contactos.filter((c) => turno.canales!.includes(c.canal)) : contactos;
+    const lista = aptos.length > 0 ? aptos : contactos;
+    const contacto = lista[abiertas % lista.length];
     return {
       conversationId: `${SIM_PREFIJO}${abiertas + 1}`,
       texto: turno.entra,
@@ -101,9 +104,13 @@ export function siguientePaso({
   }
 
   // Rota el canal para que la bandeja se mueva por los tres, no siempre por uno.
-  const canalDeseado = CANALES[tick % CANALES.length];
+  // Un turno con canales propios solo rota entre esos, y nunca cae en otro.
+  const rotacion = turno.canales && turno.canales.length > 0 ? turno.canales : CANALES;
+  const canalDeseado = rotacion[tick % rotacion.length];
   const porCanal = elegibles.filter((c) => c.canal === canalDeseado);
-  const candidatos = porCanal.length > 0 ? porCanal : elegibles;
+  const aptas = turno.canales ? elegibles.filter((c) => turno.canales!.includes(c.canal as CanalExterno)) : elegibles;
+  const candidatos = porCanal.length > 0 ? porCanal : aptas;
+  if (candidatos.length === 0) return null;
   const elegida = candidatos[Math.min(candidatos.length - 1, Math.floor(azar() * candidatos.length))];
 
   return {

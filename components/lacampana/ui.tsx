@@ -7,7 +7,17 @@ import { Globe, Phone } from "lucide-react";
 import { ChannelBadge } from "@/components/ui/ChannelBadge";
 import { activeTenantId } from "@/lib/tenants/active";
 import { cn } from "@/lib/cn";
-import { CANAL_NOMBRE, type CanalPedido } from "@/lib/lacampana/pedidos";
+
+/** Por dónde llega algo: los pedidos son siempre WhatsApp; las reservas, de cualquier canal. */
+export type Canal = "whatsapp" | "instagram" | "facebook" | "web" | "llamada";
+
+const CANAL_NOMBRE: Record<Canal, string> = {
+  whatsapp: "WhatsApp",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  web: "Sitio web",
+  llamada: "Llamada",
+};
 
 /** Pedidos y Agenda viven en el navegador: la frontera con otros paneles va aquí. */
 export function SoloCampana({ children }: { children: ReactNode }) {
@@ -21,7 +31,7 @@ export function SoloCampana({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-export function CanalChip({ canal, conNombre = false }: { canal: CanalPedido; conNombre?: boolean }) {
+export function CanalChip({ canal, conNombre = false }: { canal: Canal; conNombre?: boolean }) {
   if (canal === "whatsapp" || canal === "instagram" || canal === "facebook") {
     return <ChannelBadge channel={canal} showLabel={conNombre} />;
   }

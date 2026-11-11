@@ -205,6 +205,12 @@ export type CanalExterno = Exclude<Channel, "internal">;
 export interface TurnoSimulado {
   entra: string; // lo que escribe el cliente
   responde: string; // lo que contesta el agente de IA, sin llamar al modelo
+  /**
+   * Canales donde este turno tiene sentido. Sin esto, cualquiera. Lo usa La
+   * Campana: los pedidos de comida se toman solo por WhatsApp, así que un
+   * turno que arma un pedido no puede caer en Instagram o Facebook.
+   */
+  canales?: CanalExterno[];
 }
 
 // Contacto que abre una conversación nueva durante la simulación.
