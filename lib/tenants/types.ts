@@ -38,7 +38,8 @@ export type TenantId =
   | "shopusa"
   | "nawi"
   | "estudio"
-  | "tesoro";
+  | "tesoro"
+  | "capitanhawk";
 
 // Clientes EN VIVO: su panel está en hub.miagentia.com, con sus datos reales.
 // El demo los conoce (comparten código y tipos) pero NO los abre: ni con clave

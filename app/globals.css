@@ -599,6 +599,33 @@
   background: #bfd3d8;
 }
 
+/* Capitán Hawk va en CLARO: el azul de mar profundo de su sello y el naranja
+   del atardecer, que solo es relleno; como texto va el naranja oscuro #b45f1e
+   (4.6:1 sobre blanco). */
+[data-tenant="capitanhawk"] {
+  --brand-blue: #0e4a5f;
+  --brand-blue-dark: #0a3646;
+  --brand-green: #17694f;
+  --brand-red: #b8322a;
+  --brand-accent: #b45f1e;
+  --brand-accent-soft: #fbefe3;
+
+  --surface: #f4f7f8;
+  --surface-2: #e6eef1;
+  --card: #ffffff;
+  --border: #dbe5e9;
+  --border-2: #c0d1d8;
+  --text: #10232c;
+  --text-2: #3c505b;
+  --text-3: #566a75;
+
+  --font-app: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+[data-tenant="capitanhawk"] ::-webkit-scrollbar-thumb:hover {
+  background: #c0d1d8;
+}
+
 
 @theme inline {
   --font-sans: var(--font-app);

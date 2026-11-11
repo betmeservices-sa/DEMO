@@ -140,6 +140,24 @@ const TESORO: ConfigTickets = {
 };
 
 /**
+ * Capitán Hawk (demo con datos de muestra). La visita de día se mide con el
+ * horario que publica (de 8 a 6); recepción y operación, a reloj corrido,
+ * porque el huésped está adentro de noche también.
+ */
+const CAPITANHAWK: ConfigTickets = {
+  tipos: ["reserva", "pago", "checkin_especial", "cotizacion", "queja", "objeto_perdido", "mantenimiento", "informacion", "otro"],
+  areas: [
+    { id: "reservas", label: "Reservas", horario: horarioDiario(8, 18) },
+    { id: "visitas", label: "Visitas de día", horario: horarioDiario(8, 18) },
+    { id: "eventos", label: "Grupos y eventos", horario: horarioDiario(8, 18) },
+    { id: "operacion", label: "Recepción y operación" },
+    { id: "gerencia", label: "Gerencia", horario: horarioDiario(8, 17) },
+  ],
+  horario: HORARIO_CONTINUO,
+  areaPorDefecto: "reservas",
+};
+
+/**
  * El laboratorio (tenant "consultorio"), desde 2026-11-09 un panel SOLO del
  * lab: una sola área. Antes usaba la del hospital y en el desplegable salían
  * Imágenes, Ginecología y Caja, que no son suyas.
@@ -159,7 +177,7 @@ const POR_TENANT: Record<string, ConfigTickets> = {
   consultorio: LABORATORIO,
   yaly: YALI,
   nawi: NAWI,
-  tesoro: TESORO,
+  tesoro: TESORO, capitanhawk: CAPITANHAWK,
 };
 
 /**

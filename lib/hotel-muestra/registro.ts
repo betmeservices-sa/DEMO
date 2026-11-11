@@ -7,10 +7,12 @@ import { MODULOS_HOTEL_MUESTRA, type ModuleId } from "@/lib/modulos";
 import type { HotelMuestra } from "./tipos";
 import { NAWI } from "./nawi";
 import { TESORO } from "./tesoro";
+import { CAPITANHAWK } from "./capitanhawk";
 
 const HOTELES: Record<string, HotelMuestra> = {
   nawi: NAWI,
   tesoro: TESORO,
+  capitanhawk: CAPITANHAWK,
 };
 
 export function hotelMuestraDe(tenant: string): HotelMuestra | null {

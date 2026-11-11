@@ -20,6 +20,7 @@ import { shopusaTenant } from "./shopusa";
 import { nawiTenant } from "./nawi";
 import { estudioTenant } from "./estudio";
 import { tesoroTenant } from "./tesoro";
+import { capitanhawkTenant } from "./capitanhawk";
 
 export type { TenantConfig, TenantId } from "./types";
 export { EN_HUB, esDelDemo } from "./types";
@@ -43,6 +44,7 @@ export const TENANTS: Record<TenantId, TenantConfig> = {
   nawi: nawiTenant,
   estudio: estudioTenant,
   tesoro: tesoroTenant,
+  capitanhawk: capitanhawkTenant,
 };
 
 // Tenant por defecto (SSR / antes de login). No es visible: la UI se pinta tras
@@ -68,7 +70,8 @@ export function isTenantId(v: string | null | undefined): v is TenantId {
     v === "shopusa" ||
     v === "nawi" ||
     v === "estudio" ||
-    v === "tesoro"
+    v === "tesoro" ||
+    v === "capitanhawk"
   );
 }
 
@@ -124,6 +127,9 @@ export const DEMO_LOGINS: DemoLogin[] = [
   { usuario: "demoagentia", password: "demonawi", tenant: "nawi" },
   // Hotel Tesoro Beach (Costa del Sol): el mismo panel de hotel, todo de muestra.
   { usuario: "demoagentia", password: "demotesoro", tenant: "tesoro" },
+  // Capitán Hawk (Playa El Amatal): el mismo panel de hotel, todo de muestra.
+  { usuario: "democapitanhawk", password: "demohawk", tenant: "capitanhawk" },
+  { usuario: "demoagentia", password: "demohawk", tenant: "capitanhawk" },
   // Content Engine: el motor de contenido de BetMe (prompt, aprobacion,
   // calendario y videos con avatar) para las marcas a las que se lo revende.
   { usuario: "demoagentia", password: "demoestudio", tenant: "estudio" },
