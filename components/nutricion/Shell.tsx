@@ -23,10 +23,8 @@ import {
   ClipboardList,
   ListOrdered,
   CookingPot,
-  Contact,
   ChefHat,
   BookOpen,
-  CalendarRange,
   ChevronsUpDown,
   Check,
   X,
@@ -65,14 +63,20 @@ const HERRAMIENTAS_NUTRI: NavItem[] = [
   { href: "/demonutricion/cocina/menus", label: "Menús disponibles", Icon: BookOpen },
 ];
 
-const HERRAMIENTAS_CHEF: NavItem[] = [
-  { href: "/demonutricion/cocina", label: "Cola de órdenes", Icon: ListOrdered },
-  { href: "/demonutricion/cocina/produccion", label: "Producción del día", Icon: CookingPot },
-  { href: "/demonutricion/cocina/calendario", label: "Calendario de producción", Icon: CalendarRange },
-  { href: "/demonutricion/cocina/perfiles", label: "Perfiles de clientes", Icon: Contact },
+// Menú del chef: tres pantallas. El calendario de tandas se abre desde Hoy y
+// el perfil de cada cliente desde su orden; el dashboard queda como enlace
+// chico al pie del menú.
+const MENU_CHEF: NavItem[] = [
+  { href: "/demonutricion/cocina/produccion", label: "Hoy", Icon: CookingPot },
+  { href: "/demonutricion/cocina", label: "Órdenes", Icon: ListOrdered },
   { href: "/demonutricion/cocina/menus", label: "Menús", Icon: BookOpen },
-  { href: "/demonutricion/cocina/dashboard", label: "Dashboard", Icon: BarChart3 },
 ];
+
+/** Pantallas del chef que no están en el menú y a cuál de las tres pertenecen. */
+const DENTRO_DE: Record<string, string> = {
+  "/demonutricion/cocina/calendario": "/demonutricion/cocina/produccion",
+  "/demonutricion/cocina/perfiles": "/demonutricion/cocina",
+};
 
 const CALENDARIOS: { id: Agenda; label: string }[] = [
   { id: "consultas", label: "Consultas" },
@@ -430,8 +434,33 @@ function Sidebar({ open, onClose, general }: { open: boolean; onClose: () => voi
             <NavLink href="/demonutricion/recordatorios" label="Recordatorios" Icon={BellRing} activo={activo(pathname, "/demonutricion/recordatorios")} onClick={onClose} />
           </>
         )}
-        {rol === "chef" && <Grupo label="Herramientas" Icon={Wrench} items={HERRAMIENTAS_CHEF} pathname={pathname} onClose={onClose} avisos={{ "/demonutricion/cocina": nuevas }} />}
+        {rol === "chef" &&
+          MENU_CHEF.map((a) => (
+            <NavLink
+              key={a.href}
+              {...a}
+              activo={activo(DENTRO_DE[pathname] ?? pathname, a.href)}
+              aviso={a.href === "/demonutricion/cocina" ? nuevas : 0}
+              avisoColor="#c2410c"
+              onClick={onClose}
+            />
+          ))}
       </nav>
+
+      {rol === "chef" && (
+        <div className="px-3 pb-2">
+          <Link
+            href="/demonutricion/cocina/dashboard"
+            onClick={onClose}
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition",
+              pathname === "/demonutricion/cocina/dashboard" ? "bg-surface text-[var(--text)]" : "text-[var(--text-3)] hover:bg-surface hover:text-[var(--text)]",
+            )}
+          >
+            <BarChart3 size={14} /> Dashboard de cocina
+          </Link>
+        </div>
+      )}
 
       <div className="space-y-3 border-t border-line p-3">
         <div className="flex items-center gap-1">

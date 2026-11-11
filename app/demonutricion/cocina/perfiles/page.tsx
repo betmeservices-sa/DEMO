@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, MapPin, Search, ThumbsDown, ThumbsUp, Truck } from "lucide-react";
+import { AlertTriangle, ChevronLeft, MapPin, Search, ThumbsDown, ThumbsUp, Truck } from "lucide-react";
 import { cn } from "@/lib/nutricion/cn";
 import { ALERGENOS, COCINA_PLAN, conPlan, enCocina, plato, semanaTexto } from "@/lib/nutricion/cocina";
 import { etiquetaDia, PLAN_INFO } from "@/lib/nutricion/format";
@@ -36,7 +36,16 @@ export default function PerfilesPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <PageHeader title="Perfiles de clientes" sub="Plan, porción, alergias y gustos de cada cliente con comida a domicilio. Lo define la nutricionista." />
+      <PageHeader
+        title={
+          <span className="flex items-center gap-2">
+            <Link href="/demonutricion/cocina" aria-label="Volver a Órdenes" className="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-[var(--text-2)] hover:bg-surface">
+              <ChevronLeft size={16} />
+            </Link>
+            Perfiles de clientes
+          </span>
+        }
+        sub="Plan, porción, alergias y gustos de cada cliente con comida a domicilio. Lo define la nutricionista." />
       <div className="space-y-4 p-4 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex min-w-[220px] flex-1 items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1.5 sm:max-w-xs">

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Check, CheckCircle2, ChefHat, Clock, CookingPot, Minus, PencilLine, Plus, Printer, RotateCcw, ShoppingBasket, Truck, Utensils } from "lucide-react";
+import { AlertTriangle, CalendarRange, Check, CheckCircle2, ChefHat, Clock, CookingPot, Minus, PencilLine, Plus, Printer, RotateCcw, ShoppingBasket, Truck } from "lucide-react";
 import { cn } from "@/lib/nutricion/cn";
 import { ALERGENOS, COCINA_PLAN, enCocina, hechosDe, PARTES, partesDe, plato, RECETARIO } from "@/lib/nutricion/cocina";
 import { descargarEtiquetas, type Entrega } from "@/lib/nutricion/etiquetasPdf";
@@ -10,7 +10,7 @@ import { etiquetaDia, PLAN_INFO } from "@/lib/nutricion/format";
 import { cliente } from "@/lib/nutricion/seed";
 import { useStore } from "@/lib/nutricion/store";
 import type { PlanAlimentacion, Plato } from "@/lib/nutricion/types";
-import { Card, MetricCard, PageHeader } from "@/components/nutricion/ui";
+import { Card, PageHeader } from "@/components/nutricion/ui";
 
 // Producción del día con todo el menú: cada desayuno, almuerzo y cena con las
 // porciones a producir (de las órdenes del día) y el contador de preparados,
@@ -107,10 +107,16 @@ export default function ProduccionPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <PageHeader
-        title="Producción del día"
-        sub="La cola de órdenes del día por llegada y los platos que se hacen ese día. Marca lo que vas terminando y el contador se actualiza."
+        title={dia === 0 ? "Producción de hoy" : "Producción de mañana"}
+        sub="Marca lo que vas terminando y el avance se actualiza."
         right={
           <>
+            <Link
+              href="/demonutricion/cocina/calendario"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-card px-3 py-2 text-[13px] font-semibold hover:bg-surface"
+            >
+              <CalendarRange size={15} /> Planificar por tandas
+            </Link>
             <label className={cn("flex items-center gap-2 rounded-xl border bg-card px-3 py-2 text-[13px] shadow-sm", filtro ? "border-[var(--entregas)]" : "border-line")}>
               <span className="font-semibold text-[var(--text-3)]">Cliente</span>
               <select value={filtro} onChange={(e) => setCli(e.target.value)} className="max-w-[220px] bg-transparent font-bold outline-none">
@@ -141,11 +147,33 @@ export default function ProduccionPage() {
         }
       />
       <div className="space-y-5 p-4 sm:p-6">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <MetricCard Icon={Utensils} valor={sumaPlan} label={`Platos a producir ${etiquetaDia(dia).toLowerCase()}`} hint={`${platos.filter((x) => aProducir(x.id)).length} de ${platos.length} platos del menú`} />
-          <MetricCard Icon={CheckCircle2} valor={`${Math.min(sumaHechos, sumaPlan)}/${sumaPlan}`} label="Platos preparados" hint={`${avance}% del día`} tono={undefined} />
-          <MetricCard Icon={ChefHat} valor={`${listas}/${entregas.length}`} label="Entregas listas" hint="Con todos sus platos hechos" />
-          <MetricCard Icon={PencilLine} valor={conCambio} label="Porciones con cambio escrito" hint="Por alergia o gusto del cliente" />
+        {/* Resumen del día en una sola franja: el avance manda, lo demás acompaña. */}
+        <div className="rounded-2xl border border-line bg-card px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
+            <span className="inline-flex items-baseline gap-1.5">
+              <CheckCircle2 size={15} className="self-center text-emerald-600" />
+              <b className="text-[18px] font-extrabold tabular-nums text-[var(--text)]">
+                {Math.min(sumaHechos, sumaPlan)}/{sumaPlan}
+              </b>
+              <span className="text-[var(--text-3)]">platos preparados · {avance}%</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[var(--text-2)]">
+              <ChefHat size={15} className="text-[var(--text-3)]" />
+              <b className="tabular-nums text-[var(--text)]">
+                {listas}/{entregas.length}
+              </b>
+              entregas listas
+            </span>
+            {conCambio > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-0.5 font-semibold text-violet-800">
+                <PencilLine size={13} />
+                {conCambio} {conCambio === 1 ? "porción con cambio" : "porciones con cambio"}
+              </span>
+            )}
+          </div>
+          <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-surface-2" role="meter" aria-valuemin={0} aria-valuemax={sumaPlan} aria-valuenow={Math.min(sumaHechos, sumaPlan)} aria-label="Avance de la producción del día">
+            <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${avance}%` }} />
+          </div>
         </div>
         {elegido && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--entregas)] bg-[var(--entregas-soft)] px-4 py-2.5 text-[13px]">
@@ -161,10 +189,6 @@ export default function ProduccionPage() {
             </button>
           </div>
         )}
-        <div className="h-2.5 overflow-hidden rounded-full bg-surface-2" role="meter" aria-valuemin={0} aria-valuemax={sumaPlan} aria-valuenow={Math.min(sumaHechos, sumaPlan)} aria-label="Avance de la producción del día">
-          <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${avance}%` }} />
-        </div>
-
         <div className="inline-flex rounded-xl border border-line bg-card p-1 shadow-sm">
           {(
             [

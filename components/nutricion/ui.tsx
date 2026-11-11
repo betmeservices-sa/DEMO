@@ -144,7 +144,7 @@ export function FiltroAgendaToggle({ permitir = true }: { permitir?: boolean }) 
   );
 }
 
-export function PageHeader({ title, sub, right }: { title: string; sub?: string; right?: ReactNode }) {
+export function PageHeader({ title, sub, right }: { title: ReactNode; sub?: string; right?: ReactNode }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-3 border-b border-line bg-card px-6 py-4">
       <div>

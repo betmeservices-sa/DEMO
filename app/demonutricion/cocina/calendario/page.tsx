@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { AlertTriangle, CalendarRange, Check, ChevronLeft, ChevronRight, Plus, Search, Trash2 } from "lucide-react";
 import { cn } from "@/lib/nutricion/cn";
 import { ALERGENOS, enCocina, lunesDe, PARTES, partesDe, plato } from "@/lib/nutricion/cocina";
@@ -62,7 +63,14 @@ export default function CalendarioProduccion() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <PageHeader
-        title="Calendario de producción"
+        title={
+          <span className="flex items-center gap-2">
+            <Link href="/demonutricion/cocina/produccion" aria-label="Volver a Hoy" className="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-[var(--text-2)] hover:bg-surface">
+              <ChevronLeft size={16} />
+            </Link>
+            Planificar por tandas
+          </span>
+        }
         sub="Planifica qué vas a sacar cada día (por ejemplo, todo lo que lleva carne y arroz) y marca las partes de las órdenes conforme las terminas."
         right={
           <div className="flex items-center gap-1">

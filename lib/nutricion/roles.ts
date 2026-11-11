@@ -16,7 +16,7 @@ export const USUARIO_GENERAL = "demonutricion";
 export const ROL_INFO: Record<Rol, { usuario: string; nombre: string; cargo: string; correo: string; inicio: string; color: string }> = {
   secretaria: { usuario: "secretaria", nombre: "Gabriela Ruiz", cargo: "Secretaria · atención al cliente", correo: "gabriela.ruiz@balancenutricion.com.sv", inicio: "/demonutricion", color: "#7c3aed" },
   nutricionista: { usuario: "nutricionista", nombre: "Lda. Andrea Morales", cargo: "Nutricionista dietista", correo: "andrea.morales@balancenutricion.com.sv", inicio: "/demonutricion/pacientes", color: "#15803d" },
-  chef: { usuario: "chef", nombre: "Chef Marcos Aguilar", cargo: "Chef · cocina y producción", correo: "marcos.aguilar@balancenutricion.com.sv", inicio: "/demonutricion/cocina", color: "#c2410c" },
+  chef: { usuario: "chef", nombre: "Chef Marcos Aguilar", cargo: "Chef · cocina y producción", correo: "marcos.aguilar@balancenutricion.com.sv", inicio: "/demonutricion/cocina/produccion", color: "#c2410c" },
 };
 
 /** Rutas (prefijos) que puede abrir cada perfil. */

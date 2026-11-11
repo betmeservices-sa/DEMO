@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle, Check, CheckCircle2, ChefHat, CircleDashed, ClipboardCheck, Clock, Flag, Flame, PackageCheck, Printer, Tag, Truck } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ChefHat, Clock, Flag, ListOrdered, Printer, Tag } from "lucide-react";
 import { cn } from "@/lib/nutricion/cn";
 import { ALERGENOS, COCINA_PLAN, conflictos, plato, platosDe, semanaTexto, TIEMPOS_COCINA } from "@/lib/nutricion/cocina";
 import { descargarEtiquetas } from "@/lib/nutricion/etiquetasPdf";
@@ -11,7 +11,7 @@ import { etiquetaDia, minutosDe, PLAN_INFO } from "@/lib/nutricion/format";
 import { cliente } from "@/lib/nutricion/seed";
 import { ahora, useStore } from "@/lib/nutricion/store";
 import type { EstadoOrden, Incidencia, Orden, PlanAlimentacion } from "@/lib/nutricion/types";
-import { MetricCard, PageHeader } from "@/components/nutricion/ui";
+import { PageHeader } from "@/components/nutricion/ui";
 import { Modal } from "@/components/nutricion/ResumenConsulta";
 import { comidasDe, ESTADO_ORDEN, pendientesDeAlergia } from "@/components/nutricion/cocinaUi";
 
@@ -81,8 +81,8 @@ function Cola() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <PageHeader
-        title="Cola de órdenes"
-        sub="Órdenes de producción por cliente, en orden de llegada: los platos del menú que le tocan y cuántos de cada uno."
+        title="Órdenes"
+        sub="Paquetes por cliente en orden de llegada. Confírmalos y despáchalos."
         right={
           <button
             type="button"
@@ -95,26 +95,34 @@ function Cola() {
         }
       />
       <div className="space-y-5 p-4 sm:p-6">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          <MetricCard Icon={CircleDashed} valor={cuenta("nueva")} label="Nuevas por confirmar" tono={cuenta("nueva") ? "alerta" : undefined} />
-          <MetricCard Icon={ClipboardCheck} valor={cuenta("confirmada")} label="Confirmadas" />
-          <MetricCard Icon={Flame} valor={cuenta("preparacion")} label="En preparación" />
-          <MetricCard Icon={PackageCheck} valor={cuenta("lista")} label="Listas para reparto" />
-          <MetricCard Icon={Truck} valor={cuenta("despachada")} label="Con el repartidor" />
-        </div>
-
+        {/* Una sola barra: cada estado con su número, y tocarlo filtra la cola. */}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex gap-1 overflow-x-auto">
+          <div className="flex gap-1 overflow-x-auto rounded-xl border border-line bg-card p-1">
             {FILTROS.map(([id, label]) => {
               const n = id === "activas" ? deSemana.filter((o) => o.estado !== "despachada").length : cuenta(id);
+              const Icon = id === "activas" ? ListOrdered : ESTADO_ORDEN[id].Icon;
+              const alerta = id === "nueva" && n > 0 && filtro !== id;
               return (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setFiltro(id)}
-                  className={cn("shrink-0 rounded-lg px-3 py-1.5 text-[12.5px] font-semibold", filtro === id ? "bg-[var(--entregas)] text-white" : "text-[var(--text-2)] hover:bg-card")}
+                  aria-pressed={filtro === id}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-semibold",
+                    filtro === id ? "bg-[var(--entregas)] text-white" : alerta ? "text-rose-700 hover:bg-rose-50" : "text-[var(--text-2)] hover:bg-surface",
+                  )}
                 >
-                  {label} <span className="opacity-70">{n}</span>
+                  <Icon size={14} />
+                  {label}
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 text-[11.5px] font-bold tabular-nums",
+                      filtro === id ? "bg-white/25" : alerta ? "bg-rose-600 text-white" : "bg-surface-2 text-[var(--text)]",
+                    )}
+                  >
+                    {n}
+                  </span>
                 </button>
               );
             })}
