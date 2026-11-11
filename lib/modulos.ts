@@ -180,6 +180,11 @@ export const MODULOS_HOTEL_MUESTRA: readonly ModuleId[] = ["bandeja", "mis-chats
 // El menu de Pizza Hut, EN ESTE ORDEN. Es una lista cerrada como la de la
 // clinica: su panel gira alrededor de las propuestas de eventos, y lo demas
 // (redes, tickets, chat interno) aca solo haria ruido.
+// El menu de La Campana, EN ESTE ORDEN: el tablero de pedidos y ventas, lo que
+// entra por los chats, los clientes y el equipo. Sin redes ni comentarios: leen
+// Meta en vivo y en un demo sin cuentas conectadas saldrian vacias.
+export const MODULOS_LACAMPANA: readonly ModuleId[] = ["dashboard", "bandeja", "contactos", "interno", "settings"];
+
 export const MODULOS_PIZZAHUT: readonly ModuleId[] = [
   "dashboard",
   "bandeja",

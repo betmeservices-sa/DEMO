@@ -31,6 +31,7 @@ import { CrediqDashboard } from "@/components/dashboard/CrediqDashboard";
 import { NissanDashboard } from "@/components/dashboard/NissanDashboard";
 import { BetmeDashboard } from "@/components/dashboard/BetmeDashboard";
 import { PizzaHutDashboard } from "@/components/dashboard/PizzaHutDashboard";
+import { CampanaDashboard } from "@/components/dashboard/CampanaDashboard";
 import { CajaDashboard } from "@/components/dashboard/CajaDashboard";
 import { ShopusaDashboard } from "@/components/shopusa/ShopusaDashboard";
 import { HotelMuestraDashboard } from "@/components/hotel-muestra/HotelMuestraDashboard";
@@ -103,6 +104,7 @@ export default function DashboardPage() {
   if (activeTenantId() === "betme") return <BetmeDashboard />;
   // Pizza Hut mira sus eventos: llamadas, propuestas, cartera y confirmadas.
   if (activeTenantId() === "pizzahut") return <PizzaHutDashboard />;
+  if (activeTenantId() === "lacampana") return <CampanaDashboard />;
   // La Caja mira sus tres areas (consultas, cobros, tarjetas) y lo urgente del
   // dia, dentro de su shell flotante.
   if (activeTenantId() === "chalatenango") return <CajaDashboard />;

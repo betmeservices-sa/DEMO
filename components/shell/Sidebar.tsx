@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessageSquareText, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
-import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
+import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_LACAMPANA, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
 import { esHotelMuestra, modulosDeHotelMuestra } from "@/lib/hotel-muestra/registro";
 import { useStore } from "@/lib/store";
 import { sinLeerPorCanal, useInterno } from "@/lib/interno-bridge";
@@ -167,6 +167,8 @@ export function Sidebar({
   const veComercial = tenant === "comercial";
   // ShopUSA tambien: su panel es la linea de paquetes y los clientes.
   const veShopusa = tenant === "shopusa";
+  // La Campana tambien: tablero, bandeja, clientes y equipo.
+  const veCampana = tenant === "lacampana";
   // Los hoteles de muestra (NAWI, Tesoro Beach) llevan el menu de Porta Stays, en su orden.
   const veHotelMuestra = esHotelMuestra(tenant);
   const listaCerrada = vePizza
@@ -175,6 +177,8 @@ export function Sidebar({
     ? MODULOS_COMERCIAL
     : veShopusa
     ? MODULOS_SHOPUSA
+    : veCampana
+    ? MODULOS_LACAMPANA
     : veHotelMuestra
     ? modulosDeHotelMuestra(tenant)
     : null;

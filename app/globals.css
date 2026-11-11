@@ -626,6 +626,73 @@
   background: #c0d1d8;
 }
 
+/* Restaurante La Campana va en CREMA Y ROJO LADRILLO: el rojo es el de la
+   campana del logotipo (#7A210F, medido sobre el archivo que publican en
+   lacampanacyt.com) y el ámbar acompaña como acento de parrilla.
+   Contraste sobre el fondo #FAF6F2: tinta #2A1712 15.9:1, secundario #5A4239
+   8.6:1, terciario #77625A 5.3:1, rojo #7A210F 9.5:1 y ámbar #A14A06 5.6:1;
+   texto blanco sobre el rojo 10.2:1. Todos por encima del 4.5:1 de WCAG AA. */
+[data-tenant="lacampana"] {
+  --brand-blue: #7a210f;
+  --brand-blue-dark: #5c180a;
+  --brand-green: #2f6b3a;
+  --brand-red: #b8322a;
+  --brand-accent: #a14a06;
+  --brand-accent-soft: #fbeee0;
+
+  --surface: #faf6f2;
+  --surface-2: #f1e9e2;
+  --card: #ffffff;
+  --border: #ebe1d8;
+  --border-2: #d9cabd;
+  --text: #2a1712;
+  --text-2: #5a4239;
+  --text-3: #77625a;
+
+  --font-app: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+[data-tenant="lacampana"] ::-webkit-scrollbar-thumb:hover {
+  background: #c9b6a8;
+}
+
+/* El portal del cliente de La Campana (/lacampana): sin sesión, así que no
+   hay [data-tenant] y trae su propia paleta, la misma de arriba. Las
+   variables conservan los nombres del portal de hoteles (azul, arena). */
+.portal-campana {
+  --p-tinta: #2a1712;
+  --p-tinta-2: #5a4239;
+  --p-tinta-3: #77625a;
+  --p-azul: #7a210f;
+  --p-azul-hondo: #5c180a;
+  --p-arena: #c2410c;
+  --p-arena-honda: #a14a06;
+  --p-arena-suave: #fbeee0;
+  --p-fondo: #faf6f2;
+  --p-tarjeta: #ffffff;
+  --p-borde: #ebe1d8;
+  --p-borde-2: #d9cabd;
+  --p-nav: 68px;
+
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color: var(--p-tinta);
+  background: var(--p-fondo);
+  min-height: 100dvh;
+}
+
+body:has(.portal-campana) {
+  background: #faf6f2;
+}
+
+.portal-campana .portal-carrusel {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.portal-campana .portal-carrusel::-webkit-scrollbar {
+  display: none;
+}
+
+
 
 @theme inline {
   --font-sans: var(--font-app);

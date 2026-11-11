@@ -39,7 +39,8 @@ export type TenantId =
   | "nawi"
   | "estudio"
   | "tesoro"
-  | "capitanhawk";
+  | "capitanhawk"
+  | "lacampana";
 
 // Clientes EN VIVO: su panel está en hub.miagentia.com, con sus datos reales.
 // El demo los conoce (comparten código y tipos) pero NO los abre: ni con clave
@@ -81,7 +82,7 @@ export interface TenantBrand {
   // Logo dibujado en SVG dentro del componente, para marcas cuyo logotipo no
   // sobrevive a un <img> (fondo blanco quemado, baja resolución) y que además
   // necesitan la tipografía de la app. Gana sobre logoSrc y wordmark.
-  logoComponent?: "promerica" | "yali" | "pizzahut" | "chalatenango";
+  logoComponent?: "promerica" | "yali" | "pizzahut" | "chalatenango" | "lacampana";
   wordmark?: {
     icon: "HeartPulse" | "CarFront" | "Bot" | "Hotel" | "Building2" | "Stethoscope" | "Briefcase";
     /**
