@@ -14,14 +14,13 @@
 
 import { NextResponse } from "next/server";
 import { leerSesion, sesionDeCookieHeader } from "@/lib/session";
-import { TENANTS } from "@/lib/tenants";
 import { cuentas } from "@/lib/usuarios";
 import { listarTickets } from "@/lib/tickets-store";
 import { listarPreReservas } from "@/lib/yali-prereservas";
 import { actividadDeUsuarios, estaActivo, listarAccesos } from "@/lib/accesos";
 import { DIA, esPeriodo, rangoDePeriodo } from "@/lib/periodos";
 import { enRango, reservasDelPeriodo, ticketsDelPeriodo } from "@/lib/agencia-resumen";
-import { CLIENTES_AGENCIA, personasDelCliente } from "@/lib/agencia-clientes";
+import { CLIENTES_AGENCIA, nombreEnElTablero, personasDelCliente } from "@/lib/agencia-clientes";
 import { cuentasDeHub } from "@/lib/hub-directorio";
 
 export const runtime = "nodejs";
@@ -79,7 +78,7 @@ export async function GET(req: Request) {
       });
       return {
         id,
-        nombre: TENANTS[id].brand.nombreCorto || TENANTS[id].brand.nombre,
+        nombre: nombreEnElTablero(id),
         tickets: ticketsDelPeriodo(tickets, desde, hasta, agentes),
         // null = no vende por el chat: el tablero no pinta reservas ni "Quién cerró".
         reservas: vende ? reservasDelPeriodo(prereservas, desde, hasta) : null,

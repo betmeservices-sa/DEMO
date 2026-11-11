@@ -3,23 +3,32 @@
 // los casos con el nombre de SU agente, y la gente del cliente sale de las dos
 // listas de cuentas sin repetirse.
 import { describe, expect, it } from "vitest";
-import { CLIENTES_AGENCIA, clienteDeLaAgencia, personasDelCliente } from "@/lib/agencia-clientes";
+import { CLIENTES_AGENCIA, clienteDeLaAgencia, nombreEnElTablero, personasDelCliente } from "@/lib/agencia-clientes";
 import { TENANTS } from "@/lib/tenants";
 
 describe("los clientes del tablero", () => {
-  it("Yali y el hospital, los dos clientes de verdad", () => {
-    expect(CLIENTES_AGENCIA.map((c) => c.id)).toEqual(["yaly", "hospital"]);
+  it("Yali, el hospital y el laboratorio, los clientes de verdad", () => {
+    expect(CLIENTES_AGENCIA.map((c) => c.id)).toEqual(["yaly", "hospital", "consultorio"]);
     for (const c of CLIENTES_AGENCIA) expect(TENANTS[c.id]).toBeDefined();
   });
 
-  it("solo Yali vende: el hospital no tiene reservas ni 'Quién cerró'", () => {
+  it("solo Yali vende: el hospital y el laboratorio no tienen reservas ni 'Quién cerró'", () => {
     expect(clienteDeLaAgencia("yaly")?.vende).toBe(true);
     expect(clienteDeLaAgencia("hospital")?.vende).toBe(false);
+    expect(clienteDeLaAgencia("consultorio")?.vende).toBe(false);
   });
 
   it("cada uno con el nombre de su agente", () => {
     expect(clienteDeLaAgencia("yaly")?.agentes).toEqual(["Sofía"]);
     expect(clienteDeLaAgencia("hospital")?.agentes).toEqual(["Valeria", "Claudia"]);
+    expect(clienteDeLaAgencia("consultorio")?.agentes).toEqual(["Valeria"]);
+  });
+
+  it("cada pestaña con un nombre distinto, aunque el lab y el hospital sean de la misma marca", () => {
+    const nombres = CLIENTES_AGENCIA.map((c) => nombreEnElTablero(c.id));
+    expect(new Set(nombres).size).toBe(nombres.length);
+    expect(nombreEnElTablero("consultorio")).toBe("Laboratorio");
+    expect(nombreEnElTablero("hospital")).toBe(TENANTS.hospital.brand.nombreCorto);
   });
 
   it("un demo no es cliente del tablero", () => {

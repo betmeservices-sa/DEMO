@@ -11,6 +11,7 @@ import { TENANTS } from "@/lib/tenants";
 import type { TenantId } from "@/lib/tenants/types";
 import { detalleConsumo } from "@/lib/tokens-store";
 import { esPeriodo, rangoDePeriodo, reporteConsumo } from "@/lib/agencia-consumo";
+import { nombreEnElTablero } from "@/lib/agencia-clientes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,7 +58,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    cliente: { id: cliente, nombre: TENANTS[cliente as TenantId].brand.nombreCorto },
+    cliente: { id: cliente, nombre: nombreEnElTablero(cliente as TenantId) },
     filasLeidas: filas.length,
     truncado,
     ...reporte,
