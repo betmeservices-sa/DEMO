@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle, Check, CheckCircle2, ChefHat, Clock, Flag, ListOrdered, Printer, Tag } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ChefHat, ChevronRight, Clock, Flag, ListOrdered, MessageSquareText, PencilLine, Printer, Tag } from "lucide-react";
 import { cn } from "@/lib/nutricion/cn";
 import { ALERGENOS, COCINA_PLAN, conflictos, plato, platosDe, semanaTexto, TIEMPOS_COCINA } from "@/lib/nutricion/cocina";
 import { descargarEtiquetas } from "@/lib/nutricion/etiquetasPdf";
@@ -51,6 +51,15 @@ function Cola() {
   const [filtro, setFiltro] = useState<Filtro>("activas");
   const [semana, setSemana] = useState<"todas" | 0 | 1>("todas");
   const [abierta, setAbierta] = useState<string | null>(params.get("orden"));
+  // Órdenes desplegadas para ver sus platos (por defecto, todas en una línea).
+  const [abiertas, setAbiertas] = useState<Set<string>>(new Set());
+  const alternar = (id: string) =>
+    setAbiertas((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
   useEffect(() => {
     const o = params.get("orden");
     if (o) setAbierta(o);
@@ -155,61 +164,66 @@ function Cola() {
               const min = espera(o);
               const proxima = o.dias.find((d) => d.estado !== "entregada");
               const platos = platosDe(o);
+              const cambios = platos.filter((x) => x.ajuste).length;
+              const desplegada = abiertas.has(o.id);
               return (
-                <div key={o.id} className={cn("flex flex-wrap items-start gap-3 px-4 py-3.5", o.estado === "nueva" && "bg-amber-50/40")}>
-                  <div className="w-16 shrink-0 text-center">
-                    <p className="text-[18px] font-extrabold leading-none tabular-nums">{pos >= 0 ? `#${pos + 1}` : "—"}</p>
-                    <p className="mt-1 text-[11px] leading-tight text-[var(--text-3)]">{llegadaTexto(o)}</p>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <p className="text-[14.5px] font-bold">{c.nombre}</p>
-                      <span className="rounded-md bg-orange-50 px-1.5 py-0.5 text-[11px] font-bold text-orange-700">Plan {PLAN_INFO[o.plan].label}</span>
-                      {alergias.length ? (
-                        alergias.map((a) => (
-                          <span key={a} className="inline-flex items-center gap-0.5 rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-bold text-rose-700">
-                            <AlertTriangle size={10} /> Alergia: {ALERGENOS[a].toLowerCase()}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-semibold text-[var(--text-3)]">Sin alergias</span>
-                      )}
-                    </div>
-                    <p className="mt-0.5 text-[12.5px] text-[var(--text-2)]">
-                      {semanaTexto(o.semana)} · {o.dias.length} {o.dias.length === 1 ? "día" : "días"} · cocina {COCINA_PLAN[o.plan]} · <b>{comidasDe(o)} platos</b>
-                      {proxima ? ` · próxima entrega ${etiquetaDia(proxima.dia).toLowerCase()} ${proxima.hora}` : ""}
-                    </p>
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {platos.map((x) => (
-                        <span key={`${x.tiempo}${x.platoId}`} title={x.ajuste ?? x.tiempo} className={cn("rounded-md px-1.5 py-0.5 text-[11.5px]", x.ajuste ? "bg-violet-50 text-violet-800" : "bg-surface text-[var(--text-2)]")}>
-                          <b>{x.cantidad}×</b> {plato(x.platoId).nombre}
-                          {x.ajuste ? " ✎" : ""}
+                <div key={o.id} className={cn(o.estado === "nueva" && "bg-amber-50/40")}>
+                  {/* Una línea por orden: quién, qué tan grande, cuándo sale y lo que no se puede pasar por alto. */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
+                    <button
+                      type="button"
+                      onClick={() => alternar(o.id)}
+                      aria-expanded={desplegada}
+                      aria-label={desplegada ? "Ocultar platos" : "Ver platos"}
+                      className="flex min-w-0 flex-1 basis-full items-center gap-3 text-left sm:basis-0"
+                    >
+                      <ChevronRight size={16} className={cn("shrink-0 text-[var(--text-3)] transition-transform", desplegada && "rotate-90")} />
+                      <span className="w-8 shrink-0 text-[15px] font-extrabold tabular-nums">{pos >= 0 ? `#${pos + 1}` : "—"}</span>
+                      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-[14px] font-bold">{c.nombre}</span>
+                        <span className="text-[12.5px] font-semibold text-orange-700">{PLAN_INFO[o.plan].label}</span>
+                        <span className="text-[12.5px] text-[var(--text-2)]">
+                          · <b>{comidasDe(o)} platos</b>
+                          {proxima ? ` · sale ${etiquetaDia(proxima.dia).toLowerCase()} ${proxima.hora}` : ""}
                         </span>
-                      ))}
-                    </div>
-                    {o.nota && <p className="mt-1.5 rounded-md bg-surface px-2 py-1 text-[12px] text-[var(--text-2)]">“{o.nota}”</p>}
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1", e.className)}>
-                      <e.Icon size={11} /> {e.label}
-                    </span>
-                    {o.estado === "nueva" && min !== null && (
-                      <span className="flex items-center gap-1 text-[11px] text-[var(--text-3)]">
-                        <Clock size={11} /> espera {min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`}
+                        {alergias.map((a) => (
+                          <span key={a} className="inline-flex items-center gap-0.5 rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-bold text-rose-700">
+                            <AlertTriangle size={10} /> {ALERGENOS[a]}
+                          </span>
+                        ))}
+                        {cambios > 0 && (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-violet-50 px-1.5 py-0.5 text-[11px] font-bold text-violet-800">
+                            <PencilLine size={10} /> {cambios} {cambios === 1 ? "cambio" : "cambios"}
+                          </span>
+                        )}
+                        {o.nota && (
+                          <span title={o.nota} className="inline-flex items-center gap-0.5 rounded-md bg-sky-50 px-1.5 py-0.5 text-[11px] font-bold text-sky-800">
+                            <MessageSquareText size={10} /> Nota
+                          </span>
+                        )}
+                        {o.estado === "nueva" && min !== null && (
+                          <span className="inline-flex items-center gap-1 text-[11.5px] text-[var(--text-3)]">
+                            <Clock size={11} /> espera {min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`}
+                          </span>
+                        )}
                       </span>
-                    )}
-                    <div className="flex flex-wrap justify-end gap-1.5">
+                    </button>
+                    <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                      <span className={cn("hidden items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 sm:inline-flex", e.className)}>
+                        <e.Icon size={11} /> {e.label}
+                      </span>
                       {proxima && (
-                        <button type="button" onClick={() => descargarEtiquetas([{ o, d: proxima }], planesAlim, `Etiqueta_${c.nombre.split(" ")[0]}.pdf`)} title="Etiqueta de la próxima entrega" className="rounded-lg border border-line p-1.5 text-[var(--text-2)] hover:bg-surface">
+                        <button type="button" onClick={() => descargarEtiquetas([{ o, d: proxima }], planesAlim, `Etiqueta_${c.nombre.split(" ")[0]}.pdf`)} title="Etiqueta de la próxima entrega" aria-label="Etiqueta de la próxima entrega" className="rounded-lg border border-line p-1.5 text-[var(--text-2)] hover:bg-surface">
                           <Tag size={14} />
                         </button>
                       )}
-                      <button type="button" onClick={() => setAbierta(o.id)} className="rounded-lg border border-line px-2.5 py-1 text-[12px] font-semibold hover:bg-surface">
-                        Ver orden
-                      </button>
-                      {o.estado === "nueva" && (
+                      {o.estado === "nueva" ? (
                         <button type="button" onClick={() => setAbierta(o.id)} className="rounded-lg bg-[var(--entregas)] px-2.5 py-1 text-[12px] font-bold text-white hover:opacity-90">
                           Revisar y confirmar
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => setAbierta(o.id)} className="rounded-lg border border-line px-2.5 py-1 text-[12px] font-semibold hover:bg-surface">
+                          Ver orden
                         </button>
                       )}
                       {sig && (
@@ -224,6 +238,22 @@ function Cola() {
                       )}
                     </div>
                   </div>
+                  {desplegada && (
+                    <div className="space-y-1.5 pb-3 pl-[60px] pr-4">
+                      <p className="text-[12px] text-[var(--text-3)]">
+                        {semanaTexto(o.semana)} · {o.dias.length} {o.dias.length === 1 ? "día" : "días"} · cocina {COCINA_PLAN[o.plan]} · llegó {llegadaTexto(o)}
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {platos.map((x) => (
+                          <span key={`${x.tiempo}${x.platoId}`} title={x.ajuste ?? x.tiempo} className={cn("rounded-md px-1.5 py-0.5 text-[11.5px]", x.ajuste ? "bg-violet-50 text-violet-800" : "bg-surface text-[var(--text-2)]")}>
+                            <b>{x.cantidad}×</b> {plato(x.platoId).nombre}
+                            {x.ajuste ? " ✎" : ""}
+                          </span>
+                        ))}
+                      </div>
+                      {o.nota && <p className="rounded-md bg-surface px-2 py-1 text-[12px] text-[var(--text-2)]">“{o.nota}”</p>}
+                    </div>
+                  )}
                 </div>
               );
             })}

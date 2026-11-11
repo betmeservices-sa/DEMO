@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, CalendarRange, Check, CheckCircle2, ChefHat, Clock, CookingPot, Minus, PencilLine, Plus, Printer, RotateCcw, ShoppingBasket, Truck } from "lucide-react";
+import { AlertTriangle, CalendarRange, Check, CheckCircle2, ChefHat, ChevronRight, Clock, CookingPot, Minus, PencilLine, Plus, Printer, RotateCcw, ShoppingBasket, Truck } from "lucide-react";
 import { cn } from "@/lib/nutricion/cn";
 import { ALERGENOS, COCINA_PLAN, enCocina, hechosDe, PARTES, partesDe, plato, RECETARIO } from "@/lib/nutricion/cocina";
 import { descargarEtiquetas, type Entrega } from "@/lib/nutricion/etiquetasPdf";
@@ -31,8 +31,11 @@ export default function ProduccionPage() {
   const [dia, setDia] = useState<0 | 1>(0);
   // Filtro por cliente: "" = todos.
   const [cli, setCli] = useState("");
-  // Cola de órdenes del día (por llegada) o vista por plato del menú.
-  const [vista, setVista] = useState<"cola" | "platos">("cola");
+  // Por plato del menú (como piensa la cocina), por cliente (cola por llegada)
+  // o la lista de insumos del día con los avisos a la nutricionista.
+  const [vista, setVista] = useState<"platos" | "cola" | "insumos">("platos");
+  // Platos con la línea de ingredientes abierta.
+  const [conIng, setConIng] = useState<Set<string>>(new Set());
   // Plato y porciones para agregar a la producción del día.
   const [nuevo, setNuevo] = useState("");
   const [cuantas, setCuantas] = useState(1);
@@ -192,8 +195,9 @@ export default function ProduccionPage() {
         <div className="inline-flex rounded-xl border border-line bg-card p-1 shadow-sm">
           {(
             [
-              ["cola", "Cola de órdenes (por llegada)"],
-              ["platos", "Por plato del menú"],
+              ["platos", "Por plato"],
+              ["cola", "Por cliente"],
+              ["insumos", "Insumos"],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -208,7 +212,51 @@ export default function ProduccionPage() {
           ))}
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        {vista === "insumos" ? (
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <Card title={<span className="flex items-center gap-1.5"><ShoppingBasket size={16} /> Ingredientes necesarios</span>} sub={`Total del día · ${sumaPlan} platos · «falta» descuenta lo ya preparado`}>
+              {total.length === 0 && <p className="text-[13px] text-[var(--text-3)]">Sin ingredientes.</p>}
+              <table className="w-full text-[13px]">
+                <thead className="text-[10.5px] uppercase tracking-wider text-[var(--text-3)]">
+                  <tr>
+                    <th className="py-1 text-left font-bold">Ingrediente</th>
+                    <th className="py-1 text-right font-bold">Total</th>
+                    <th className="py-1 text-right font-bold">Falta</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {total.map(([nombre, { cant, unidad }]) => {
+                    const f = faltaTotal.get(nombre);
+                    return (
+                      <tr key={nombre}>
+                        <td className="py-1.5">{nombre}</td>
+                        <td className="py-1.5 text-right tabular-nums text-[var(--text-2)]">{formato(redondeo(cant, unidad), unidad)}</td>
+                        <td className="py-1.5 text-right font-semibold tabular-nums">{f ? formato(redondeo(f.cant, unidad), unidad) : "✓"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <p className="mt-2 text-[11px] text-[var(--text-3)]">Porción pequeña rinde 80 % y grande 130 % de la regular, según el plan de cada cliente. Los cambios escritos pueden pedir otros ingredientes: revísalos en cada plato.</p>
+            </Card>
+
+            <Card title={<span className="flex items-center gap-1.5"><CookingPot size={16} /> Avisos a la nutricionista</span>} sub="Faltantes y dudas que envió la cocina">
+              {incidencias.length === 0 && <p className="text-[13px] text-[var(--text-3)]">Todavía no hay avisos. Se envían desde cada orden.</p>}
+              <div className="space-y-2">
+                {incidencias.map((i) => (
+                  <div key={i.id} className="rounded-lg bg-surface px-3 py-2 text-[12.5px]">
+                    <p className="flex items-center justify-between gap-2 font-semibold">
+                      {cliente(i.clienteId).nombre}
+                      <span className={cn("rounded-full px-1.5 py-0.5 text-[10.5px]", i.resuelta ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800")}>{i.resuelta ? "Vista" : { sustitucion: "Cambio", faltante: "Faltante", duda: "Duda" }[i.tipo]}</span>
+                    </p>
+                    <p className="mt-0.5 text-[var(--text-2)]">{i.texto}</p>
+                    <p className="mt-0.5 text-[11px] text-[var(--text-3)]">Hoy {i.hora}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        ) : (
           <div className="space-y-4">
             {vista === "cola" ? (
               <ColaDelDia entregas={entregas} dia={dia} />
@@ -216,7 +264,7 @@ export default function ProduccionPage() {
               <>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-[12.5px] text-[var(--text-3)]">
-                {guardado ? "A producir editado por cocina." : "A producir según las órdenes de la cola."} Las meriendas del plan no las prepara la cocina. Las porciones de órdenes sin confirmar se marcan después de confirmarlas.
+                {guardado ? "Cantidades editadas por cocina." : "Cantidades según las órdenes."} Las meriendas no las prepara la cocina.
               </p>
               {guardado && (
                 <button type="button" onClick={() => setProduccion(dia, null)} className="inline-flex items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-1 text-[12px] font-semibold hover:bg-surface">
@@ -312,9 +360,24 @@ export default function ProduccionPage() {
                             </p>
                           ))}
                           {n > 0 && (
-                            <p className="ml-[120px] mt-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[12px] text-[var(--text-2)]">
-                              <b className="text-[var(--text)]">Ingredientes:</b> {ing.join(" · ") || "—"}
-                            </p>
+                            <div className="ml-[120px] mt-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setConIng((s) => {
+                                    const x = new Set(s);
+                                    if (x.has(pl.id)) x.delete(pl.id);
+                                    else x.add(pl.id);
+                                    return x;
+                                  })
+                                }
+                                aria-expanded={conIng.has(pl.id)}
+                                className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[var(--text-3)] hover:text-[var(--text)]"
+                              >
+                                <ChevronRight size={12} className={cn("transition-transform", conIng.has(pl.id) && "rotate-90")} /> Ingredientes
+                              </button>
+                              {conIng.has(pl.id) && <p className="mt-1 rounded-lg border border-line px-2.5 py-1.5 text-[12px] text-[var(--text-2)]">{ing.join(" · ") || "—"}</p>}
+                            </div>
                           )}
                         </div>
                       );
@@ -362,51 +425,7 @@ export default function ProduccionPage() {
               </>
             )}
           </div>
-
-          <div className="space-y-5 xl:sticky xl:top-0 xl:self-start">
-            <Card title={<span className="flex items-center gap-1.5"><ShoppingBasket size={16} /> Ingredientes necesarios</span>} sub={`Total del día · ${sumaPlan} platos · «falta» descuenta lo ya preparado`}>
-              {total.length === 0 && <p className="text-[13px] text-[var(--text-3)]">Sin ingredientes.</p>}
-              <table className="w-full text-[13px]">
-                <thead className="text-[10.5px] uppercase tracking-wider text-[var(--text-3)]">
-                  <tr>
-                    <th className="py-1 text-left font-bold">Ingrediente</th>
-                    <th className="py-1 text-right font-bold">Total</th>
-                    <th className="py-1 text-right font-bold">Falta</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {total.map(([nombre, { cant, unidad }]) => {
-                    const f = faltaTotal.get(nombre);
-                    return (
-                      <tr key={nombre}>
-                        <td className="py-1.5">{nombre}</td>
-                        <td className="py-1.5 text-right tabular-nums text-[var(--text-2)]">{formato(redondeo(cant, unidad), unidad)}</td>
-                        <td className="py-1.5 text-right font-semibold tabular-nums">{f ? formato(redondeo(f.cant, unidad), unidad) : "✓"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <p className="mt-2 text-[11px] text-[var(--text-3)]">Porción pequeña rinde 80 % y grande 130 % de la regular, según el plan de cada cliente. Los cambios escritos pueden pedir otros ingredientes: revísalos en cada plato.</p>
-            </Card>
-
-            <Card title={<span className="flex items-center gap-1.5"><CookingPot size={16} /> Avisos a la nutricionista</span>} sub="Faltantes y dudas que envió la cocina">
-              {incidencias.length === 0 && <p className="text-[13px] text-[var(--text-3)]">Todavía no hay avisos. Se envían desde cada orden.</p>}
-              <div className="space-y-2">
-                {incidencias.map((i) => (
-                  <div key={i.id} className="rounded-lg bg-surface px-3 py-2 text-[12.5px]">
-                    <p className="flex items-center justify-between gap-2 font-semibold">
-                      {cliente(i.clienteId).nombre}
-                      <span className={cn("rounded-full px-1.5 py-0.5 text-[10.5px]", i.resuelta ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800")}>{i.resuelta ? "Vista" : { sustitucion: "Cambio", faltante: "Faltante", duda: "Duda" }[i.tipo]}</span>
-                    </p>
-                    <p className="mt-0.5 text-[var(--text-2)]">{i.texto}</p>
-                    <p className="mt-0.5 text-[11px] text-[var(--text-3)]">Hoy {i.hora}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -420,6 +439,15 @@ export default function ProduccionPage() {
  */
 function ColaDelDia({ entregas }: { entregas: Entrega[]; dia: number }) {
   const { marcarParte, despacharDia, completarEntrega, planesAlim } = useStore();
+  // Platos con las partes a la vista (por defecto se marca el plato entero).
+  const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
+  const alternar = (k: string) =>
+    setAbiertos((s) => {
+      const n = new Set(s);
+      if (n.has(k)) n.delete(k);
+      else n.add(k);
+      return n;
+    });
   // Más antigua primero; a igual llegada, la que sale antes en la ruta.
   const cola = [...entregas].sort((a, b) => a.o.diaLlegada - b.o.diaLlegada || a.o.llegada.localeCompare(b.o.llegada) || a.d.hora.localeCompare(b.d.hora));
   const pendientes = cola.filter(({ d }) => d.estado !== "entregada");
@@ -431,7 +459,7 @@ function ColaDelDia({ entregas }: { entregas: Entrega[]; dia: number }) {
   return (
     <div className="space-y-3">
       <p className="text-[12.5px] text-[var(--text-3)]">
-        En orden de llegada: la más antigua es la primera en producirse y despacharse. Marca cada parte del plato cuando esté hecha. {pendientes.length} por despachar de {cola.length}.
+        En orden de llegada. Marca cada plato cuando esté hecho. {pendientes.length} por despachar de {cola.length}.
       </p>
       {cola.map(({ o, d }, i) => {
         const c = cliente(o.clienteId);
@@ -506,6 +534,8 @@ function ColaDelDia({ entregas }: { entregas: Entrega[]; dia: number }) {
                 const pl = plato(x.platoId);
                 const hecho = x.hecho || listaDia;
                 const partes = partesDe(x.platoId);
+                const clave = `${o.id}|${d.dia}|${x.tiempo}`;
+                const abierto = abiertos.has(clave);
                 return (
                   <div key={x.tiempo} className={cn("rounded-xl border p-2.5", hecho ? "border-emerald-300 bg-emerald-50/60" : "border-line")}>
                     <button
@@ -524,7 +554,18 @@ function ColaDelDia({ entregas }: { entregas: Entrega[]; dia: number }) {
                       </span>
                     </button>
                     {x.ajuste && <p className="ml-7 mt-1 text-[11px] font-semibold text-violet-700">✎ {x.ajuste}</p>}
-                    {partes.length > 0 && (
+                    {partes.length > 0 && !entregada && (
+                      <button
+                        type="button"
+                        onClick={() => alternar(clave)}
+                        aria-expanded={abierto}
+                        className="ml-7 mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--text-3)] hover:text-[var(--text)]"
+                      >
+                        <ChevronRight size={11} className={cn("transition-transform", abierto && "rotate-90")} />
+                        Por partes · {hecho ? partes.length : (x.partes ?? []).filter((k) => partes.includes(k)).length}/{partes.length}
+                      </button>
+                    )}
+                    {partes.length > 0 && abierto && !entregada && (
                       <div className="ml-7 mt-1.5 space-y-1">
                         {PARTES.filter((k) => partes.includes(k.id)).map((k) => {
                           const on = hecho || (x.partes ?? []).includes(k.id);
