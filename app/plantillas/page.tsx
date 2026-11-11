@@ -14,7 +14,8 @@ import { hotelMuestraDe } from "@/lib/hotel-muestra/registro";
 import type { PlantillaSemilla } from "@/lib/hotel-muestra/tipos";
 
 const TENANT = activeTenantId();
-const LLAVE = `ccg.plantillas.${TENANT}`;
+// v2: suma la plantilla de promoción con fechas a la muestra.
+const LLAVE = `ccg.plantillas.v2.${TENANT}`;
 const MAXIMO = 5;
 /** Lo que dura "En revisión" una plantilla nueva o editada. */
 const REVISION_MS = 8_000;

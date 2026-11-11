@@ -307,5 +307,14 @@ export const CAPITANHAWK: HotelMuestra = {
       pie: "Responda BAJA para no recibir promociones",
       ejemplos: ["Karla"],
     },
+    {
+      id: "chpl4",
+      nombre: "promo_bungalow_temporada",
+      categoria: "MARKETING",
+      encabezado: "Promo de temporada 🌴",
+      cuerpo: "¡Hola, {{1}}! Del {{2}} al {{3}} su noche en Bungalow Ecológico tiene 20% de descuento: {{4}} para dos personas, con desayuno típico, piscina iluminada y fogata en la playa. La promoción es válida solo entre esas fechas. ¿Le apartamos su fecha? Responda a este mensaje.",
+      pie: "Responda BAJA para no recibir promociones",
+      ejemplos: ["Karla", "15 de noviembre", "15 de diciembre", "$72"],
+    },
   ],
 };
