@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessageSquareText, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
@@ -62,6 +62,7 @@ const NAV: NavItem[] = [
   { id: "redes", href: "/redes", label: "Redes sociales", Icon: Megaphone },
   { id: "comentarios", href: "/comentarios", label: "Comentarios", Icon: MsgSq },
   { id: "promociones", href: "/promociones", label: "Promociones", Icon: BadgePercent },
+  { id: "plantillas", href: "/plantillas", label: "Plantillas WhatsApp", Icon: MessageSquareText },
   { id: "perfil", href: "/perfil", label: "Perfil del agente", Icon: IdCard },
   { id: "sofia", href: "/sofia", label: "Probar a Sofía", Icon: Bot },
   { id: "dashboard", href: "/dashboard", label: "Dashboard", Icon: BarChart3 },
@@ -215,6 +216,8 @@ export function Sidebar({
       (item.id !== "mis-chats" || veYali || veCrediq || veNissan || veBetme) &&
       (item.id !== "tickets" || tieneTickets) &&
       (item.id !== "promociones" || veYali) &&
+      // Las plantillas solo las traen los hoteles de muestra, que arman su menu arriba.
+      item.id !== "plantillas" &&
       (item.id !== "perfil" || veYali) &&
       (item.id !== "sofia" || veYali) &&
       // El reporte es la lectura de la AGENCIA sobre el agente de un cliente:

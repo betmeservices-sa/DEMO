@@ -282,4 +282,30 @@ export const CAPITANHAWK: HotelMuestra = {
   conversacionesDia: 27,
   redes: CAPITANHAWK_REDES,
   promociones: CAPITANHAWK_PROMOCIONES,
+  plantillas: [
+    {
+      id: "chpl1",
+      nombre: "apartado_confirmado",
+      categoria: "UTILITY",
+      cuerpo: "¡Listo, {{1}}! Su reserva {{2}} en {{3}} quedó confirmada del {{4}} al {{5}}. ¡Le esperamos en Playa El Amatal! 🌴",
+      pie: "Capitán Hawk · Campamento marino",
+      ejemplos: ["Mariela", "CH-2041", "Bungalow Ecológico", "14 nov", "16 nov"],
+    },
+    {
+      id: "chpl2",
+      nombre: "recordatorio_llegada",
+      categoria: "UTILITY",
+      encabezado: "Capitán Hawk",
+      cuerpo: "Hola, {{1}}. Mañana le esperamos en Capitán Hawk. El check in es desde las 3:00 p. m. y si viene con su mascota, ¡también es bienvenida! 🐾",
+      ejemplos: ["Josué"],
+    },
+    {
+      id: "chpl3",
+      nombre: "promo_visita_de_dia",
+      categoria: "MARKETING",
+      cuerpo: "¡Hola, {{1}}! Este fin de semana venga a Capitán Hawk: visita de día por $10 con palapa privada frente al mar, piscina y fogata en la playa el sábado 🔥",
+      pie: "Responda BAJA para no recibir promociones",
+      ejemplos: ["Karla"],
+    },
+  ],
 };

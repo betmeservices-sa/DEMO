@@ -68,6 +68,8 @@ export type ModuleId =
   | "redes"
   | "comentarios"
   | "promociones"
+  // Plantillas de WhatsApp (hasta cinco), de los hoteles de muestra que las traen.
+  | "plantillas"
   | "perfil"
   // Probar a Sofía: un chat de prueba contra el guion real (solo Yali).
   | "sofia"
@@ -216,7 +218,7 @@ export interface RoleDef {
 // marketing no gestiona casos, asi que no lo ve.
 // "mis-chats" lo ve todo el mundo: es donde caen los chats que el agente pasa a
 // una persona, y quien atiende tiene que verlos sin depender de su rol.
-const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "reporte", "auditoria", "costos", "llamadas", "leads", "alta-numero", "qa", "agentes", "ia", "estudio", "settings"];
+const TODO: ModuleId[] = ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "plantillas", "perfil", "sofia", "dashboard", "reporte", "auditoria", "costos", "llamadas", "leads", "alta-numero", "qa", "agentes", "ia", "estudio", "settings"];
 export const VE: Record<RoleId, ModuleId[]> = {
   // Recepcion del consultorio es quien recibe al paciente y quien mueve la
   // fila del laboratorio: los dos modulos del modulo clinico son suyos.
@@ -229,12 +231,12 @@ export const VE: Record<RoleId, ModuleId[]> = {
   // Lo que sigue cerrado: ajustes, promociones y el perfil del agente, que
   // cambian como se comporta Sofia.
   atencion: ["bandeja", "mis-chats", "tickets", "interno", "comentarios", "redes", "sofia", "dashboard"],
-  marketing: ["bandeja", "mis-chats", "contactos", "cartera", "publicacion", "cobros", "redes", "comentarios", "promociones", "estudio"],
+  marketing: ["bandeja", "mis-chats", "contactos", "cartera", "publicacion", "cobros", "redes", "comentarios", "promociones", "plantillas", "estudio"],
   gerente_marketing: TODO,
   // El medico ve su consultorio (sus pacientes, sus recetas), pero no el
   // mostrador del laboratorio: esa fila no es suya.
   medico: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "campanas", "consultorio", "imagenologia", "mensajes", "valeria", "interno"],
-  jefe: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "perfil", "sofia", "dashboard", "ia", "estudio"],
+  jefe: ["bandeja", "mis-chats", "tickets", "hoy", "contactos", "habitaciones", "calendario", "pipeline", "crediq", "ventas", "talento", "vacantes", "perfiles", "entrevistas", "onboarding", "eventos", "paquetes", "clientes", "visitas", "cartera", "publicacion", "cobros", "consultorio", "laboratorio", "jefatura", "imagenologia", "mensajes", "valeria", "interno", "redes", "comentarios", "promociones", "plantillas", "perfil", "sofia", "dashboard", "ia", "estudio"],
   admin: TODO,
 };
 
@@ -274,6 +276,7 @@ export const MODULO_RUTA: Record<ModuleId, string> = {
   redes: "/redes",
   comentarios: "/comentarios",
   promociones: "/promociones",
+  plantillas: "/plantillas",
   perfil: "/perfil",
   sofia: "/sofia",
   dashboard: "/dashboard",
@@ -328,6 +331,7 @@ export function moduloDeRuta(pathname: string): ModuleId | null {
   if (pathname.startsWith("/redes")) return "redes";
   if (pathname.startsWith("/comentarios")) return "comentarios";
   if (pathname.startsWith("/promociones")) return "promociones";
+  if (pathname.startsWith("/plantillas")) return "plantillas";
   if (pathname.startsWith("/perfil")) return "perfil";
   if (pathname.startsWith("/sofia")) return "sofia";
   if (pathname.startsWith("/dashboard")) return "dashboard";

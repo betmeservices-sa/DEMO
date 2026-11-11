@@ -38,6 +38,7 @@ export function modulosDeHotelMuestra(tenant: string): ModuleId[] {
     ...(hotel.voz ? (["llamadas", "agentes"] as const) : []),
     ...(hotel.redes ? (["redes", "comentarios"] as const) : []),
     ...(hotel.promociones ? (["promociones"] as const) : []),
+    ...(hotel.plantillas ? (["plantillas"] as const) : []),
   ];
   const i = MODULOS_HOTEL_MUESTRA.indexOf("interno") + 1;
   return [...MODULOS_HOTEL_MUESTRA.slice(0, i), ...extra, ...MODULOS_HOTEL_MUESTRA.slice(i)];

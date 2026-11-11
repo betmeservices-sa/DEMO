@@ -212,6 +212,19 @@ export interface VozMuestra {
   llamadas: LlamadaSemilla[];
 }
 
+/** Una plantilla de WhatsApp de la muestra. El cuerpo lleva {{1}}, {{2}}... */
+export interface PlantillaSemilla {
+  id: string;
+  /** Como la pide Meta: minúsculas y guiones bajos. */
+  nombre: string;
+  categoria: "UTILITY" | "MARKETING";
+  encabezado?: string;
+  cuerpo: string;
+  pie?: string;
+  /** Un valor de ejemplo por variable, en orden. */
+  ejemplos: string[];
+}
+
 /** Un tema de "Qué nos piden" con su peso en las conversaciones. */
 export interface TemaPedido {
   tema: string;
@@ -250,6 +263,8 @@ export interface HotelMuestra {
   promociones?: PromocionSemilla[];
   /** Con esto el menú suma Llamadas y Agentes. */
   voz?: VozMuestra;
+  /** Con esto el menú suma Plantillas WhatsApp (hasta cinco). */
+  plantillas?: PlantillaSemilla[];
 }
 
 // ── Lo que se hace en el demo y queda guardado en el navegador ──
