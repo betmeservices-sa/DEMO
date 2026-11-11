@@ -14,8 +14,11 @@ export interface PedidoTexto {
   cantidad: number;
   idiomas: Record<Idioma, number>;
   redes?: Red[];
+  /** Las fotos subidas o elegidas, en orden. */
   fotos?: string[];
   origenImagen?: OrigenImagen;
+  /** fotos[0] es el antes y fotos[1] el después. */
+  antesDespues?: boolean;
   encargoId: string;
   actor: string;
 }

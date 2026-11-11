@@ -7,8 +7,9 @@
 
 import { modeloOpenAI } from "../../ai-cliente-openai";
 import { CREDITOS, TARIFA, generarPiezas, idiomaDe, reescribir, usoDeGeneracion } from "../generador";
+import { llevaImagen } from "../imagen";
 import { guardarImagen } from "../medios";
-import { ESQUEMA_PIEZAS, angulosEscritos, instruccionesDeMarca, pedidoDeLote, pedidoDeVersion, type PiezaEscrita } from "../redaccion";
+import { ESQUEMA_PIEZAS, angulosEscritos, fotosParaModelo, instruccionesDeMarca, pedidoDeLote, pedidoDeVersion, type PiezaEscrita } from "../redaccion";
 import type { EstiloImagen, LecturaImagen, PedidoImagen } from "../tipos";
 import type { ProveedorImagen, ProveedorTexto, ProveedorVision } from "./tipos";
 
@@ -114,11 +115,18 @@ export function textoOpenAI(llave: string, modelo = modeloOpenAI()): ProveedorTe
     async generar(pedido) {
       const n = Math.max(1, Math.min(pedido.cantidad, 12));
       const idiomas = Array.from({ length: n }, (_, i) => idiomaDe(i, pedido.idiomas.es));
+      // Las fotos que se subieron van con el pedido: el texto sale de lo que se ve en ellas.
+      const fotos = llevaImagen(pedido.formato) ? fotosParaModelo(pedido.fotos) : [];
+      const deFotos = fotos.length ? { n: fotos.length, antesDespues: pedido.antesDespues && fotos.length >= 2 } : undefined;
       const texto = await responderJson(
         llave,
         modelo,
         instruccionesDeMarca(pedido.marca),
-        [{ type: "input_text", text: pedidoDeLote(pedido.texto, pedido.formato, pedido.marca, idiomas) }],
+        [
+          { type: "input_text", text: pedidoDeLote(pedido.texto, pedido.formato, pedido.marca, idiomas, deFotos) },
+          // "low" alcanza para saber qué se ve y cuesta una fracción.
+          ...fotos.map((url) => ({ type: "input_image", image_url: url, detail: "low" })),
+        ],
         "piezas",
         ESQUEMA_PIEZAS,
         "el texto",

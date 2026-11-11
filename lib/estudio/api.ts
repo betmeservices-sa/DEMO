@@ -30,8 +30,11 @@ export interface NuevoEncargo {
   cantidad: number;
   idiomas: Record<Idioma, number>;
   redes: Red[];
+  /** Las fotos subidas o elegidas, en orden. */
   fotos?: string[];
   origenImagen?: OrigenImagen;
+  /** fotos[0] es el antes y fotos[1] el después. */
+  antesDespues?: boolean;
 }
 
 /** Genera el lote y lo deja en la cola de aprobación. Devuelve las piezas nuevas. */
@@ -46,6 +49,7 @@ export async function generar(n: NuevoEncargo): Promise<Pieza[]> {
     redes: n.redes,
     fotos: n.fotos,
     origenImagen: n.origenImagen,
+    antesDespues: n.antesDespues || undefined,
     encargoId,
     actor: ACTOR,
   });
@@ -56,6 +60,7 @@ export async function generar(n: NuevoEncargo): Promise<Pieza[]> {
     formato: n.formato,
     cantidad: n.cantidad,
     origenImagen: n.origenImagen,
+    antesDespues: n.antesDespues || undefined,
     idiomas: n.idiomas,
     redes: n.redes,
     creado: new Date().toISOString(),

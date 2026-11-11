@@ -169,6 +169,17 @@ export interface Pieza {
   origenImagen?: OrigenImagen;
   /** Solo si se generó: lo que se le pidió al modelo, uno por lámina. */
   pedidosImagen?: PedidoImagen[];
+  /**
+   * Las fotos las subió o las eligió quien hizo el encargo: regenerar el
+   * texto no las cambia por otras de la marca.
+   */
+  fotosDelEncargo?: boolean;
+  /**
+   * Antes y después: medios[0] es SIEMPRE el antes y medios[1] el después.
+   * En un carrusel son las dos láminas, en ese orden; en un post o un
+   * anuncio van en una sola imagen, el antes arriba (antes-despues.ts).
+   */
+  antesDespues?: boolean;
   /** Segundos, solo video. */
   duracion?: number;
   /** Solo anuncio. */
@@ -194,6 +205,7 @@ export interface Encargo {
   formato: TipoPieza;
   cantidad: number;
   origenImagen?: OrigenImagen;
+  antesDespues?: boolean;
   idiomas: Record<Idioma, number>;
   redes: Red[];
   creado: string;

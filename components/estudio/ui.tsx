@@ -7,6 +7,7 @@ import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from "
 import { Facebook, Instagram, Linkedin, Play, Store, Youtube, Layers } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { EstadoPieza, Marca, Pieza, Red, TipoPieza } from "@/lib/estudio/tipos";
+import { ImagenDePieza } from "./AntesDespues";
 
 export function Vidrio({
   children,
@@ -182,6 +183,7 @@ export function Miniatura({
   marca,
   forma = "cuadro",
   sinTexto = false,
+  sinEtiquetas = false,
   className,
 }: {
   pieza: Pieza;
@@ -189,6 +191,8 @@ export function Miniatura({
   forma?: "cuadro" | "vertical" | "post";
   /** En miniaturas chicas, sin el texto encima: solo la imagen. */
   sinTexto?: boolean;
+  /** Sin las etiquetas del antes y después, cuando algo más va en esa esquina. */
+  sinEtiquetas?: boolean;
   className?: string;
 }) {
   const aspecto = forma === "vertical" ? "aspect-[9/16]" : forma === "post" ? "aspect-[4/5]" : "aspect-square";
@@ -223,11 +227,8 @@ export function Miniatura({
   }
 
   return (
-    <div className={cn("relative overflow-hidden rounded-[14px] bg-[#1a2843]", aspecto, className)}>
-      {foto && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={foto} alt={pieza.ideaImagen ?? pieza.titulo} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-      )}
+    <div className={cn("relative overflow-hidden rounded-[14px] bg-[#1a2843] [container-type:inline-size]", aspecto, className)}>
+      <ImagenDePieza pieza={pieza} etiquetas={!sinTexto && !sinEtiquetas} />
       {pieza.tipo === "texto" && !sinTexto && (
         <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/75 via-black/20 to-transparent p-3">
           <p className="es-rotulo line-clamp-3 text-[16px] font-semibold leading-[1.05] text-white">{pieza.titulo}</p>

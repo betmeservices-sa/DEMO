@@ -7,7 +7,8 @@
 // arma las piezas igual que con la muestra.
 
 import { fotoDeMuestraPara, type Angulo, type TextoAngulo } from "./banco";
-import { LAMINAS_CARRUSEL } from "./generador";
+import { LAMINAS_CARRUSEL, laminasDeCarrusel } from "./generador";
+import { llevaImagen } from "./imagen";
 import type { Idioma, Marca, Pieza, TipoPieza } from "./tipos";
 
 /** El titular va encima de la foto: largo, no cabe en las letras grandes. */
@@ -21,6 +22,51 @@ const FORMATO: Record<TipoPieza, string> = {
   anuncio: "un anuncio pagado de Meta, en Facebook e Instagram",
   texto: "una publicación solo de texto para Facebook, LinkedIn y Google",
 };
+
+function formatoCon(formato: TipoPieza, laminas: number): string {
+  return formato === "carrusel" ? `un carrusel de ${laminas} láminas para Instagram` : FORMATO[formato];
+}
+
+/**
+ * Las fotos del encargo que el modelo puede ver: las subidas (URL pública o
+ * data URL en local). Las de muestra viven dentro del panel y no le llegan.
+ */
+export function fotosParaModelo(fotos?: string[]): string[] {
+  return (fotos ?? []).filter((f) => /^(https:|data:image\/)/.test(f));
+}
+
+export interface FotosDelPedido {
+  /** Cuántas fotos van adjuntas al pedido, en orden. */
+  n: number;
+  /** La primera es el antes y la segunda el después. */
+  antesDespues?: boolean;
+}
+
+/** Qué son las fotos adjuntas y cómo se usan: el modelo escribe sobre lo que se ve en ellas. */
+function lineasDeFotos(formato: TipoPieza, f: FotosDelPedido | undefined, piezas: number): string[] {
+  if (!f?.n || !llevaImagen(formato)) return [];
+  if (f.antesDespues) {
+    return [
+      "Van dos fotos de la misma obra: la PRIMERA es el ANTES y la SEGUNDA el DESPUÉS.",
+      formato === "carrusel"
+        ? "El carrusel lleva esas dos láminas en ese orden: primero el antes, después el después."
+        : "La imagen las muestra juntas, el antes arriba y el después abajo.",
+      "Escribe sobre el cambio que se ve entre las dos. No describas nada que no se vea en las fotos.",
+    ];
+  }
+  const una = f.n === 1;
+  return [
+    una ? "Va una foto de la obra." : `Van ${f.n} fotos de la obra, en orden.`,
+    formato === "carrusel"
+      ? una
+        ? "Es la primera lámina del carrusel."
+        : `Son las láminas del carrusel en ese orden (lámina 1 = foto 1).`
+      : una || piezas === 1
+        ? "Es la imagen de la pieza."
+        : `La pieza 1 lleva la foto 1, la 2 la foto 2, y así${piezas > f.n ? `, volviendo a la foto 1 después de la ${f.n}` : ""}.`,
+    "Escribe sobre lo que se ve en su foto. No describas nada que no se vea.",
+  ];
+}
 
 const IDIOMA: Record<Idioma, string> = { es: "español", en: "inglés" };
 
@@ -39,8 +85,8 @@ export function instruccionesDeMarca(marca: Marca): string {
     .join("\n");
 }
 
-function camposDelFormato(formato: TipoPieza, marca: Marca): string[] {
-  const otras = LAMINAS_CARRUSEL - 1;
+function camposDelFormato(formato: TipoPieza, marca: Marca, laminas = LAMINAS_CARRUSEL, sinTextoEncima = false): string[] {
+  const otras = laminas - 1;
   return [
     formato === "anuncio"
       ? `- titulo: el titular del anuncio, máximo ${LARGO_TITULO} caracteres.`
@@ -51,8 +97,8 @@ function camposDelFormato(formato: TipoPieza, marca: Marca): string[] {
       ? `- texto: el texto principal del anuncio, una o dos frases que invitan a "${marca.cta.es}" (o "${marca.cta.en}" en inglés).`
       : "- texto: el texto de la publicación, de dos a cuatro frases, sin hashtags.",
     formato === "anuncio" ? "- hashtags: vacío." : "- hashtags: de tres a cinco, de su servicio y su ciudad.",
-    formato === "carrusel"
-      ? `- laminas: el texto encima de las láminas 2 a ${LAMINAS_CARRUSEL}, ${otras} textos de máximo ${LARGO_LAMINA} caracteres que siguen al titular.`
+    formato === "carrusel" && !sinTextoEncima
+      ? `- laminas: el texto encima de las láminas 2 a ${laminas}, ${otras} textos de máximo ${LARGO_LAMINA} caracteres que siguen al titular.`
       : "- laminas: vacío.",
     formato === "video" ? "- guion: lo que dice el avatar a cámara, en primera persona, de 60 a 110 palabras." : "- guion: vacío.",
     formato === "video" ? "- duracion: los segundos que dura el guion leído en voz alta." : "- duracion: 0.",
@@ -62,14 +108,20 @@ function camposDelFormato(formato: TipoPieza, marca: Marca): string[] {
   ];
 }
 
-/** El pedido de un lote: cuántas piezas, en qué idioma cada una y qué lleva cada campo. */
-export function pedidoDeLote(texto: string, formato: TipoPieza, marca: Marca, idiomas: Idioma[]): string {
+/**
+ * El pedido de un lote: cuántas piezas, en qué idioma cada una y qué lleva
+ * cada campo. Con fotos adjuntas, también qué es cada una.
+ */
+export function pedidoDeLote(texto: string, formato: TipoPieza, marca: Marca, idiomas: Idioma[], fotos?: FotosDelPedido): string {
+  const conFotos = Boolean(fotos?.n) && llevaImagen(formato);
+  const laminas = conFotos ? laminasDeCarrusel(fotos!.n, fotos!.antesDespues) : LAMINAS_CARRUSEL;
   return [
     `Pedido: ${texto.trim()}`,
-    `Formato: ${FORMATO[formato]}.`,
+    `Formato: ${formatoCon(formato, laminas)}.`,
+    ...lineasDeFotos(formato, fotos, idiomas.length),
     `Escribe ${idiomas.length} ${idiomas.length === 1 ? "pieza" : "piezas distintas entre sí (otro ángulo, otro gancho)"}, en este idioma cada una: ${idiomas.map((i, k) => `${k + 1}. ${IDIOMA[i]}`).join(", ")}.`,
     "Cada pieza lleva:",
-    ...camposDelFormato(formato, marca),
+    ...camposDelFormato(formato, marca, laminas, conFotos && Boolean(fotos?.antesDespues)),
   ].join("\n");
 }
 

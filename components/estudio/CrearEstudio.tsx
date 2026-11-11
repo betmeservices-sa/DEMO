@@ -10,15 +10,16 @@
 // /estudio/crear?marca=<id>&formato=<tipo>&foto=<url>&texto=<...>
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, ImageIcon, Play, Sparkles, WandSparkles, X } from "lucide-react";
+import { ArrowRight, Columns2, ImageIcon, ImagePlus, LoaderCircle, Play, Sparkles, WandSparkles, X } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { deMarca, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
+import { agregarMedio, deMarca, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
 import { generar } from "@/lib/estudio/api";
 import { diaDe, haceCuanto, localSV } from "@/lib/estudio/fechas";
-import { CANTIDADES, creditosTotal, estimarCreditos, idiomaDe, redesDelFormato } from "@/lib/estudio/generador";
+import { CANTIDADES, MAX_FOTOS, creditosTotal, estimarCreditos, idiomaDe, laminasDeCarrusel, redesDelFormato } from "@/lib/estudio/generador";
 import { llevaImagen } from "@/lib/estudio/imagen";
+import { subirFoto, tituloDeArchivo } from "@/lib/estudio/subir";
 import type { Idioma, Marca, OrigenImagen, Pieza, Red, RegistroUso, TipoPieza } from "@/lib/estudio/tipos";
 import {
   Boton,
@@ -180,11 +181,14 @@ function TarjetaFormato({
   formato,
   marca,
   activo,
+  laminas,
   onElegir,
 }: {
   formato: TipoPieza;
   marca: Marca;
   activo: boolean;
+  /** Las láminas que saldría el carrusel con las fotos de ahora. */
+  laminas: number;
   onElegir: () => void;
 }) {
   const tiene = new Set(marca.redes.filter((r) => r.estado !== "sin_conectar").map((r) => r.red));
@@ -196,7 +200,7 @@ function TarjetaFormato({
     formato === "video"
       ? marca.avatar?.nombre ?? "Sin avatar"
       : formato === "carrusel"
-        ? "3 láminas"
+        ? `${laminas} láminas`
         : formato === "anuncio"
           ? "Facebook e Instagram"
           : redes.length
@@ -223,6 +227,208 @@ function TarjetaFormato({
   );
 }
 
+/** De dónde sale la imagen: la genera el modelo, son fotos de obra, o un antes y después. */
+type Fuente = "ia" | "obra" | "antes_despues";
+type Lado = "antes" | "despues";
+
+/** Soltar fotos encima: solo las imágenes, en el orden en que llegan. */
+function useSoltar(onArchivos: (fs: File[]) => void) {
+  const [encima, setEncima] = useState(false);
+  return {
+    encima,
+    props: {
+      onDragOver: (e: DragEvent) => {
+        e.preventDefault();
+        setEncima(true);
+      },
+      onDragLeave: () => setEncima(false),
+      onDrop: (e: DragEvent) => {
+        e.preventDefault();
+        setEncima(false);
+        const fs = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+        if (fs.length) onArchivos(fs);
+      },
+    },
+  };
+}
+
+/** Las fotos de obra del encargo, en su orden, y el botón para subir más. */
+function FotosDeObra({
+  fotos,
+  subiendo,
+  formato,
+  onArchivos,
+  onQuitar,
+}: {
+  fotos: string[];
+  subiendo: number;
+  formato: TipoPieza;
+  onArchivos: (fs: File[]) => void;
+  onQuitar: (k: number) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const { encima, props } = useSoltar(onArchivos);
+  const carrusel = formato === "carrusel";
+  const caben = fotos.length + subiendo < MAX_FOTOS;
+  const nota =
+    fotos.length + subiendo === 0
+      ? "Súbelas o suéltalas aquí. Sin fotos, el motor usa las de la biblioteca de la marca."
+      : carrusel
+        ? fotos.length > 1
+          ? "Van en este orden en el carrusel."
+          : null
+        : fotos.length > 1
+          ? `Una foto por ${formato === "anuncio" ? "anuncio" : "post"}, en este orden.`
+          : null;
+  return (
+    <div
+      {...props}
+      className={cn(
+        "mt-3 rounded-[18px] border border-dashed p-2.5 transition",
+        encima ? "border-[var(--es-acento)] bg-[rgba(91,188,214,0.08)]" : "border-[var(--border-2)] bg-white/[0.02]",
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        {fotos.map((u, k) => (
+          <span key={`${k}-${u.slice(-24)}`} className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[12px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={u} alt={`Foto ${k + 1}`} className="h-full w-full object-cover" />
+            {carrusel && fotos.length > 1 && (
+              <span className="absolute bottom-1 left-1 rounded-full bg-black/70 px-1.5 text-[10.5px] font-bold leading-[16px] text-white">{k + 1}</span>
+            )}
+            <button
+              type="button"
+              aria-label={`Quitar la foto ${k + 1}`}
+              onClick={() => onQuitar(k)}
+              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/65 text-white transition hover:bg-black/85"
+            >
+              <X size={12} />
+            </button>
+          </span>
+        ))}
+        {Array.from({ length: subiendo }, (_, k) => (
+          <span key={`subiendo-${k}`} className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[12px] bg-white/[0.06]">
+            <LoaderCircle size={18} className="animate-spin text-[var(--text-3)]" />
+          </span>
+        ))}
+        {caben && (
+          <button
+            type="button"
+            onClick={() => input.current?.click()}
+            className="flex h-[72px] min-w-[72px] shrink-0 flex-col items-center justify-center gap-1 rounded-[12px] bg-white/[0.05] px-3 text-[11.5px] font-semibold text-[var(--text-2)] transition hover:bg-white/[0.09] hover:text-[var(--text)]"
+          >
+            <ImagePlus size={18} />
+            {fotos.length ? "Agregar" : "Subir fotos"}
+          </button>
+        )}
+        <div className="min-w-[180px] flex-1 pl-1 text-[12px] leading-snug text-[var(--text-3)]">
+          {nota && <p>{nota}</p>}
+          <Link href="/estudio/biblioteca" className="font-semibold text-[var(--es-acento)] hover:underline">
+            Elegir de la biblioteca
+          </Link>
+        </div>
+      </div>
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          const fs = Array.from(e.target.files ?? []);
+          e.target.value = "";
+          if (fs.length) onArchivos(fs);
+        }}
+      />
+    </div>
+  );
+}
+
+/** Una de las dos cajas del antes y después: vacía pide la foto; con foto, se cambia o se quita. */
+function CajaFoto({
+  etiqueta,
+  url,
+  subiendo,
+  onArchivo,
+  onQuitar,
+}: {
+  etiqueta: string;
+  url: string | null;
+  subiendo: boolean;
+  onArchivo: (f: File) => void;
+  onQuitar: () => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const { encima, props } = useSoltar((fs) => onArchivo(fs[0]));
+  const abrir = () => input.current?.click();
+  return (
+    <div
+      {...props}
+      className={cn(
+        "relative aspect-[4/3] overflow-hidden rounded-[18px] border transition",
+        encima
+          ? "border-dashed border-[var(--es-acento)] bg-[rgba(91,188,214,0.08)]"
+          : url
+            ? "border-[var(--border)]"
+            : "border-dashed border-[var(--border-2)] bg-white/[0.02]",
+      )}
+    >
+      {url ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={etiqueta} className="absolute inset-0 h-full w-full object-cover" />
+          <span className="absolute left-2.5 top-2.5 rounded-full bg-[#0b1830]/80 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white">
+            {etiqueta}
+          </span>
+          <div className="absolute bottom-2 right-2 flex gap-1.5">
+            <button
+              type="button"
+              onClick={abrir}
+              className="rounded-full bg-black/65 px-2.5 py-1 text-[11.5px] font-semibold text-white transition hover:bg-black/85"
+            >
+              Cambiar
+            </button>
+            <button
+              type="button"
+              aria-label={`Quitar la foto del ${etiqueta.toLowerCase()}`}
+              onClick={onQuitar}
+              className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-black/65 text-white transition hover:bg-black/85"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={abrir}
+          className="flex h-full w-full flex-col items-center justify-center gap-1 px-2 text-center text-[var(--text-2)] transition hover:bg-white/[0.04] hover:text-[var(--text)]"
+        >
+          <ImagePlus size={22} />
+          <span className="es-rotulo mt-0.5 text-[20px] font-semibold uppercase tracking-[0.04em]">{etiqueta}</span>
+          <span className="text-[11.5px] text-[var(--text-3)]">Sube o suelta la foto</span>
+        </button>
+      )}
+      {subiendo && (
+        <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/55 text-[12.5px] font-semibold text-white">
+          <LoaderCircle size={16} className="animate-spin" /> Subiendo
+        </span>
+      )}
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) onArchivo(f);
+        }}
+      />
+    </div>
+  );
+}
+
 function Composer({
   marcas,
   marca,
@@ -243,8 +449,14 @@ function Composer({
   const [es, setEs] = useState(marca.idiomas.es);
   const [idiomaUno, setIdiomaUno] = useState<Idioma>(marca.idiomas.es >= 50 ? "es" : "en");
   const [redes, setRedes] = useState<Red[]>([]);
-  const [foto, setFoto] = useState<string | null>(null);
-  const [origen, setOrigen] = useState<OrigenImagen>("ia");
+  const [fuente, setFuente] = useState<Fuente>("ia");
+  // Fotos de obra (subidas o de la biblioteca), en el orden en que van.
+  const [fotos, setFotos] = useState<string[]>([]);
+  const [subiendo, setSubiendo] = useState(0);
+  // Antes y después: cada una en su caja, siempre en ese orden.
+  const [antes, setAntes] = useState<string | null>(null);
+  const [despues, setDespues] = useState<string | null>(null);
+  const [subiendoLado, setSubiendoLado] = useState<Record<Lado, boolean>>({ antes: false, despues: false });
   const [generando, setGenerando] = useState(false);
 
   const tiene = marca.redes.filter((r) => r.estado !== "sin_conectar");
@@ -284,7 +496,8 @@ function Composer({
       setCantidad(CANTIDADES[fmt][0]);
     }
     if (f) {
-      setFoto(f);
+      setFotos([f]);
+      setFuente("obra");
       if (!esFormato(fmt)) {
         setFormato("imagen");
         setCantidad(1);
@@ -299,16 +512,85 @@ function Composer({
       : { es: 0, en: 100 }
     : { es, en: 100 - es };
 
-  // Con una foto elegida, la imagen es esa foto.
-  const origenImagen: OrigenImagen | undefined = llevaImagen(formato) ? (foto ? "obra" : origen) : undefined;
-  const estimado = estimarCreditos(formato, cantidad, origenImagen);
+  // Las fotos que van con el encargo. Antes y después: siempre el antes primero.
+  const conImagen = llevaImagen(formato);
+  const esAntesDespues = conImagen && fuente === "antes_despues";
+  const fotosEncargo: string[] | undefined =
+    formato === "video"
+      ? undefined
+      : !conImagen
+        ? fotos.slice(0, 1)
+        : esAntesDespues
+          ? antes && despues
+            ? [antes, despues]
+            : undefined
+          : fuente === "obra"
+            ? fotos
+            : undefined;
+  const origenImagen: OrigenImagen | undefined = conImagen ? (fuente === "ia" ? "ia" : "obra") : undefined;
+  const laminas = laminasDeCarrusel(esAntesDespues ? 2 : fotosEncargo?.length ?? 0, esAntesDespues);
+  const estimado = estimarCreditos(formato, cantidad, origenImagen, laminas);
   const porVideo = formato === "video" ? Math.round(estimado.alAprobar / cantidad) : 0;
   const usado = usadoEsteMes(uso, marca.id);
   const quedan = Math.max(0, marca.creditosPlan - usado);
   const alcanza = estimado.ahora <= quedan;
+  const falta = esAntesDespues && !(antes && despues) ? (antes ? "Falta la foto del después." : despues ? "Falta la foto del antes." : "Sube el antes y el después.") : null;
+  const ocupado = subiendo > 0 || subiendoLado.antes || subiendoLado.despues;
+
+  /** Cada foto que se sube queda también en la biblioteca de la marca. */
+  function aLaBiblioteca(url: string, archivo: File) {
+    agregarMedio({
+      id: `md-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      marcaId: marca.id,
+      url,
+      tipo: "obra",
+      titulo: tituloDeArchivo(archivo.name),
+      fecha: new Date().toISOString(),
+      usos: 0,
+    });
+  }
+
+  async function subirVarias(archivos: File[]) {
+    const libres = MAX_FOTOS - fotos.length - subiendo;
+    const van = archivos.filter((f) => f.type.startsWith("image/")).slice(0, Math.max(0, libres));
+    if (archivos.length > van.length) avisar(`Van hasta ${MAX_FOTOS} fotos por encargo.`, "error");
+    if (!van.length) return;
+    setSubiendo((n) => n + van.length);
+    const salieron = await Promise.allSettled(van.map((f) => subirFoto(f, marca.id)));
+    setSubiendo((n) => n - van.length);
+    const urls: string[] = [];
+    salieron.forEach((r, k) => {
+      if (r.status !== "fulfilled") return;
+      urls.push(r.value);
+      aLaBiblioteca(r.value, van[k]);
+    });
+    // En el orden en que se eligieron, después de las que ya estaban.
+    setFotos((prev) => [...prev, ...urls].slice(0, MAX_FOTOS));
+    const fallo = salieron.find((r): r is PromiseRejectedResult => r.status === "rejected");
+    if (fallo) avisar(fallo.reason instanceof Error ? fallo.reason.message : "Una foto no se pudo subir.", "error");
+  }
+
+  async function subirLado(lado: Lado, archivo: File) {
+    setSubiendoLado((s) => ({ ...s, [lado]: true }));
+    try {
+      const url = await subirFoto(archivo, marca.id);
+      (lado === "antes" ? setAntes : setDespues)(url);
+      aLaBiblioteca(url, archivo);
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : "La foto no se pudo subir.", "error");
+    } finally {
+      setSubiendoLado((s) => ({ ...s, [lado]: false }));
+    }
+  }
+
+  function elegirFuente(f: Fuente) {
+    setFuente(f);
+    // Un antes y después suele ser uno: el lote grande repite las mismas dos fotos.
+    if (f === "antes_despues") setCantidad(CANTIDADES[formato][0]);
+  }
 
   async function lanzar() {
-    if (!texto.trim() || generando || !alcanza) return;
+    if (!texto.trim() || generando || !alcanza || falta || ocupado) return;
     if (!redes.length) {
       avisar("Elige al menos una red.", "error");
       return;
@@ -322,14 +604,17 @@ function Composer({
         cantidad,
         idiomas,
         redes,
-        fotos: foto && formato !== "video" ? [foto] : undefined,
+        fotos: fotosEncargo?.length ? fotosEncargo : undefined,
         origenImagen,
+        antesDespues: esAntesDespues,
       });
       if (!piezas.length) {
         avisar(`${marca.nombre} todavía no tiene ${formato === "video" ? "avatar para video" : "ese formato"}.`, "error");
       } else {
         onListo(piezas);
-        setFoto(null);
+        setFotos([]);
+        setAntes(null);
+        setDespues(null);
       }
     } catch (e) {
       avisar((e as Error).message, "error");
@@ -362,7 +647,7 @@ function Composer({
       {/* Qué se crea */}
       <div role="group" aria-label="Formato" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:grid md:grid-cols-5 md:overflow-visible">
         {FORMATOS.map((f) => (
-          <TarjetaFormato key={f} formato={f} marca={marca} activo={formato === f} onElegir={() => elegirFormato(f)} />
+          <TarjetaFormato key={f} formato={f} marca={marca} activo={formato === f} laminas={laminas} onElegir={() => elegirFormato(f)} />
         ))}
       </div>
 
@@ -384,38 +669,76 @@ function Composer({
             </button>
           ))}
         </div>
-        {llevaImagen(formato) && !foto && (
+        {conImagen && (
           <div role="group" aria-label="La imagen" className="flex flex-wrap items-center gap-2">
             <span className="text-[12.5px] text-[var(--text-3)]">La imagen</span>
-            <div className="flex rounded-full bg-black/30 p-0.5">
+            <div className="flex flex-wrap rounded-[18px] bg-black/30 p-0.5">
               {(
                 [
                   ["ia", "Generarla con IA", Sparkles],
-                  ["obra", "Foto de obra", ImageIcon],
+                  ["obra", "Fotos de obra", ImageIcon],
+                  ["antes_despues", "Antes y después", Columns2],
                 ] as const
               ).map(([id, texto, Icono]) => (
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setOrigen(id)}
-                  aria-pressed={origen === id}
+                  onClick={() => elegirFuente(id)}
+                  aria-pressed={fuente === id}
                   className={cn(
                     "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition",
-                    origen === id ? "bg-white/[0.14] text-[var(--text)]" : "text-[var(--text-3)] hover:text-[var(--text-2)]",
+                    fuente === id ? "bg-white/[0.14] text-[var(--text)]" : "text-[var(--text-3)] hover:text-[var(--text-2)]",
                   )}
                 >
                   <Icono size={14} /> {texto}
                 </button>
               ))}
             </div>
-            {origen === "obra" && (
-              <Link href="/estudio/biblioteca" className="text-[12.5px] font-semibold text-[var(--es-acento)] hover:underline">
-                Elegir la foto
-              </Link>
-            )}
           </div>
         )}
       </div>
+
+      {/* Las fotos: las de obra en su orden, o las dos cajas del antes y después */}
+      {conImagen && fuente === "obra" && (
+        <FotosDeObra
+          fotos={fotos}
+          subiendo={subiendo}
+          formato={formato}
+          onArchivos={(fs) => void subirVarias(fs)}
+          onQuitar={(k) => setFotos(fotos.filter((_, j) => j !== k))}
+        />
+      )}
+      {esAntesDespues && (
+        <div className="mt-3">
+          <div className="relative grid grid-cols-2 gap-3">
+            <CajaFoto
+              etiqueta="Antes"
+              url={antes}
+              subiendo={subiendoLado.antes}
+              onArchivo={(f) => void subirLado("antes", f)}
+              onQuitar={() => setAntes(null)}
+            />
+            <CajaFoto
+              etiqueta="Después"
+              url={despues}
+              subiendo={subiendoLado.despues}
+              onArchivo={(f) => void subirLado("despues", f)}
+              onQuitar={() => setDespues(null)}
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#0f1a30] text-[var(--es-acento)] ring-1 ring-[var(--border-2)]"
+            >
+              <ArrowRight size={15} />
+            </span>
+          </div>
+          <p className="mt-2 text-[12px] text-[var(--text-3)]">
+            {formato === "carrusel"
+              ? "Lámina 1 el antes, lámina 2 el después."
+              : "Van en una sola imagen: el antes arriba y el después abajo."}
+          </p>
+        </div>
+      )}
 
       {/* El encargo */}
       <div className="es-hueco mt-4 rounded-[20px] p-1.5 focus-within:border-[rgba(91,188,214,0.45)]">
@@ -431,12 +754,12 @@ function Composer({
           className="block w-full resize-none bg-transparent px-3.5 pb-2 pt-3 text-[16px] leading-[1.5] text-[var(--text)] outline-none placeholder:text-[var(--text-3)] lg:text-[17px]"
         />
         <div className="flex flex-wrap items-center gap-2 px-2 pb-1.5">
-          {foto && formato !== "video" ? (
+          {formato === "texto" && fotos[0] ? (
             <span className="flex items-center gap-2 rounded-[12px] bg-white/[0.06] p-1 pr-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={foto} alt="" className="h-10 w-10 rounded-[8px] object-cover" />
+              <img src={fotos[0]} alt="" className="h-10 w-10 rounded-[8px] object-cover" />
               <span className="text-[12px] text-[var(--text-2)]">Sobre esta foto</span>
-              <button type="button" aria-label="Quitar la foto" onClick={() => setFoto(null)} className="text-[var(--text-3)] hover:text-[var(--text)]">
+              <button type="button" aria-label="Quitar la foto" onClick={() => setFotos([])} className="text-[var(--text-3)] hover:text-[var(--text)]">
                 <X size={14} />
               </button>
             </span>
@@ -553,15 +876,18 @@ function Composer({
               No alcanza: a {marca.nombre} le quedan {creditosTexto(quedan)} este mes.
             </p>
           )}
+          {falta && (
+            <p className={cn("mt-0.5 text-[12px]", antes || despues ? "font-semibold text-[var(--es-ambar)]" : "text-[var(--text-3)]")}>{falta}</p>
+          )}
         </div>
         <Boton
           variante="primario"
           onClick={() => void lanzar()}
-          disabled={!texto.trim() || generando || !alcanza}
+          disabled={!texto.trim() || generando || !alcanza || Boolean(falta) || ocupado}
           className="h-11 w-full px-6 text-[14px] sm:w-auto"
         >
           <WandSparkles size={17} />
-          {generando ? "Generando" : `Generar ${cuantasDe(formato, cantidad)}`}
+          {generando ? "Generando" : ocupado ? "Subiendo fotos" : `Generar ${cuantasDe(formato, cantidad)}`}
         </Boton>
       </div>
 
@@ -627,9 +953,10 @@ function Resultado({ piezas, marca }: { piezas: Pieza[]; marca: Marca }) {
           <motion.li key={p.id} variants={{ oculto: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}>
             <Link href={`/estudio/aprobacion?pieza=${p.id}`} className="group block">
               <span className="relative block">
-                <Miniatura pieza={p} marca={marca} forma="post" className="transition group-hover:-translate-y-0.5" />
+                {/* El sello del formato va en la esquina de la etiqueta del antes: en un antes y después la reemplaza. */}
+                <Miniatura pieza={p} marca={marca} forma="post" sinEtiquetas={p.antesDespues} className="transition group-hover:-translate-y-0.5" />
                 <span className="absolute left-2 top-2 rounded-full bg-[#0b1830]/80 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
-                  {p.tipo === "video" && p.fase === "guion" ? "Guion de video" : TIPO[p.tipo]}
+                  {p.tipo === "video" && p.fase === "guion" ? "Guion de video" : p.antesDespues ? "Antes y después" : TIPO[p.tipo]}
                 </span>
               </span>
               <p className="mt-2 line-clamp-2 text-[13px] font-semibold leading-snug">{p.titulo}</p>

@@ -34,7 +34,9 @@ import {
   ThumbsUp,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { enUnaImagen, esAntesDespues, etiquetaDeLamina } from "@/lib/estudio/antes-despues";
 import type { Marca, Pieza, Red } from "@/lib/estudio/tipos";
+import { Etiqueta, FotoDividida, ImagenDePieza } from "./AntesDespues";
 import { RotuloDePieza } from "./Rotulo";
 import { MarcaSello } from "./ui";
 
@@ -60,16 +62,27 @@ function Foto({ src, alt, className }: { src?: string; alt: string; className?: 
   return <img src={src} alt={alt} className={cn("h-full w-full object-cover", className)} />;
 }
 
-/** Las fotos de un carrusel, con flechas y puntos. */
+/**
+ * Las fotos de un carrusel, con flechas y puntos. Un post de antes y después
+ * es una sola lámina con las dos fotos.
+ */
 function Carrusel({ pieza, marca, aspecto }: { pieza: Pieza; marca: Marca; aspecto: string }) {
   const [i, setI] = useState(0);
-  const fotos = pieza.medios.length ? pieza.medios : [undefined];
+  const dividida = enUnaImagen(pieza);
+  const fotos = dividida ? pieza.medios.slice(0, 1) : pieza.medios.length ? pieza.medios : [undefined];
   const n = fotos.length;
+  const k = Math.min(i, n - 1);
+  const etiqueta = etiquetaDeLamina(pieza, k);
   useEffect(() => setI(0), [pieza.id]);
   return (
     <div className={cn("relative overflow-hidden bg-[#1a2843] [container-type:inline-size]", aspecto)}>
-      <Foto src={fotos[Math.min(i, n - 1)]} alt={pieza.ideaImagen ?? pieza.titulo} className="absolute inset-0" />
-      <RotuloDePieza pieza={pieza} marca={marca} i={Math.min(i, n - 1)} />
+      {dividida ? (
+        <FotoDividida antes={pieza.medios[0]} despues={pieza.medios[1]} idioma={pieza.idioma} alt={pieza.ideaImagen ?? pieza.titulo} className="absolute inset-0" />
+      ) : (
+        <Foto src={fotos[k]} alt={pieza.ideaImagen ?? pieza.titulo} className="absolute inset-0" />
+      )}
+      <RotuloDePieza pieza={pieza} marca={marca} i={k} />
+      {etiqueta && <Etiqueta texto={etiqueta} />}
       {n > 1 && (
         <>
           <span className="absolute right-2.5 top-2.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">
@@ -230,7 +243,12 @@ function Google({ pieza, marca }: { pieza: Pieza; marca: Marca }) {
           <p className="text-[12px] text-[#9aa0a6]">Novedad · Ahora</p>
         </div>
       </div>
-      <Carrusel pieza={{ ...pieza, medios: pieza.medios.slice(0, 1) }} marca={marca} aspecto="aspect-[4/3]" />
+      {/* Google lleva una sola imagen: un antes y después va con las dos fotos juntas. */}
+      <Carrusel
+        pieza={esAntesDespues(pieza) ? { ...pieza, tipo: "imagen" } : { ...pieza, medios: pieza.medios.slice(0, 1) }}
+        marca={marca}
+        aspecto="aspect-[4/3]"
+      />
       <div className="px-4 pb-4 pt-3">
         <TextoCorto texto={textoDeRed(pieza, "google")} lineas={3} />
         <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#5f6368] px-3.5 py-1.5 text-[13px] font-medium text-[#8ab4f8]">
@@ -244,7 +262,6 @@ function Google({ pieza, marca }: { pieza: Pieza; marca: Marca }) {
 /** El anuncio de Meta: mismo texto, imagen, titular y botón en las dos redes. */
 function Anuncio({ pieza, marca, red }: { pieza: Pieza; marca: Marca; red: "facebook" | "instagram" }) {
   const ad = pieza.anuncio ?? { titular: pieza.titulo, descripcion: "", cta: "Ver más" };
-  const foto = pieza.medios[0];
 
   if (red === "instagram") {
     const h = handle(marca, "instagram");
@@ -258,8 +275,8 @@ function Anuncio({ pieza, marca, red }: { pieza: Pieza; marca: Marca; red: "face
           </span>
           <MoreHorizontal size={18} className="text-white/80" />
         </div>
-        <div className="relative aspect-[4/5] bg-[#1a2843]">
-          <Foto src={foto} alt={pieza.ideaImagen ?? ad.titular} className="absolute inset-0" />
+        <div className="relative aspect-[4/5] bg-[#1a2843] [container-type:inline-size]">
+          <ImagenDePieza pieza={pieza} />
         </div>
         <div className="flex items-center justify-between bg-[#1d2a44] px-3 py-2.5 text-[13.5px] font-semibold text-white">
           {ad.cta}
@@ -293,8 +310,8 @@ function Anuncio({ pieza, marca, red }: { pieza: Pieza; marca: Marca; red: "face
       <div className="px-3.5 py-3">
         <TextoCorto texto={textoDeRed(pieza, "facebook")} />
       </div>
-      <div className="relative aspect-square bg-[#1a2843]">
-        <Foto src={foto} alt={pieza.ideaImagen ?? ad.titular} className="absolute inset-0" />
+      <div className="relative aspect-square bg-[#1a2843] [container-type:inline-size]">
+        <ImagenDePieza pieza={pieza} />
       </div>
       <div className="flex items-center gap-3 bg-[#3a3b3c] px-3.5 py-3">
         <div className="min-w-0 flex-1">

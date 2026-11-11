@@ -130,13 +130,29 @@ function fotosDeMarca(marcaId: string): string[] {
 /** Cuántas láminas lleva un carrusel. */
 export const LAMINAS_CARRUSEL = 3;
 
-function mediosPara(formato: TipoPieza, a: Angulo, marcaId: string, fotos?: string[]): string[] {
+/** Las fotos que se pueden subir en un encargo: un carrusel lleva hasta estas láminas. */
+export const MAX_FOTOS = 10;
+
+/** Cuántas láminas sale un carrusel: tres, o las fotos que se subieron si son más; dos si es antes y después. */
+export function laminasDeCarrusel(fotos = 0, antesDespues = false): number {
+  if (antesDespues) return 2;
+  return Math.max(LAMINAS_CARRUSEL, Math.min(fotos, MAX_FOTOS));
+}
+
+/**
+ * Las fotos de la pieza i del lote. Con fotos del encargo, un post usa una
+ * (la i, dando la vuelta) y un carrusel todas en su orden; antes y después
+ * son siempre esas dos, el antes primero.
+ */
+function mediosPara(formato: TipoPieza, a: Angulo, marcaId: string, fotos?: string[], i = 0, antesDespues = false): string[] {
   if (formato === "video") return [];
+  if (antesDespues && fotos && fotos.length >= 2) return fotos.slice(0, 2);
+  if (formato !== "carrusel" && fotos?.length) return [fotos[i % fotos.length]];
   const base = fotos?.length ? fotos : a.fotos.filter((f) => !f.includes("retrato-"));
   const propias = base.length ? base : fotosDeMarca(marcaId).slice(0, 1);
   if (formato !== "carrusel") return propias.slice(0, 1);
   const extra = fotosDeMarca(marcaId).filter((f) => !propias.includes(f));
-  return [...propias, ...extra].slice(0, LAMINAS_CARRUSEL);
+  return [...propias, ...extra].slice(0, laminasDeCarrusel(fotos?.length ?? 0));
 }
 
 /**
@@ -148,6 +164,12 @@ export function rotulosDeAngulo(tipo: TipoPieza, t: TextoAngulo, laminas: number
   if (tipo !== "carrusel") return [t.titulo];
   const textos = [t.titulo, ...(t.laminas ?? [])];
   return Array.from({ length: Math.max(1, laminas) }, (_, i) => textos[i] ?? "");
+}
+
+/** Una lámina sin texto por foto (el post de antes y después es una sola lámina). */
+function rotulosVacios(tipo: TipoPieza, laminas: number): string[] | undefined {
+  if (!llevaRotulo(tipo)) return undefined;
+  return Array<string>(tipo === "carrusel" ? Math.max(1, laminas) : 1).fill("");
 }
 
 /**
@@ -166,10 +188,12 @@ export interface PedidoGeneracion {
   cantidad: number;
   idiomas: Record<Idioma, number>;
   redes?: Red[];
-  /** Fotos de la biblioteca sobre las que escribir. */
+  /** Fotos subidas o de la biblioteca sobre las que escribir. */
   fotos?: string[];
   /** Si la imagen la genera el modelo o sale de las fotos de obra. Con fotos elegidas, es obra. */
   origenImagen?: OrigenImagen;
+  /** fotos[0] es el antes y fotos[1] el después. */
+  antesDespues?: boolean;
   encargoId: string;
   actor: string;
   ahoraIso: string;
@@ -196,7 +220,8 @@ export function generarPiezas(p: PedidoGeneracion, escritos?: Angulo[]): Pieza[]
     const t = a[idioma];
     const tipo = p.formato;
     const redes = redesPara(tipo, p.marca, p.redes);
-    const medios = mediosPara(tipo, a, p.marca.id, p.fotos);
+    const antesDespues = llevaImagen(tipo) && Boolean(p.antesDespues) && (p.fotos?.length ?? 0) >= 2;
+    const medios = mediosPara(tipo, a, p.marca.id, p.fotos, i, antesDespues);
     const origenImagen = llevaImagen(tipo) ? (p.fotos?.length ? "obra" : p.origenImagen) : undefined;
     piezas.push({
       id: `${p.encargoId}-${i + 1}`,
@@ -210,8 +235,12 @@ export function generarPiezas(p: PedidoGeneracion, escritos?: Angulo[]): Pieza[]
       guion: tipo === "video" ? t.guion : undefined,
       ideaImagen: a.idea,
       medios,
-      rotulos: rotulosDeAngulo(tipo, t, medios.length),
+      // Antes y después va sin titular encima: las fotos y sus etiquetas
+      // hablan solas. Quien aprueba puede escribirle uno.
+      rotulos: antesDespues ? rotulosVacios(tipo, medios.length) : rotulosDeAngulo(tipo, t, medios.length),
       origenImagen,
+      fotosDelEncargo: p.fotos?.length && tipo !== "video" ? true : undefined,
+      antesDespues: antesDespues || undefined,
       duracion: tipo === "video" ? a.duracion : undefined,
       anuncio: tipo === "anuncio" ? anuncioDe(t.titulo, p.marca, idioma) : undefined,
       redes,
@@ -233,9 +262,11 @@ export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso:
   if (!otro) return pieza;
   const t = otro[pieza.idioma];
   const hashtags = pieza.tipo === "anuncio" ? [] : t.hashtags;
-  // Regenerar es el texto: una imagen generada se queda (rehacerla se cobra aparte).
+  // Regenerar es el texto: una imagen generada se queda (rehacerla se cobra
+  // aparte), y las fotos que se subieron con el encargo también.
   const generada = llevaImagen(pieza.tipo) && origenDe(pieza) === "ia" && Boolean(pieza.pedidosImagen?.length);
-  const medios = pieza.tipo === "video" || generada ? pieza.medios : mediosPara(pieza.tipo, otro, marca.id);
+  const fijas = generada || Boolean(pieza.fotosDelEncargo);
+  const medios = pieza.tipo === "video" || fijas ? pieza.medios : mediosPara(pieza.tipo, otro, marca.id);
   return {
     ...pieza,
     titulo: t.titulo,
@@ -243,12 +274,12 @@ export function reescribir(pieza: Pieza, marca: Marca, motivo: string, ahoraIso:
     hashtags,
     guion: pieza.tipo === "video" ? t.guion : pieza.guion,
     // La imagen generada se queda, y con ella la escena que se le pidió.
-    ideaImagen: generada ? pieza.ideaImagen : otro.idea,
+    ideaImagen: fijas ? pieza.ideaImagen : otro.idea,
     medios,
     // Fotos nuevas: la letra se vuelve a sugerir con lo que se lea de ellas.
-    rotulos: rotulosDeAngulo(pieza.tipo, t, medios.length),
-    letra: generada ? pieza.letra : undefined,
-    lectura: generada ? pieza.lectura : undefined,
+    rotulos: pieza.antesDespues ? pieza.rotulos : rotulosDeAngulo(pieza.tipo, t, medios.length),
+    letra: fijas ? pieza.letra : undefined,
+    lectura: fijas ? pieza.lectura : undefined,
     duracion: pieza.tipo === "video" ? otro.duracion : pieza.duracion,
     anuncio: pieza.tipo === "anuncio" ? anuncioDe(t.titulo, marca, pieza.idioma) : pieza.anuncio,
     variantes: variantesDe(t.texto, t.hashtags, pieza.redes, "por_aprobar", pieza.tipo),
@@ -365,8 +396,8 @@ export function creditosPieza(formato: TipoPieza, laminas = 1, origen?: OrigenIm
  * Lo que va a gastar un encargo, para mostrarlo antes de generar. En video se
  * suma lo que costará armar cada uno si se aprueba el guion (30 s de promedio).
  */
-export function estimarCreditos(formato: TipoPieza, cantidad: number, origen?: OrigenImagen): { ahora: number; alAprobar: number } {
-  const ahora = creditosPieza(formato, 3, origen) * cantidad;
+export function estimarCreditos(formato: TipoPieza, cantidad: number, origen?: OrigenImagen, laminas = LAMINAS_CARRUSEL): { ahora: number; alAprobar: number } {
+  const ahora = creditosPieza(formato, laminas, origen) * cantidad;
   const alAprobar = formato === "video" ? creditosVideo("x".repeat(420), 30).total * cantidad : 0;
   return { ahora, alAprobar };
 }

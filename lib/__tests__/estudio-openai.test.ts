@@ -4,7 +4,7 @@ import { guardarImagen } from "@/lib/estudio/medios";
 import { conImagenes, proveedores } from "@/lib/estudio/proveedores";
 import { FallaOpenAI, imagenOpenAI, lecturaDeTexto, textoOpenAI, visionOpenAI } from "@/lib/estudio/proveedores/openai";
 import type { ProveedorImagen } from "@/lib/estudio/proveedores/tipos";
-import { angulosEscritos, instruccionesDeMarca, pedidoDeLote } from "@/lib/estudio/redaccion";
+import { angulosEscritos, fotosParaModelo, instruccionesDeMarca, pedidoDeLote } from "@/lib/estudio/redaccion";
 import { MARCAS } from "@/lib/estudio/semilla";
 import type { PedidoImagen } from "@/lib/estudio/tipos";
 
@@ -237,6 +237,49 @@ describe("textos con OpenAI", () => {
     const cuerpo = JSON.parse(String(llamadas[0].init.body));
     expect(cuerpo.text.format).toMatchObject({ type: "json_schema", name: "piezas", strict: true });
     expect(cuerpo.input[0].role).toBe("system");
+  });
+
+  it("las fotos del antes y después van al modelo en orden y el pedido dice cuál es cuál", async () => {
+    fetchFalso(
+      respuesta(200, {
+        output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify({ piezas: [escrita("De gris a blanco en 3 días")] }) }] }],
+      }),
+    );
+    const ANTES = "https://base/estudio/solano/antes.jpeg";
+    const DESPUES = "https://base/estudio/solano/despues.jpeg";
+    const { piezas } = await textoOpenAI("sk", "gpt-6-luna").generar({
+      marca: solano(),
+      texto: "la fachada de Coral Gables",
+      formato: "imagen",
+      cantidad: 1,
+      idiomas: { es: 100, en: 0 },
+      origenImagen: "obra",
+      fotos: [ANTES, DESPUES],
+      antesDespues: true,
+      encargoId: "enc-ad",
+      actor: "Prueba",
+    });
+    const contenido = JSON.parse(String(llamadas[0].init.body)).input[1].content;
+    expect(contenido[0].text).toMatch(/PRIMERA es el ANTES y la SEGUNDA el DESPUÉS/);
+    expect(contenido.slice(1)).toEqual([
+      { type: "input_image", image_url: ANTES, detail: "low" },
+      { type: "input_image", image_url: DESPUES, detail: "low" },
+    ]);
+    expect(piezas[0].medios).toEqual([ANTES, DESPUES]);
+    expect(piezas[0].antesDespues).toBe(true);
+  });
+
+  it("las fotos de muestra no van al modelo; las subidas sí, una por pieza", () => {
+    expect(fotosParaModelo(["/brand/estudio/casa.jpg", "blob:x", "https://b/1.jpeg", "data:image/jpeg;base64,AA"])).toEqual([
+      "https://b/1.jpeg",
+      "data:image/jpeg;base64,AA",
+    ]);
+    const lote = pedidoDeLote("fachadas", "imagen", solano(), ["es", "en", "es"], { n: 2 });
+    expect(lote).toMatch(/Van 2 fotos de la obra/);
+    expect(lote).toMatch(/volviendo a la foto 1/);
+    const carrusel = pedidoDeLote("fachadas", "carrusel", solano(), ["es"], { n: 5 });
+    expect(carrusel).toMatch(/carrusel de 5 láminas/);
+    expect(carrusel).toMatch(/láminas 2 a 5/);
   });
 
   it("otra versión conserva la imagen generada y su escena", async () => {

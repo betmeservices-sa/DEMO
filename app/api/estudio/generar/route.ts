@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { MAX_FOTOS } from "@/lib/estudio/generador";
 import { conImagenes, conLectura, proveedores } from "@/lib/estudio/proveedores";
 import { FallaOpenAI } from "@/lib/estudio/proveedores/openai";
 import type { PedidoTexto } from "@/lib/estudio/proveedores/tipos";
@@ -22,6 +23,10 @@ export async function POST(req: Request) {
   const p = await cuerpo<PedidoTexto>(req);
   if (!p?.marca?.id || !p.texto?.trim() || !p.formato || !p.encargoId) return malPedido("Falta la marca o el encargo.");
   if (!Number.isInteger(p.cantidad) || p.cantidad < 1 || p.cantidad > 12) return malPedido("La cantidad va de 1 a 12.");
+  if (p.fotos !== undefined && (!Array.isArray(p.fotos) || p.fotos.length > MAX_FOTOS || p.fotos.some((f) => typeof f !== "string" || !f))) {
+    return malPedido(`Van hasta ${MAX_FOTOS} fotos por encargo.`);
+  }
+  if (p.antesDespues && (p.fotos?.length ?? 0) < 2) return malPedido("El antes y después lleva las dos fotos: primero el antes y después el después.");
   let r;
   try {
     r = await proveedores().texto.generar(p);

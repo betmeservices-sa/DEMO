@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { enUnaImagen, esAntesDespues, etiquetaDeLamina, etiquetasDe } from "@/lib/estudio/antes-despues";
 import { BANCO, lecturaDeFoto } from "@/lib/estudio/banco";
 import { diaSemana, horaEnZona, instanteDe, localSV, lunesDe, sumarDias } from "@/lib/estudio/fechas";
 import {
@@ -8,6 +9,7 @@ import {
   creditosVideo,
   estimarCreditos,
   generarPiezas,
+  laminasDeCarrusel,
   usoDeGeneracion,
   idiomaDe,
   redesPara,
@@ -363,5 +365,77 @@ describe("la imagen que se le pide al modelo", () => {
     const otra = reescribir(p, solano(), "más corto", new Date(AHORA).toISOString());
     expect(otra.medios).toEqual(p.medios);
     expect(otra.pedidosImagen).toEqual(p.pedidosImagen);
+  });
+});
+
+describe("fotos subidas y antes y después", () => {
+  const ANTES = "https://base/estudio/solano/antes.jpeg";
+  const DESPUES = "https://base/estudio/solano/despues.jpeg";
+  const base = {
+    marca: marca("solano"),
+    texto: "El antes y después de la fachada en Coral Gables",
+    idiomas: { es: 100, en: 0 },
+    encargoId: "enc-ad",
+    actor: "Mario G.",
+    ahoraIso: new Date(AHORA).toISOString(),
+  };
+
+  it("el antes va siempre primero y el después después, en post, carrusel y anuncio", () => {
+    for (const formato of ["imagen", "carrusel", "anuncio"] as const) {
+      const [p] = generarPiezas({ ...base, formato, cantidad: 1, origenImagen: "obra", fotos: [ANTES, DESPUES], antesDespues: true });
+      expect(p.medios).toEqual([ANTES, DESPUES]);
+      expect(p.antesDespues).toBe(true);
+      expect(p.origenImagen).toBe("obra");
+      expect(esAntesDespues(p)).toBe(true);
+      expect(enUnaImagen(p)).toBe(formato !== "carrusel");
+    }
+  });
+
+  it("antes y después sale sin titular encima y con sus etiquetas en el idioma de la pieza", () => {
+    const [post] = generarPiezas({ ...base, formato: "imagen", cantidad: 1, fotos: [ANTES, DESPUES], antesDespues: true });
+    expect(rotulosDe(post)).toEqual([""]);
+    const [c] = generarPiezas({ ...base, formato: "carrusel", cantidad: 1, fotos: [ANTES, DESPUES], antesDespues: true, idiomas: { es: 0, en: 100 } });
+    expect(rotulosDe(c)).toEqual(["", ""]);
+    expect([etiquetaDeLamina(c, 0), etiquetaDeLamina(c, 1), etiquetaDeLamina(c, 2)]).toEqual(["Before", "After", undefined]);
+    expect(etiquetasDe("es")).toEqual(["Antes", "Después"]);
+  });
+
+  it("el carrusel de antes y después son dos láminas y cobra dos", () => {
+    expect(laminasDeCarrusel(2, true)).toBe(2);
+    expect(estimarCreditos("carrusel", 1, "obra", 2).ahora).toBe(3);
+  });
+
+  it("regenerar el texto deja las dos fotos en su orden", () => {
+    const [p] = generarPiezas({ ...base, formato: "carrusel", cantidad: 1, fotos: [ANTES, DESPUES], antesDespues: true });
+    const otra = reescribir(p, marca("solano"), "más corto", new Date(AHORA).toISOString());
+    expect(otra.medios).toEqual([ANTES, DESPUES]);
+    expect(otra.antesDespues).toBe(true);
+    expect(otra.rotulos).toEqual(["", ""]);
+  });
+
+  it("las fotos subidas reparten una por post y el carrusel las lleva todas en orden", () => {
+    const fotos = ["https://b/1.jpeg", "https://b/2.jpeg", "https://b/3.jpeg", "https://b/4.jpeg"];
+    const posts = generarPiezas({ ...base, formato: "imagen", cantidad: 5, idiomas: { es: 60, en: 40 }, fotos });
+    expect(posts.map((p) => p.medios[0])).toEqual([...fotos, fotos[0]]);
+    expect(posts.every((p) => p.fotosDelEncargo)).toBe(true);
+    const [c] = generarPiezas({ ...base, formato: "carrusel", cantidad: 1, fotos });
+    expect(c.medios).toEqual(fotos);
+    expect(c.rotulos).toHaveLength(4);
+    // Una sola foto en un carrusel: se completa con la biblioteca de la marca.
+    const [uno] = generarPiezas({ ...base, formato: "carrusel", cantidad: 1, fotos: [fotos[0]] });
+    expect(uno.medios[0]).toBe(fotos[0]);
+    expect(uno.medios).toHaveLength(3);
+  });
+
+  it("regenerar no cambia las fotos que se subieron", () => {
+    const [p] = generarPiezas({ ...base, formato: "imagen", cantidad: 1, fotos: ["https://b/obra.jpeg"] });
+    const otra = reescribir(p, marca("solano"), "", new Date(AHORA).toISOString());
+    expect(otra.medios).toEqual(["https://b/obra.jpeg"]);
+  });
+
+  it("sin las dos fotos no es antes y después", () => {
+    const [p] = generarPiezas({ ...base, formato: "imagen", cantidad: 1, fotos: [ANTES], antesDespues: true });
+    expect(p.antesDespues).toBeUndefined();
+    expect(p.medios).toEqual([ANTES]);
   });
 });

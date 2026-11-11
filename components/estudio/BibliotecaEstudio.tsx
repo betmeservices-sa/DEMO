@@ -12,6 +12,7 @@ import { cn } from "@/lib/cn";
 import { agregarMedio, deMarca, useEstudio, useMarcaActiva } from "@/lib/estudio/store";
 import { diaDe, fechaCorta, localSV } from "@/lib/estudio/fechas";
 import { estiloLetra, sugerirLetras, tamanoRotulo } from "@/lib/estudio/letras";
+import { subirFoto, tituloDeArchivo } from "@/lib/estudio/subir";
 import type { Marca, Medio, TipoMedio } from "@/lib/estudio/tipos";
 import { Desplegable } from "@/components/ui/Desplegable";
 import { MarcaSello, Vidrio, useAviso } from "./ui";
@@ -165,27 +166,39 @@ function Subir({ marcas, activa, avisar }: { marcas: Marca[]; activa: string; av
   const marcaId = activa !== "todas" ? activa : destino;
   const marca = marcas.find((m) => m.id === marcaId);
 
-  function recibir(archivos: FileList | null) {
+  const [subiendo, setSubiendo] = useState(0);
+
+  // Cada foto se sube a los medios de la marca: queda con su URL y no se pierde al recargar.
+  async function recibir(archivos: FileList | null) {
     if (!archivos || !marca) return;
     const fotos = Array.from(archivos).filter((f) => f.type.startsWith("image/"));
-    for (const f of fotos) {
+    if (!fotos.length) return;
+    setSubiendo((n) => n + fotos.length);
+    const salieron = await Promise.allSettled(fotos.map((f) => subirFoto(f, marca.id)));
+    setSubiendo((n) => n - fotos.length);
+    let bien = 0;
+    salieron.forEach((r, k) => {
+      if (r.status !== "fulfilled") return;
+      bien++;
       agregarMedio({
-        id: `md-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+        id: `md-${Date.now().toString(36)}-${k}-${Math.random().toString(36).slice(2, 6)}`,
         marcaId: marca.id,
-        url: URL.createObjectURL(f),
+        url: r.value,
         tipo: "obra",
-        titulo: f.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+        titulo: tituloDeArchivo(fotos[k].name),
         fecha: new Date().toISOString(),
         usos: 0,
       });
-    }
-    if (fotos.length) avisar(`${fotos.length === 1 ? "1 foto" : `${fotos.length} fotos`} en la biblioteca de ${marca.nombre}.`);
+    });
+    const fallo = salieron.find((r): r is PromiseRejectedResult => r.status === "rejected");
+    if (fallo) avisar(fallo.reason instanceof Error ? fallo.reason.message : "Una foto no se pudo subir.");
+    else avisar(`${bien === 1 ? "1 foto" : `${bien} fotos`} en la biblioteca de ${marca.nombre}.`);
   }
 
   function soltar(e: DragEvent) {
     e.preventDefault();
     setEncima(false);
-    recibir(e.dataTransfer.files);
+    void recibir(e.dataTransfer.files);
   }
 
   return (
@@ -221,12 +234,12 @@ function Subir({ marcas, activa, avisar }: { marcas: Marca[]; activa: string; av
       )}
       <button
         type="button"
-        disabled={!marca}
+        disabled={!marca || subiendo > 0}
         onClick={() => input.current?.click()}
         className="es-primario inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Upload size={14} />
-        Elegir fotos
+        {subiendo > 0 ? `Subiendo ${subiendo === 1 ? "1 foto" : `${subiendo} fotos`}` : "Elegir fotos"}
       </button>
       <input
         ref={input}
@@ -235,7 +248,7 @@ function Subir({ marcas, activa, avisar }: { marcas: Marca[]; activa: string; av
         multiple
         className="hidden"
         onChange={(e) => {
-          recibir(e.target.files);
+          void recibir(e.target.files);
           e.target.value = "";
         }}
       />
