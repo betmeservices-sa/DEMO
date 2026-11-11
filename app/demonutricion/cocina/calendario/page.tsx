@@ -232,7 +232,7 @@ function DetalleTanda({ tanda, filas, editar, eliminar, marcar }: { tanda: Tanda
               <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-bold">
                 <span className="tabular-nums text-[var(--text-3)]">#{k + 1}</span>
                 {cliente(g.o.clienteId).nombre}
-                <span className="rounded-md bg-orange-50 px-1.5 py-0.5 text-[10.5px] font-bold text-orange-700">{PLAN_INFO[g.o.plan].label}</span>
+                <span className="rounded-md bg-surface px-1.5 py-0.5 text-[10.5px] font-semibold text-[var(--text-2)]">{PLAN_INFO[g.o.plan].label}</span>
                 {p?.alergias.map((a) => (
                   <span key={a} className="inline-flex items-center gap-0.5 rounded-md bg-rose-50 px-1.5 py-0.5 text-[10.5px] font-bold text-rose-700">
                     <AlertTriangle size={9} /> {ALERGENOS[a]}

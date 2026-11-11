@@ -140,6 +140,18 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   const { calendario, setCalendario, rol } = useStore();
   const enAgendas = pathname.startsWith("/demonutricion/agendas");
 
+  // El chef no usa la barra de arriba: las órdenes nuevas ya se cuentan en el
+  // menú y lo del día está en Hoy. En el teléfono queda solo el botón del menú.
+  if (rol === "chef") {
+    return (
+      <div className="relative z-30 flex items-center border-b border-line bg-card px-3 py-2 lg:hidden">
+        <button type="button" onClick={onMenu} aria-label="Abrir menú" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-2)] hover:bg-surface">
+          <Menu size={22} />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="relative z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-line bg-card px-3 py-2 sm:px-4">
       <div className="flex min-w-0 items-center gap-2">
@@ -174,7 +186,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
         </div>
       </div>
 
-      <div className="flex justify-end">{rol === "secretaria" ? <Urgencias /> : rol === "nutricionista" ? <CasosNutricionista /> : <AvisosCocina />}</div>
+      <div className="flex justify-end">{rol === "secretaria" ? <Urgencias /> : <CasosNutricionista />}</div>
     </div>
   );
 }
@@ -579,46 +591,6 @@ function CasosNutricionista() {
   );
 }
 
-// Avisos de cocina: órdenes nuevas sin confirmar, la más antigua primero.
-function AvisosCocina() {
-  const { abierto, setAbierto, ref } = useDropdown();
-  const router = useRouter();
-  const { ordenes } = useStore();
-  const nuevas = ordenes.filter((o) => o.estado === "nueva");
-  return (
-    <div ref={ref} className="relative">
-      <BotonAviso abierto={abierto} onClick={() => setAbierto((a) => !a)} Icon={ChefHat} label="Órdenes nuevas" n={nuevas.length} color="#c2410c" titulo={`${nuevas.length} órdenes sin confirmar`} tono="neutro" />
-      {abierto && (
-        <div className="absolute right-0 z-40 mt-2 max-h-[80vh] w-[min(340px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-line bg-card shadow-xl">
-          <div className="bg-orange-50 px-4 py-3">
-            <p className="text-[14px] font-bold text-orange-800">Órdenes por confirmar</p>
-            <p className="text-[12px] text-orange-700/80">En orden de llegada</p>
-          </div>
-          {nuevas.length === 0 && <p className="px-4 py-6 text-center text-[13px] text-[var(--text-3)]">Todas confirmadas.</p>}
-          <div className="divide-y divide-line">
-            {nuevas.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => {
-                  setAbierto(false);
-                  router.push(`/demonutricion/cocina?orden=${o.id}`);
-                }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface"
-              >
-                <span className="w-11 shrink-0 text-[12px] font-bold tabular-nums text-[var(--text-3)]">{o.llegada}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-semibold">{cliente(o.clienteId).nombre}</span>
-                  <span className="block truncate text-[12px] text-[var(--text-2)]">{o.origen}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function NavLink({
   href,

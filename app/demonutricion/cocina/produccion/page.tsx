@@ -335,7 +335,7 @@ export default function ProduccionPage() {
                                 </span>
                               </div>
                             </div>
-                            <div className="flex shrink-0 gap-1.5 self-center">
+                            <div className="flex w-full shrink-0 justify-end gap-1.5 self-center sm:w-auto">
                               <button
                                 type="button"
                                 onClick={() => marcarPlatoHecho(dia, pl.id, 1, filtro || undefined)}
@@ -355,12 +355,12 @@ export default function ProduccionPage() {
                             </div>
                           </div>
                           {o?.ajustes.map((a) => (
-                            <p key={a.quien} className="ml-[120px] mt-1 rounded-md bg-violet-50 px-2 py-1 text-[12px] text-violet-800">
+                            <p key={a.quien} className="mt-1 rounded-md bg-violet-50 sm:ml-[120px] px-2 py-1 text-[12px] text-violet-800">
                               <b>1 porción para {a.quien}:</b> {a.texto}
                             </p>
                           ))}
                           {n > 0 && (
-                            <div className="ml-[120px] mt-1">
+                            <div className="mt-1 sm:ml-[120px]">
                               <button
                                 type="button"
                                 onClick={() =>
@@ -484,7 +484,7 @@ function ColaDelDia({ entregas }: { entregas: Entrega[]; dia: number }) {
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-1.5 text-[14.5px] font-bold">
                   {c.nombre}
-                  <span className="rounded-md bg-orange-50 px-1.5 py-0.5 text-[11px] font-bold text-orange-700">Plan {PLAN_INFO[o.plan].label}</span>
+                  <span className="rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-semibold text-[var(--text-2)]">Plan {PLAN_INFO[o.plan].label}</span>
                   {p?.alergias.map((a) => (
                     <span key={a} className="inline-flex items-center gap-0.5 rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-bold text-rose-700">
                       <AlertTriangle size={10} /> {ALERGENOS[a]}
@@ -549,7 +549,7 @@ function ColaDelDia({ entregas }: { entregas: Entrega[]; dia: number }) {
                         {hecho && <Check size={13} strokeWidth={3} />}
                       </span>
                       <span className="min-w-0 text-[12.5px] leading-snug">
-                        <span className="block text-[10.5px] font-bold uppercase tracking-wide text-[var(--entregas)]">{x.tiempo}</span>
+                        <span className="block text-[10.5px] font-bold uppercase tracking-wide text-[var(--text-3)]">{x.tiempo}</span>
                         <span className={cn("font-bold", hecho && "line-through decoration-emerald-600/60")}>{pl.nombre}</span>
                       </span>
                     </button>

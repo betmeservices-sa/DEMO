@@ -78,7 +78,7 @@ export default function PerfilesPage() {
                       {PLAN_INFO[p.plan].label} · porción {p.porcion.toLowerCase()} · {p.kcal} kcal · {p.proteinaG} g proteína
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-md bg-orange-50 px-1.5 py-0.5 text-[10.5px] font-bold text-orange-700">{PLAN_INFO[p.plan].label}</span>
+                  <span className="shrink-0 rounded-md bg-surface px-1.5 py-0.5 text-[10.5px] font-semibold text-[var(--text-2)]">{PLAN_INFO[p.plan].label}</span>
                 </div>
 
                 {p.alergias.length > 0 ? (
@@ -108,7 +108,7 @@ export default function PerfilesPage() {
                   <ul className="space-y-1 text-[12.5px]">
                     {p.tiempos.filter((t) => enCocina(t, p.plan)).map((t) => (
                       <li key={t} className="flex gap-2">
-                        <span className="w-24 shrink-0 font-semibold text-[var(--entregas)]">{t}</span>
+                        <span className="w-24 shrink-0 font-semibold text-[var(--text-3)]">{t}</span>
                         <span className="min-w-0 flex-1 text-[var(--text-2)]">
                           {(p.opciones[t] ?? []).map((id, i) => (
                             <span key={id}>
@@ -152,7 +152,7 @@ export default function PerfilesPage() {
                           <p className="text-[var(--text-2)]">
                             {d.items.filter((i) => enCocina(i.tiempo, o.plan)).map((i) => (
                               <span key={i.tiempo} className="mr-2 inline-block">
-                                <b className="text-[var(--entregas)]">{i.tiempo}:</b> {plato(i.platoId).nombre}
+                                <b className="text-[var(--text-3)]">{i.tiempo}:</b> {plato(i.platoId).nombre}
                                 {i.ajuste ? <span className="text-violet-700"> ✎</span> : null}
                               </span>
                             ))}

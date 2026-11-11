@@ -181,7 +181,7 @@ function Cola() {
                       <span className="w-8 shrink-0 text-[15px] font-extrabold tabular-nums">{pos >= 0 ? `#${pos + 1}` : "—"}</span>
                       <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="text-[14px] font-bold">{c.nombre}</span>
-                        <span className="text-[12.5px] font-semibold text-orange-700">{PLAN_INFO[o.plan].label}</span>
+                        <span className="text-[12.5px] font-semibold text-[var(--text-3)]">{PLAN_INFO[o.plan].label}</span>
                         <span className="text-[12.5px] text-[var(--text-2)]">
                           · <b>{comidasDe(o)} platos</b>
                           {proxima ? ` · sale ${etiquetaDia(proxima.dia).toLowerCase()} ${proxima.hora}` : ""}
@@ -209,7 +209,7 @@ function Cola() {
                       </span>
                     </button>
                     <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                      <span className={cn("hidden items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 sm:inline-flex", e.className)}>
+                      <span className={cn("hidden items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 sm:inline-flex", o.estado === "nueva" ? e.className : "bg-surface text-[var(--text-3)] ring-line")}>
                         <e.Icon size={11} /> {e.label}
                       </span>
                       {proxima && (
@@ -232,7 +232,7 @@ function Cola() {
                         </button>
                       )}
                       {(o.estado === "confirmada" || o.estado === "preparacion") && (
-                        <button type="button" onClick={() => moverOrden(o.id, "lista")} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[12px] font-bold text-white hover:bg-emerald-700">
+                        <button type="button" onClick={() => moverOrden(o.id, "lista")} className="inline-flex items-center gap-1 rounded-lg border border-emerald-600 px-2.5 py-1 text-[12px] font-bold text-emerald-700 hover:bg-emerald-50">
                           <Check size={13} /> Orden lista
                         </button>
                       )}
@@ -337,7 +337,7 @@ function Revision({ o, p, cerrar }: { o: Orden; p?: PlanAlimentacion; cerrar: ()
                   <span className="w-9 shrink-0 text-[18px] font-extrabold tabular-nums">{x.cantidad}</span>
                   <div className="min-w-0 flex-1">
                     <p>
-                      <span className="mr-1.5 text-[10.5px] font-bold uppercase tracking-wide text-[var(--entregas)]">{x.tiempo}</span>
+                      <span className="mr-1.5 text-[10.5px] font-bold uppercase tracking-wide text-[var(--text-3)]">{x.tiempo}</span>
                       <b>{pl.nombre}</b>
                     </p>
                     {pl.componentes && (
