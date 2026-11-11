@@ -18,9 +18,7 @@ import { ShellEstudio } from "@/components/estudio/ShellEstudio";
 // Rutas públicas que NO llevan el chrome del dashboard (sidebar, store, etc.).
 // "/portal" es el portal del paciente de la clínica: entra con su correo, sin
 // cuenta, igual que las páginas de los QR de abajo.
-// "/lacampana" es el portal del cliente del demo de La Campana: menú, carrito
-// y sucursales, sin cuenta, como lo abriría un comensal desde WhatsApp.
-const PUBLIC_ROUTES = ["/privacy", "/portal", "/lacampana"];
+const PUBLIC_ROUTES = ["/privacy", "/portal"];
 
 // Lo mismo, pero por prefijo: las dos páginas que abre el PACIENTE al escanear
 // un QR del consultorio (`/r/<código>` la del doctor, `/s/<código>` la del

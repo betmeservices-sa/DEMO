@@ -107,7 +107,7 @@ export function panelCampana(dias: PeriodoCampana): PanelCampana {
     ["Sitio web", 0.27],
     ["Instagram", 0.15],
     ["Facebook", 0.08],
-    ["Portal de Sofía", 0.04],
+    ["Llamada", 0.04],
   ];
   const porCanal = canales.map(([canal, w]) => ({ canal, pedidos: Math.round(pedidos * w) }));
 

@@ -626,44 +626,47 @@
   background: #c0d1d8;
 }
 
-/* El portal del cliente de La Campana (/lacampana): sin sesión, así que no
-   hay [data-tenant] y trae su propia paleta, la de MiAgentIA (oscuro, violeta
-   y cian, como el login). El violeta #7C3AED es solo relleno (texto blanco
-   encima 5.7:1); como texto va el violeta claro #A78BFA (7.1:1 sobre la
-   tarjeta). Contraste sobre #0D0D18: tinta 17.6:1, secundario 8.1:1,
-   terciario 5.7:1, cian #22D3EE 10.7:1. */
-.portal-campana {
-  --p-tinta: #f4f4f8;
-  --p-tinta-2: #a6a6ba;
-  --p-tinta-3: #8a8aa3;
-  --p-azul: #7c3aed;
-  --p-azul-hondo: #0d0d18;
-  --p-acento: #a78bfa;
-  --p-arena: #0e7490;
-  --p-arena-honda: #22d3ee;
-  --p-arena-suave: #10222b;
-  --p-fondo: #05050a;
-  --p-tarjeta: #0d0d18;
-  --p-borde: #1f1f2e;
-  --p-borde-2: #2e2e44;
-  --p-nav: 68px;
+/* Restaurante La Campana va en CLARO, CREMA Y ROJO LADRILLO: el rojo es el de
+   la campana de su logotipo (#7A210F, medido sobre el archivo de
+   lacampanacyt.com) y el ámbar acompaña como acento de parrilla. Fondo crema
+   tibio para que las fotos de los platos se vean apetitosas.
+   Contraste sobre el fondo #FAF6F2: tinta #2A1712 15.9:1, secundario #5A4239
+   8.6:1, terciario #77625A 5.3:1, rojo #7A210F 9.5:1, ámbar #A14A06 5.6:1 y
+   verde #2F6B3A 5.9:1; texto blanco sobre el rojo 10.2:1. WCAG AA. */
+[data-tenant="lacampana"] {
+  --brand-blue: #7a210f;
+  --brand-blue-dark: #5c180a;
+  --brand-green: #2f6b3a;
+  --brand-red: #b8322a;
+  --brand-accent: #a14a06;
+  --brand-accent-soft: #fbeee0;
 
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  color: var(--p-tinta);
-  background: var(--p-fondo);
-  min-height: 100dvh;
+  --surface: #faf6f2;
+  --surface-2: #f1e9e2;
+  --card: #ffffff;
+  --border: #ebe1d8;
+  --border-2: #d9cabd;
+  --text: #2a1712;
+  --text-2: #5a4239;
+  --text-3: #77625a;
+
+  /* Tokens de los pedidos y la agenda. */
+  --lc-cola: #a14a06;
+  --lc-cola-fondo: #fdf1e3;
+  --lc-cocina: #7a210f;
+  --lc-cocina-fondo: #f8e8e3;
+  --lc-camino: #1d5f8a;
+  --lc-camino-fondo: #e7f0f7;
+  --lc-listo: #2f6b3a;
+  --lc-listo-fondo: #e8f3ea;
+  --lc-reserva: #1d5f8a;
+  --lc-evento: #7a210f;
+
+  --font-app: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-body:has(.portal-campana) {
-  background: #05050a;
-}
-
-.portal-campana .portal-carrusel {
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-}
-.portal-campana .portal-carrusel::-webkit-scrollbar {
-  display: none;
+[data-tenant="lacampana"] ::-webkit-scrollbar-thumb:hover {
+  background: #c9b6a8;
 }
 
 

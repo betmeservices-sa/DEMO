@@ -12,13 +12,14 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { Bike, Bot, Clock, DollarSign, ExternalLink, Receipt, ShoppingBag, Store, TrendingUp } from "lucide-react";
+import { Bike, Bot, Clock, DollarSign, Receipt, ShoppingBag, Store, TrendingUp } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/cn";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { DeptBreakdown } from "@/components/dashboard/DeptBreakdown";
 import { PERIODOS_CAMPANA, dinero, panelCampana, type PeriodoCampana } from "@/lib/lacampana/panel-demo";
 import { precio } from "@/lib/lacampana/menu";
+import { AhoraCampana } from "@/components/lacampana/AhoraCampana";
 
 export function CampanaDashboard() {
   const { state } = useStore();
@@ -37,15 +38,6 @@ export function CampanaDashboard() {
             </p>
           </div>
           <div className="mb-1 flex flex-wrap items-center gap-2">
-          <a
-            href="/lacampana"
-            target="_blank"
-            rel="noopener"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 text-[12px] font-semibold text-[var(--text-2)] transition hover:bg-surface"
-          >
-            <ExternalLink size={13} />
-            Portal del cliente
-          </a>
           <div className="flex gap-1 rounded-xl border border-line bg-surface p-1">
             {PERIODOS_CAMPANA.map((x) => (
               <button
@@ -74,6 +66,8 @@ export function CampanaDashboard() {
           <MetricCard label="Chats resueltos por Sofía" valor={`${p.resueltasPorIa}%`} Icon={Bot} />
           <MetricCard label="Primera respuesta" valor={`${p.respuestaSeg} s`} Icon={Clock} />
         </div>
+
+        <AhoraCampana />
 
         <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
           <Panel titulo="Pedidos por hora" bajada={dias === 1 ? "Hoy, de 11:00 a 21:00" : `Promedio diario, ${periodo}`}>

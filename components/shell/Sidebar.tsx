@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessageSquareText, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
+import { BadgePercent, CalendarHeart, ShoppingBag, Receipt, Briefcase, CalendarCheck, Kanban, Rocket, UserSearch, MessagesSquare as MsgSq, TicketCheck, BarChart3, BedDouble, FileBarChart, ScrollText, Bot, BotOff, Building2, CalendarClock, CalendarDays, ConciergeBell, Contact, Filter, Gauge, FlaskConical, GitBranch, HandCoins, Headphones, IdCard, Inbox, LogOut, Megaphone, MessageCircle, MessageSquareText, MessagesSquare, Package, PartyPopper, PhoneCall, PhoneOutgoing, Scan, Settings, Share2, Sparkles, Stethoscope, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { MODULOS_AGENCIA, MODULOS_CLINICA, MODULOS_COMERCIAL, MODULOS_LACAMPANA, MODULOS_SHOPUSA, MODULOS_PIZZAHUT, VE_CLINICA } from "@/lib/modulos";
@@ -47,6 +47,8 @@ const NAV: NavItem[] = [
   { id: "eventos", href: "/eventos", label: "Eventos", Icon: PartyPopper },
   { id: "paquetes", href: "/paquetes", label: "Paquetes", Icon: Package },
   { id: "clientes", href: "/clientes", label: "Clientes", Icon: Users },
+  { id: "pedidos", href: "/pedidos", label: "Pedidos", Icon: ShoppingBag },
+  { id: "agenda", href: "/agenda", label: "Reservas y eventos", Icon: CalendarHeart },
   { id: "visitas", href: "/visitas", label: "Visitas", Icon: CalendarClock },
   { id: "cartera", href: "/cartera", label: "Cartera", Icon: Building2 },
   { id: "publicacion", href: "/publicacion", label: "Publicación", Icon: Share2 },
@@ -209,6 +211,9 @@ export function Sidebar({
       // Paquetes y Clientes son solo de ShopUSA, que tambien.
       item.id !== "paquetes" &&
       item.id !== "clientes" &&
+      // Pedidos y Agenda son solo de La Campana, que tambien.
+      item.id !== "pedidos" &&
+      item.id !== "agenda" &&
       (item.id !== "visitas" || veInmobiliaria) &&
       (item.id !== "cartera" || veInmobiliaria) &&
       (item.id !== "publicacion" || veInmobiliaria) &&
