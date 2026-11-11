@@ -2,7 +2,8 @@
 // salvadoreña de 21 sucursales con pedidos a domicilio, retiro en sucursal,
 // eventos y buzón de quejas (lacampanacyt.com). Es un demo para enseñarle el
 // panel con TODO de muestra salvo el menú, las fotos, el logo y las
-// sucursales, que son los de su sitio (lib/lacampana/).
+// sucursales, que son los de su sitio (lib/lacampana/). Panel y portal van
+// con la imagen de MiAgentIA (tema oscuro, violeta y cian), no la del restaurante.
 //
 // La agente, Sofía, NO contesta sola: el demo no tiene número conectado y no
 // se enciende el Modo IA. Sus respuestas en la bandeja son de la muestra.
@@ -69,8 +70,9 @@ export const lacampanaTenant: TenantConfig = {
     tagline: "Carnes, Tacos y más",
     loginTitulo: "Centro de Comunicación",
     emailPlaceholder: "nombre@lacampanacyt.com",
-    logoComponent: "lacampana",
-    logoAlt: "Restaurante La Campana",
+    // Con la imagen de MiAgentIA: el panel no lleva la marca del restaurante,
+    // solo su nombre como subtítulo.
+    wordmark: { icon: "Bot", titulo: "MiAgentIA", subtitulo: "La Campana" },
   },
   labels: { contacto: "cliente", contactoPlural: "clientes" },
   roles: {

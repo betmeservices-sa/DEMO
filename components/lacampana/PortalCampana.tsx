@@ -13,7 +13,6 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bike, Home, MapPin, Minus, MessageCircle, Plus, Send, ShoppingBag, Store, UtensilsCrossed } from "lucide-react";
-import { LaCampanaMarca } from "@/components/ui/LaCampanaLogo";
 import { CATEGORIAS, platoPorId, platosDe, precio, type Plato } from "@/lib/lacampana/menu";
 import { HORA_APERTURA, SUCURSALES_CAMPANA } from "@/lib/lacampana/sucursales";
 import { lacampanaSimulacion } from "@/lib/tenants/simulacion/lacampana";
@@ -133,10 +132,15 @@ function totalDe(c: Carrito): number {
 
 function Encabezado({ vista, irA, unidades }: { vista: VistaCampana; irA: (v: VistaCampana) => void; unidades: number }) {
   return (
-    <header className="sticky top-0 z-30 bg-[var(--p-azul-hondo)] px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+14px)] text-white lg:px-8 lg:pb-0 lg:pt-5">
+    <header className="sticky top-0 z-30 border-b border-[var(--p-borde)] bg-[var(--p-azul-hondo)] px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+14px)] text-white lg:px-8 lg:pb-0 lg:pt-5">
       <div className="flex items-center justify-between">
-        <div className="text-white">
-          <LaCampanaMarca height={30} />
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/miagentia-lockup.png" alt="MiAgentIA" className="h-8 w-auto" />
+          <span className="border-l border-white/20 pl-3 text-[15px] font-bold leading-tight">
+            La Campana
+            <span className="block text-[11px] font-medium text-white/60">Carnes, Tacos y más</span>
+          </span>
         </div>
         <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/75">
           {SUCURSALES_CAMPANA.length} sucursales
@@ -153,7 +157,7 @@ function Encabezado({ vista, irA, unidades }: { vista: VistaCampana; irA: (v: Vi
                   onClick={() => irA(id)}
                   aria-current={activa ? "page" : undefined}
                   className={`flex items-center gap-2 rounded-t-xl px-4 py-2.5 text-[14px] font-semibold transition-colors ${
-                    activa ? "bg-[var(--p-fondo)] text-[var(--p-azul-hondo)]" : "text-white/80 hover:bg-white/10"
+                    activa ? "bg-[var(--p-fondo)] text-[var(--p-tinta)]" : "text-white/80 hover:bg-white/10"
                   }`}
                 >
                   <Icono size={17} strokeWidth={activa ? 2.3 : 1.9} />
@@ -173,7 +177,7 @@ function Encabezado({ vista, irA, unidades }: { vista: VistaCampana; irA: (v: Vi
 
 function BarraInferior({ vista, irA, unidades }: { vista: VistaCampana; irA: (v: VistaCampana) => void; unidades: number }) {
   return (
-    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-[560px] -translate-x-1/2 border-t border-[var(--p-borde)] bg-white/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur lg:hidden">
+    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-[560px] -translate-x-1/2 border-t border-[var(--p-borde)] bg-[#0d0d18]/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur lg:hidden">
       <ul className="flex">
         {PESTANAS.map(({ id, rotulo, Icono }) => {
           const activa = vista === id;
@@ -184,7 +188,7 @@ function BarraInferior({ vista, irA, unidades }: { vista: VistaCampana; irA: (v:
                 onClick={() => irA(id)}
                 aria-current={activa ? "page" : undefined}
                 className={`relative flex h-[var(--p-nav)] w-full flex-col items-center justify-center gap-1 text-[10.5px] font-semibold transition-colors ${
-                  activa ? "text-[var(--p-azul)]" : "text-[var(--p-tinta-3)]"
+                  activa ? "text-[var(--p-acento)]" : "text-[var(--p-tinta-3)]"
                 }`}
               >
                 <Icono size={21} strokeWidth={activa ? 2.4 : 1.9} />
@@ -237,7 +241,7 @@ function Inicio({
             <button
               type="button"
               onClick={() => irA("menu")}
-              className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[14px] font-bold text-[var(--p-azul-hondo)]"
+              className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[14px] font-bold text-[#05050a]"
             >
               <Bike size={17} /> Pedir a domicilio
             </button>
@@ -269,7 +273,7 @@ function Inicio({
               key={c.id}
               type="button"
               onClick={() => verCategoria(c.id)}
-              className="rounded-full border border-[var(--p-borde-2)] bg-white px-3.5 py-2 text-[13px] font-semibold text-[var(--p-azul)]"
+              className="rounded-full border border-[var(--p-borde-2)] bg-[var(--p-tarjeta)] px-3.5 py-2 text-[13px] font-semibold text-[var(--p-acento)]"
             >
               {c.nombre}
             </button>
@@ -278,7 +282,7 @@ function Inicio({
       </section>
 
       <Tarjeta className="flex items-center gap-3 p-4">
-        <MessageCircle className="shrink-0 text-[var(--p-azul)]" size={22} />
+        <MessageCircle className="shrink-0 text-[var(--p-acento)]" size={22} />
         <div className="flex-1">
           <p className="text-[14px] font-bold">¿Un evento o un pedido grande?</p>
           <p className="text-[13px] text-[var(--p-tinta-2)]">Escríbale a Sofía y un asesor de eventos le cotiza.</p>
@@ -318,7 +322,7 @@ function Menu({
               onClick={() => setCategoria(c.id)}
               aria-pressed={activa}
               className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${
-                activa ? "bg-[var(--p-azul)] text-white" : "border border-[var(--p-borde-2)] bg-white text-[var(--p-tinta-2)]"
+                activa ? "bg-[var(--p-azul)] text-white" : "border border-[var(--p-borde-2)] bg-[var(--p-tarjeta)] text-[var(--p-tinta-2)]"
               }`}
             >
               {c.nombre}
@@ -352,7 +356,7 @@ function TarjetaPlato({ plato, cantidad, cambiar }: { plato: Plato; cantidad: nu
           <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-[var(--p-tinta-2)]">{plato.descripcion}</p>
         ) : null}
         <div className="mt-auto flex items-center justify-between pt-2">
-          <span className="text-[15px] font-extrabold text-[var(--p-azul)]">{precio(plato.precio)}</span>
+          <span className="text-[15px] font-extrabold text-[var(--p-acento)]">{precio(plato.precio)}</span>
           {cantidad === 0 ? (
             <button
               type="button"
@@ -374,11 +378,11 @@ function TarjetaPlato({ plato, cantidad, cambiar }: { plato: Plato; cantidad: nu
 function Contador({ cantidad, onMenos, onMas, nombre }: { cantidad: number; onMenos: () => void; onMas: () => void; nombre: string }) {
   return (
     <div className="flex items-center gap-2 rounded-full border border-[var(--p-borde-2)] px-1 py-0.5">
-      <button type="button" onClick={onMenos} aria-label={`Quitar ${nombre}`} className="p-1 text-[var(--p-azul)]">
+      <button type="button" onClick={onMenos} aria-label={`Quitar ${nombre}`} className="p-1 text-[var(--p-acento)]">
         <Minus size={14} />
       </button>
       <span className="min-w-[1ch] text-center text-[13px] font-bold">{cantidad}</span>
-      <button type="button" onClick={onMas} aria-label={`Agregar ${nombre}`} className="p-1 text-[var(--p-azul)]">
+      <button type="button" onClick={onMas} aria-label={`Agregar ${nombre}`} className="p-1 text-[var(--p-acento)]">
         <Plus size={14} />
       </button>
     </div>
@@ -456,7 +460,7 @@ function Pedido({
   }
 
   const campo =
-    "w-full rounded-xl border border-[var(--p-borde-2)] bg-white px-3 py-2.5 text-[15px] text-[var(--p-tinta)] outline-none focus:border-[var(--p-azul)]";
+    "w-full rounded-xl border border-[var(--p-borde-2)] bg-[var(--p-tarjeta)] px-3 py-2.5 text-[15px] text-[var(--p-tinta)] outline-none focus:border-[var(--p-acento)]";
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
@@ -476,7 +480,7 @@ function Pedido({
                 onClick={() => setModo(id)}
                 aria-pressed={modo === id}
                 className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-[14px] font-semibold ${
-                  modo === id ? "border-[var(--p-azul)] bg-[var(--p-arena-suave)] text-[var(--p-azul)]" : "border-[var(--p-borde-2)] text-[var(--p-tinta-2)]"
+                  modo === id ? "border-[var(--p-azul)] bg-[var(--p-arena-suave)] text-[var(--p-acento)]" : "border-[var(--p-borde-2)] text-[var(--p-tinta-2)]"
                 }`}
               >
                 <Icono size={18} /> {rotulo}
@@ -549,7 +553,7 @@ function Pedido({
         </ul>
         <div className="mt-3 flex items-center justify-between border-t border-[var(--p-borde)] pt-3">
           <span className="text-[14px] font-semibold">Total</span>
-          <span className="text-[20px] font-extrabold text-[var(--p-azul)]">{precio(total)}</span>
+          <span className="text-[20px] font-extrabold text-[var(--p-acento)]">{precio(total)}</span>
         </div>
         {modo === "domicilio" ? (
           <p className="mt-1 text-[12px] text-[var(--p-tinta-3)]">El costo de envío lo confirma la sucursal.</p>
@@ -561,7 +565,7 @@ function Pedido({
             setOrden(4800 + Math.floor(Math.random() * 190));
             vaciar();
           }}
-          className="mt-4 w-full rounded-xl bg-[var(--p-azul)] py-3 text-[15px] font-bold text-white disabled:bg-[#c9b6a8]"
+          className="mt-4 w-full rounded-xl bg-[var(--p-azul)] py-3 text-[15px] font-bold text-white disabled:bg-[#2a2a3d] disabled:text-[#71718a]"
         >
           Confirmar pedido
         </button>
@@ -589,7 +593,7 @@ function Sucursales() {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {SUCURSALES_CAMPANA.filter((s) => s.zona === z).map((s) => (
               <Tarjeta key={s.id} className="flex items-center gap-3 p-3.5">
-                <span className="rounded-full bg-[var(--p-arena-suave)] p-2 text-[var(--p-azul)]">
+                <span className="rounded-full bg-[var(--p-arena-suave)] p-2 text-[var(--p-acento)]">
                   <Store size={18} />
                 </span>
                 <div>
@@ -654,7 +658,7 @@ function ChatDemo() {
     <div className="mx-auto flex min-h-[calc(100dvh-230px)] w-full flex-col lg:min-h-[60vh] lg:max-w-[780px]">
       <div className="flex-1 space-y-3">
         {mensajes.length === 0 ? (
-          <div className="rounded-2xl border border-[var(--p-borde)] bg-white p-4">
+          <div className="rounded-2xl border border-[var(--p-borde)] bg-[var(--p-tarjeta)] p-4">
             <p className="text-[15px] font-bold">Hola, soy Sofía</p>
             <p className="mt-1 text-[13.5px] leading-snug text-[var(--p-tinta-2)]">
               Le atiendo de La Campana. Pregúnteme por el menú, las promos, su pedido o nuestras sucursales.
@@ -665,7 +669,7 @@ function ChatDemo() {
                   key={s}
                   type="button"
                   onClick={() => enviar(s)}
-                  className="rounded-full border border-[var(--p-borde-2)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--p-azul)]"
+                  className="rounded-full border border-[var(--p-borde-2)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--p-acento)]"
                 >
                   {s}
                 </button>
@@ -679,7 +683,7 @@ function ChatDemo() {
               className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[14.5px] leading-snug ${
                 m.autor === "cliente"
                   ? "rounded-br-md bg-[var(--p-azul)] text-white"
-                  : "rounded-bl-md border border-[var(--p-borde)] bg-white text-[var(--p-tinta)]"
+                  : "rounded-bl-md border border-[var(--p-borde)] bg-[var(--p-tarjeta)] text-[var(--p-tinta)]"
               }`}
             >
               {m.texto}
@@ -688,7 +692,7 @@ function ChatDemo() {
         ))}
         {escribiendo ? (
           <div className="flex justify-start">
-            <div className="flex gap-1 rounded-2xl rounded-bl-md border border-[var(--p-borde)] bg-white px-4 py-3">
+            <div className="flex gap-1 rounded-2xl rounded-bl-md border border-[var(--p-borde)] bg-[var(--p-tarjeta)] px-4 py-3">
               {[0, 1, 2].map((i) => (
                 <span key={i} className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--p-tinta-3)]" style={{ animationDelay: `${i * 0.12}s` }} />
               ))}
@@ -697,7 +701,7 @@ function ChatDemo() {
         ) : null}
         <div ref={fin} />
       </div>
-      <div className="sticky bottom-[calc(var(--p-nav)+8px)] mt-3 flex items-end gap-2 rounded-2xl border border-[var(--p-borde)] bg-white p-2 lg:bottom-6">
+      <div className="sticky bottom-[calc(var(--p-nav)+8px)] mt-3 flex items-end gap-2 rounded-2xl border border-[var(--p-borde)] bg-[var(--p-tarjeta)] p-2 lg:bottom-6">
         <textarea
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
@@ -716,7 +720,7 @@ function ChatDemo() {
           onClick={() => enviar(texto)}
           disabled={!texto.trim() || escribiendo}
           aria-label="Enviar"
-          className="rounded-xl bg-[var(--p-azul)] p-2.5 text-white disabled:bg-[#c9b6a8]"
+          className="rounded-xl bg-[var(--p-azul)] p-2.5 text-white disabled:bg-[#2a2a3d] disabled:text-[#71718a]"
         >
           <Send size={18} />
         </button>
@@ -730,7 +734,7 @@ function ChatDemo() {
 function Tarjeta({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`w-full rounded-2xl border border-[var(--p-borde)] bg-[var(--p-tarjeta)] text-left shadow-[0_1px_2px_rgba(42,23,18,0.04),0_8px_24px_-16px_rgba(42,23,18,0.18)] ${className}`}
+      className={`w-full rounded-2xl border border-[var(--p-borde)] bg-[var(--p-tarjeta)] text-left shadow-[0_8px_24px_-16px_rgba(0,0,0,0.6)] ${className}`}
     >
       {children}
     </div>

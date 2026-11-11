@@ -7,7 +7,6 @@ import { PromericaLogo } from "@/components/ui/PromericaLogo";
 import { YaliLogo } from "@/components/ui/YaliLogo";
 import { PizzaHutLogo } from "@/components/ui/PizzaHutLogo";
 import { CajaLogo } from "@/components/ui/CajaLogo";
-import { LaCampanaLogo } from "@/components/ui/LaCampanaLogo";
 
 const WORDMARK_ICONS = { HeartPulse, CarFront, Bot, Hotel, Building2, Stethoscope, Briefcase } as const;
 
@@ -22,7 +21,6 @@ export function Brand({ compact = false }: { compact?: boolean }) {
   if (brand.logoComponent === "yali") return <YaliLogo compact={compact} />;
   if (brand.logoComponent === "pizzahut") return <PizzaHutLogo compact={compact} />;
   if (brand.logoComponent === "chalatenango") return <CajaLogo compact={compact} />;
-  if (brand.logoComponent === "lacampana") return <LaCampanaLogo compact={compact} />;
 
   if (brand.logoSrc) {
     return (
