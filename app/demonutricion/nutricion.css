@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* Tema claro heredado del demo de Grupo Q (gris azulado de oficina, tinta
+   oscura, violeta MiAgentIA). Lo propio de la agencia de nutrición son los dos
+   colores de agenda: verde para consultas y naranja para entregas, que se usan
+   en todo el producto para que nunca se confundan los dos calendarios. */
+:root {
+  --brand-blue: #7c3aed;
+  --brand-blue-dark: #6d28d9;
+  --brand-green: #146c43;
+  --brand-red: #a32923;
+  --brand-accent: #0e7490;
+  --brand-accent-soft: #ecfeff;
+
+  --consultas: #15803d;
+  --consultas-soft: #e8f5ec;
+  --entregas: #c2410c;
+  --entregas-soft: #fdf0e7;
+
+  --surface: #f4f6f9;
+  --surface-2: #e8ecf2;
+  --card: #ffffff;
+  --border: #dfe4ec;
+  --border-2: #c6cfdc;
+  --text: #16202c;
+  --text-2: #43505f;
+  --text-3: #5c6a7a;
+
+  --font-app: 'Barlow', Arial, system-ui, sans-serif;
+}
+
+@theme inline {
+  --font-sans: var(--font-app);
+  --color-brand: var(--brand-blue);
+  --color-brand-dark: var(--brand-blue-dark);
+  --color-accent: var(--brand-green);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-card: var(--card);
+  --color-line: var(--border);
+  --color-consultas: var(--consultas);
+  --color-entregas: var(--entregas);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--surface);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a9b4c2;
+}
+
+@keyframes ccg-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ccg-pop {
+  animation: ccg-pop 0.22s ease-out;
+}
+
+.prose-doc h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+.prose-doc h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+}
+.prose-doc p,
+.prose-doc li {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.prose-doc ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.prose-doc ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose-doc li {
+  margin: 0.2rem 0;
+}
+.prose-doc strong {
+  color: var(--text);
+}
+
+/* Teléfono: con letra menor a 16px, iPhone hace zoom al tocar un campo. Solo
+   aplica en pantallas chicas; en computadora los campos quedan igual. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

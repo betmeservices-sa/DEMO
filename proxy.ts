@@ -19,6 +19,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookieBorrada, leerSesion, sesionDeCookieHeader } from "@/lib/session";
 import { MODULO_RUTA, agenciaVeRuta, destinoAgencia, primerModulo, puedeVerRuta, VE } from "@/lib/modulos";
 import { esDelDemo } from "@/lib/tenants/types";
+import { proxyNutricion } from "@/lib/nutricion/proxy";
 
 const PUBLICAS = [
   "/api/auth/login",
@@ -52,6 +53,9 @@ function esPublica(pathname: string): boolean {
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  // El demo de nutrición es otra app con su propio login y su propia cookie:
+  // lo que cuelga de /demonutricion lo decide su proxy, no la sesión del panel.
+  if (pathname === "/demonutricion" || pathname.startsWith("/demonutricion/")) return proxyNutricion(req);
   const sesion = await leerSesion(sesionDeCookieHeader(req.headers.get("cookie")));
 
   // Un panel en vivo (hospital, Yalí) no se abre desde el demo: una sesión
