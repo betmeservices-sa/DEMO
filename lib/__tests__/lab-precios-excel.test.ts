@@ -44,7 +44,7 @@ describe("precios especiales de campaña", () => {
   });
 
   it("fuera de las fechas de la campaña vuelve el precio normal", () => {
-    const psa = primero("psa", "2027-01-05");
+    const psa = primero("psa", "2026-12-01");
     expect(psa.precio).toBe(59.6);
     expect(psa.precioEspecial).toBeUndefined();
   });
