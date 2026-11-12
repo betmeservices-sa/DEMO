@@ -31,12 +31,6 @@ export const PANELES_EXTERNOS: readonly PanelElegible[] = [
     corto: "Rentas vacacionales · demo aparte",
     url: "https://porta-stays-demo.vercel.app",
   },
-  {
-    id: "demototal",
-    nombre: "Demo Total",
-    corto: "Sistema de gestión · BetMe · demo aparte",
-    url: "https://demo-total.vercel.app",
-  },
 ];
 
 /** Sin tildes ni mayúsculas: "Ginecológico" y "ginecologico" son lo mismo al buscar. */
