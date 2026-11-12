@@ -86,15 +86,14 @@ export const SUCURSALES_LAB: SucursalKb[] = [
     nombre: "Laboratorio San Benito",
     sinonimos: ["san benito", "zona rosa", "boulevard del hipodromo", "hipodromo", "sucursal san benito"],
     direccion: "Local 303, Boulevard del Hipódromo, Zona Rosa, San Salvador.",
-    horario:
-      "Lunes a viernes de 6:30 a.m. a 6:30 p.m. Sábado de 6:30 a.m. a 12:30 p.m. Domingo de 6:30 a.m. a 12:00 m.",
+    horario: "Lunes a viernes de 6:30 a.m. a 6:30 p.m. Sábado de 6:30 a.m. a 12:00 m. Domingo no abre. Se atiende por orden de llegada.",
     telefono: "2514-7900",
     whatsapp: "6175-8389",
     servicios: "Laboratorio clínico. Cuarto exclusivo para la muestra de espermograma.",
     fuente:
       "hub, base del hospital, 15/10/2026; chats Escalón: WhatsApp 08/10/2026 conv 101; cuarto de espermograma 23/07/2026 conv 396",
     notas:
-      "Los pacientes le dicen 'Zona Rosa'. El 31/10/2025 se dijo que tenía el mismo horario que Escalón (de entonces). El 21/08/2026 un paciente se quejó de que no abrió a tiempo. Escalón cambió su horario en 2026; no se sabe si San Benito también: confirmar.",
+      "Los pacientes le dicen 'Zona Rosa'. El 31/10/2025 se dijo que tenía el mismo horario que Escalón (de entonces). El 21/08/2026 un paciente se quejó de que no abrió a tiempo. El horario lo corrigieron las evaluadoras el 2026-11-09 (sábado hasta las 12:00 m. y sin domingo).",
   },
   {
     id: "suc-las-ramblas",
@@ -102,7 +101,7 @@ export const SUCURSALES_LAB: SucursalKb[] = [
     sinonimos: ["las ramblas", "ramblas", "cc las ramblas", "centro comercial las ramblas", "merliot", "ciudad merliot", "santa tecla", "panamericana"],
     direccion: "Centro Comercial Las Ramblas, Calle Panamericana, km 10, Ciudad Merliot, Santa Tecla, La Libertad.",
     horario:
-      "Lunes a viernes de 6:30 a.m. a 6:30 p.m. Sábado de 6:30 a.m. a 12:30 p.m. Domingo de 6:30 a.m. a 12:00 m.",
+      "Lunes a viernes de 6:30 a.m. a 6:30 p.m. Sábado de 6:30 a.m. a 12:30 p.m. Domingo de 6:30 a.m. a 12:00 m. Se atiende por orden de llegada.",
     telefono: "2508-6064",
     whatsapp: "7497-4472",
     servicios: "Laboratorio clínico. Cuarto exclusivo para la muestra de espermograma.",
@@ -345,6 +344,15 @@ export const CONVENIOS_LAB: ConvenioKb[] = [
 
 export const TEMAS_LAB: TemaKb[] = [
   {
+    id: "tema-aseguradoras",
+    nombre: "Aseguradoras con las que trabajamos",
+    sinonimos: ["aseguradoras", "con que aseguradoras trabajan", "que aseguradoras aceptan", "que seguros aceptan", "con que seguros trabajan", "lista de aseguradoras", "seguros medicos", "aceptan seguro", "trabajan con seguro"],
+    respuesta:
+      "Por despacho directo trabajamos con RPN, MiRed, MAPFRE, Asesuisa y Abank. Bajo reembolso, con Palig, ACSA y SISA. También se atiende con Seguros Azul y con Atlántida. Si su aseguradora no está en la lista, una compañera le confirma cómo se puede trabajar.",
+    fuente: "evaluaciones de Valeria 2026-11-09",
+    notas: "El documento de las evaluadoras dice: \"RPN, Mi Red, Mapfre, Asesuisa y Abank. Bajo reembolso: PALIG, ACSA y SISA. Azul, Atlántida\". No queda claro en qué modalidad van Azul y Atlántida (Atlántida RPN va por la red RPN): confirmar con el lab.",
+  },
+  {
     id: "tema-cotizar",
     nombre: "Cómo pedir una cotización",
     sinonimos: ["cotizar", "cotizacion", "me cotiza", "cuanto me sale", "precio de estos examenes", "cuanto me cuestan estos", "presupuesto"],
@@ -553,11 +561,11 @@ export const TEMAS_LAB: TemaKb[] = [
     nombre: "Muestra de orina",
     sinonimos: ["muestra de orina", "frasco de orina", "bote de orina", "botecito", "primera orina", "primera orina del dia", "cuanto aguanta la orina", "cuanto dura la muestra de orina", "orina de bebe", "bolsita recolectora", "cuantos ml de orina", "llevar orina de la casa", "frasco esteril", "venden frascos", "cuanto cuesta el frasco", "precio del frasco"],
     respuesta:
-      "Puede tomar la muestra en su casa o aquí en el laboratorio. Hágase un buen aseo del área genital antes de recolectarla. No es necesario que sea la primera orina del día, a menos que su médico se lo haya indicado. Para el examen general bastan unos 10 ml. Use un frasco estéril que no sea de vidrio; si no tiene, aquí lo vendemos a $1.40. Si la toma en casa, tráigala lo antes posible: no debe pasar de 1 hora y media desde que la recolectó. En bebés se usa una bolsita recolectora, que se consigue en farmacia, colocada después de un buen aseo.",
+      "Puede tomar la muestra en su casa o aquí en el laboratorio. Hágase un buen aseo del área genital antes de recolectarla. No es necesario que sea la primera orina del día, a menos que su médico se lo haya indicado. Use un frasco estéril que no sea de vidrio; si no tiene, aquí lo vendemos a $1.40. Si la toma en casa, tráigala lo antes posible: no debe pasar de 1 hora y media desde que la recolectó. En bebés se usa una bolsita recolectora, que se consigue en farmacia, colocada después de un buen aseo.",
     fuente:
       "chats Escalón: 07/10/2026 y 16/10/2026 conv 42; 18/09/2026 conv 132; 19/06/2026 conv 474; 26/08/2026 conv 278; 2026 conv 563, 639, 773; 09/10/2025 conv 1183 (frasco); frasco a $1.40, dicho por el usuario el 30/10/2026",
     notas:
-      "CONTRADICCIÓN del tiempo: 1 h y media (lo más dicho en 2026); bebé 2 h desde que termina de recolectarse (conv 773); 'general 2 horas, cultivo 1 hora y 30 minutos' (conv 977); 'antes de una hora' (conv 1790); '2 o 3 horas' (conv 1168); 'con duración de 3 horas' (conv 1662). Primera orina: 'no solicitamos que sea la primera' (2026) frente a 'de preferencia la primera de la mañana' (2025, conv 577, 1412). Gonorrea en orina: primera del día sin aseo (2025), pero en 01/2026 'no se están realizando'. Para curvas, la orina se da antes de la sangre (conv 600).",
+      "Volumen: se quitó 'bastan unos 10 ml' (una evaluadora dijo 50 ml el 2026-11-09, sin confirmar por el lab). CONTRADICCIÓN del tiempo: 1 h y media (lo más dicho en 2026); bebé 2 h desde que termina de recolectarse (conv 773); 'general 2 horas, cultivo 1 hora y 30 minutos' (conv 977); 'antes de una hora' (conv 1790); '2 o 3 horas' (conv 1168); 'con duración de 3 horas' (conv 1662). Primera orina: 'no solicitamos que sea la primera' (2026) frente a 'de preferencia la primera de la mañana' (2025, conv 577, 1412). Gonorrea en orina: primera del día sin aseo (2025), pero en 01/2026 'no se están realizando'. Para curvas, la orina se da antes de la sangre (conv 600).",
   },
   {
     id: "tema-muestra-heces",

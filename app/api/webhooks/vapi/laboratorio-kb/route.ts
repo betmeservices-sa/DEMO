@@ -34,6 +34,10 @@ export async function POST(req: Request) {
   const cuerpo = (await req.json().catch(() => ({}))) as { message?: unknown };
   const llamada = buscarToolCall(cuerpo.message, NOMBRE_TOOL_LAB);
   if (!llamada) return NextResponse.json({ results: [] });
-  const result = respuestaDeBusqueda(BASE_LAB, llamada.args.consulta, hoyEnElSalvador());
+  // La voz sí da el precio con aseguradora de la lista del lab (evaluaciones
+  // del 2026-11-09); el WhatsApp no lo ve.
+  const result = respuestaDeBusqueda(BASE_LAB, llamada.args.consulta, hoyEnElSalvador(), {
+    conPrecioAseguradora: true,
+  });
   return NextResponse.json({ results: [{ toolCallId: llamada.id, result }] });
 }

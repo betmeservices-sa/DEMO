@@ -29,6 +29,12 @@ export interface ExamenKb extends ConFuente {
   estado: EstadoKb;
   /** El precio que se da hoy, en dólares, sin seguro. */
   precio?: number;
+  /**
+   * El precio con aseguradora de la lista "precios - IA Valeria" (evaluaciones
+   * del 2026-11-09). Lo ve SOLO la voz (opción `conPrecioAseguradora`): el
+   * WhatsApp sigue abriendo un caso de cotización cuando hay seguro.
+   */
+  precioAseguradora?: number;
   /** Condiciones del precio: qué incluye, qué va aparte, cuándo cambia. */
   precioNota?: string;
   /** Lo que trae un perfil o paquete. */
@@ -225,8 +231,19 @@ function vigenteHoy(p: PromocionKb, hoy: string): boolean {
   return p.desde <= hoy && hoy <= p.hasta;
 }
 
+export interface OpcionesBusqueda {
+  /** La voz da el precio con aseguradora; el WhatsApp no lo ve (abre un caso). */
+  conPrecioAseguradora?: boolean;
+}
+
 /** Busca en la base. `hoy` en AAAA-MM-DD, hora de El Salvador. */
-export function buscarEnBase(base: BaseLab, consulta: string, hoy: string, limite = LIMITE_KB): Candidato[] {
+export function buscarEnBase(
+  base: BaseLab,
+  consulta: string,
+  hoy: string,
+  limite = LIMITE_KB,
+  opciones: OpcionesBusqueda = {},
+): Candidato[] {
   const q = limpiarKb(consulta);
   if (!q) return [];
   const candidatos: Candidato[] = [];
@@ -237,6 +254,7 @@ export function buscarEnBase(base: BaseLab, consulta: string, hoy: string, limit
     const s = puntuar([e.nombre, ...e.sinonimos]);
     if (s < PUNTAJE_MINIMO) continue;
     const datos = datosParaElModelo(e.estado, sinInterno(e));
+    if (!opciones.conPrecioAseguradora) delete datos.precioAseguradora;
     // Un examen que se hace pero sin precio confirmado lo dice con todas las
     // letras: un campo ausente el modelo lo puede leer como "no lo sé" o como
     // permiso para completarlo.
@@ -286,10 +304,15 @@ export function buscarEnBase(base: BaseLab, consulta: string, hoy: string, limit
  * La consulta no se devuelve: lo que respalda una cifra tiene que venir de la
  * base, no de lo que el modelo escribió al buscar.
  */
-export function respuestaDeBusqueda(base: BaseLab, consulta: unknown, hoy: string): string {
+export function respuestaDeBusqueda(
+  base: BaseLab,
+  consulta: unknown,
+  hoy: string,
+  opciones: OpcionesBusqueda = {},
+): string {
   const q = String(consulta ?? "").replace(/\s+/g, " ").trim().slice(0, 200);
   if (!q) return JSON.stringify({ error: "Falta qué buscar.", resultados: [] });
-  const resultados = buscarEnBase(base, q, hoy);
+  const resultados = buscarEnBase(base, q, hoy, LIMITE_KB, opciones);
   if (resultados.length === 0) {
     return JSON.stringify({
       resultados: [],

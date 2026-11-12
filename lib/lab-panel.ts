@@ -189,6 +189,7 @@ const CATEGORIA_DE_TEMA: Record<string, string> = {
   "tema-muestra-pendiente": "preparacion",
   "tema-orden-medica": "preparacion",
   "tema-seguro": "seguros",
+  "tema-aseguradoras": "seguros",
   "tema-horario-habil": "horarios",
   "tema-feriados": "horarios",
   "tema-cita": "horarios",
