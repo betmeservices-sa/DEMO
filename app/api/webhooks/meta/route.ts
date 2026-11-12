@@ -109,7 +109,10 @@ export async function POST(req: Request) {
   // webhook abierto deja inventar mensajes de clientes y hacer hablar a la IA.
   // Dos secretos posibles: los avisos de una cuenta con login de Instagram
   // vienen firmados con el secret de Instagram, no con el de la app.
-  const secretos = [process.env.META_APP_SECRET, process.env.IG_APP_SECRET].filter(
+  // CEGISA_APP_SECRET: la app "Cegisa", del portafolio del hospital (2026-11-12). Sin
+  // verificación de negocio de MiAgentIA, la página del hospital va con su propia
+  // app, y sus avisos llegan aquí firmados con ESE secreto.
+  const secretos = [process.env.META_APP_SECRET, process.env.IG_APP_SECRET, process.env.CEGISA_APP_SECRET].filter(
     (s): s is string => Boolean(s),
   );
   if (secretos.length) {
