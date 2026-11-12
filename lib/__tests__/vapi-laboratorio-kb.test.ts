@@ -42,7 +42,8 @@ describe("base del laboratorio para la voz", () => {
     const json = (await res.json()) as { results: { toolCallId: string; result: string }[] };
     expect(json.results).toHaveLength(1);
     expect(json.results[0].toolCallId).toBe("call_1");
-    expect(json.results[0].result).toContain("20.2");
+    // Precio del Excel oficial del lab (2026-11-12): embarazo en sangre $20.10.
+    expect(json.results[0].result).toContain("20.1");
   });
 
   it("acepta los argumentos como texto JSON", async () => {

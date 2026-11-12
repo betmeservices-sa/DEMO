@@ -85,6 +85,15 @@ export interface PromocionKb extends ConFuente {
   campana: string;
   sinonimos: string[];
   detalle: string;
+  /**
+   * Si la promoción es el precio especial de UN examen: su id y ese precio. En
+   * la búsqueda el examen sale con `precioEspecial` (y `precioRegular`), así
+   * Valeria lo da cuando preguntan por el examen sin anunciar la campaña.
+   */
+  examenId?: string;
+  precioEspecial?: number;
+  /** El precio regular que dice la campaña, si no es el de la base. */
+  precioRegular?: number;
   /** AAAA-MM-DD, inclusive. Fuera de este rango la promoción no existe. */
   desde: string;
   hasta: string;
@@ -255,6 +264,14 @@ export function buscarEnBase(
     if (s < PUNTAJE_MINIMO) continue;
     const datos = datosParaElModelo(e.estado, sinInterno(e));
     if (!opciones.conPrecioAseguradora) delete datos.precioAseguradora;
+    const especial = base.promociones.find((p) => p.examenId === e.id && p.precioEspecial !== undefined && vigenteHoy(p, hoy));
+    if (especial && e.estado === "vigente") {
+      // Mientras dura, el precio de hoy ES el especial; el regular va aparte.
+      const regular = especial.precioRegular ?? e.precio;
+      datos.precio = especial.precioEspecial;
+      datos.precioEspecial = especial.precioEspecial;
+      if (regular !== undefined) datos.precioRegular = regular;
+    }
     // Un examen que se hace pero sin precio confirmado lo dice con todas las
     // letras: un campo ausente el modelo lo puede leer como "no lo sé" o como
     // permiso para completarlo.
