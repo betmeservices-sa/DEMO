@@ -130,7 +130,9 @@ export function staffMeta(id: string) {
 //
 // "[documento: x.pdf]" devuelve null a propósito: el nombre del archivo ya es el
 // texto del enlace, repetirlo abajo sería decir dos veces lo mismo.
-const MARCA_MEDIA = /^\[(?:imagen|video|audio|sticker|documento(?::[^\]]*)?)\]/i;
+// "[imagen enviada]" y "[documento enviado]" son las marcas de lo que manda el
+// equipo desde la bandeja: tampoco son pie de foto.
+const MARCA_MEDIA = /^\[(?:imagen(?: enviada)?|video|audio|sticker|documento(?: enviado)?(?::[^\]]*)?)\]/i;
 
 export function captionDeMedia(texto: string | undefined | null): string | null {
   if (!texto) return null;
