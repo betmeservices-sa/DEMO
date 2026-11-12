@@ -87,6 +87,8 @@ export interface CuerpoVapi {
     toolCalls?: { id?: string; function?: { name?: string; arguments?: unknown } }[];
     toolCallList?: { id?: string; name?: string }[];
     analysis?: { structuredData?: Record<string, unknown>; summary?: string };
+    /** Las variables de la llamada; en un traspaso traen lo que viajó al otro agente. */
+    artifact?: { variableValues?: Record<string, unknown> };
     transcript?: string;
   };
 }
@@ -335,6 +337,28 @@ export async function diagnosticoMemoria(req: Request) {
   return NextResponse.json({ ok: true, ...(await diagnostico()) });
 }
 
+/**
+ * Lo que viajó en un traspaso entre agentes (viene_de, consulta, resumen,
+ * nombre), para los campos que la extracción dejó vacíos.
+ *
+ * Por qué: el reporte de fin de llamada lo arma el ÚLTIMO agente, que solo ve
+ * su parte. En las evaluaciones de CEGISA (6 y 7/11) cinco llamadas con
+ * traspaso quedaron "sin nada que recordar" y la siguiente llamada de esa
+ * persona empezó de cero, aunque la consulta estaba en las variables de la
+ * llamada. Solo llena huecos: lo que el agente extrajo manda.
+ */
+export function conLoDelTraspaso(extracto: ExtractoLlamada, variables?: Record<string, unknown>): ExtractoLlamada {
+  if (!variables || !comoTexto(variables.viene_de)) return extracto;
+  const consulta = comoTexto(variables.consulta);
+  const resumen = comoTexto(variables.resumen);
+  return {
+    ...extracto,
+    nombre: extracto.nombre ?? comoTexto(variables.nombre),
+    uso: extracto.uso ?? consulta,
+    resumen: extracto.resumen ?? ([resumen, consulta].filter(Boolean).join(". ") || undefined),
+  };
+}
+
 export async function manejarMemoria(req: Request, op: OpcionesMemoria) {
   if (!secretoValido(req)) return NextResponse.json({ ok: false }, { status: 401 });
 
@@ -370,7 +394,7 @@ export async function manejarMemoria(req: Request, op: OpcionesMemoria) {
     const telefono = telefonoDe(msg);
     if (!telefono) return NextResponse.json({ ok: true, ignorado: "sin número" });
 
-    const extracto = op.extraer(msg.analysis?.structuredData ?? {}, msg.analysis?.summary);
+    const extracto = conLoDelTraspaso(op.extraer(msg.analysis?.structuredData ?? {}, msg.analysis?.summary), msg.artifact?.variableValues);
 
     // DE QUÉ CLIENTE ES ESTA LLAMADA, y no es `op.tenantFicha` sin más.
     //
