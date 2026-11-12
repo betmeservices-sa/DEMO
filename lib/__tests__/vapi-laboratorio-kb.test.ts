@@ -2,6 +2,8 @@
 // WhatsApp del lab, detrás del secreto compartido de Vapi.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { POST } from "@/app/api/webhooks/vapi/laboratorio-kb/route";
+import { respuestaDeBusqueda } from "@/lib/consultorio/lab-kb";
+import { BASE_LAB } from "@/lib/consultorio/lab-kb-datos";
 
 const SECRETO = "secreto-de-prueba-del-lab";
 let antes: string | undefined;
@@ -61,5 +63,15 @@ describe("base del laboratorio para la voz", () => {
   it("otra herramienta no se responde", async () => {
     const json = (await (await POST(llamada("glucosa", SECRETO, "consultar_historial"))).json()) as { results: unknown[] };
     expect(json.results).toEqual([]);
+  });
+
+  // Evaluaciones del 2026-11-09: la voz da el precio con aseguradora de la
+  // lista del lab. El WhatsApp no lo ve: allá, con seguro, se abre un caso.
+  it("la voz ve el precio con aseguradora y el WhatsApp no", async () => {
+    const json = (await (await POST(llamada("lh"))).json()) as { results: { result: string }[] };
+    expect(json.results[0].result).toContain("\"precioAseguradora\":53.33");
+    const whatsapp = respuestaDeBusqueda(BASE_LAB, "lh", "2026-11-12");
+    expect(whatsapp).toContain("56.1");
+    expect(whatsapp).not.toContain("precioAseguradora");
   });
 });
