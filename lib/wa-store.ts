@@ -93,6 +93,8 @@ export async function addOutbound(m: {
   /** Si lo escribió una persona desde el panel: quién. */
   staffId?: string;
   staffNombre?: string;
+  /** El archivo que se mandó: sin esto el panel solo pinta "[imagen enviada]". */
+  media?: WaMedia;
 }): Promise<void> {
   return guardar({
     waId: m.waId,
@@ -103,6 +105,7 @@ export async function addOutbound(m: {
     tenant: m.tenant,
     staffId: m.staffId,
     staffNombre: m.staffNombre,
+    media: m.media,
   });
 }
 

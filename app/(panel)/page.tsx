@@ -502,12 +502,16 @@ export default function BandejaPage() {
                         : `[documento: ${file.name}]`,
                       staffId: yo,
                       waId: d.id,
+                      media: d.media,
                     });
                   } else {
                     console.error("send-media fallo:", d);
+                    // Antes fallaba en silencio: la persona creía que el archivo había salido.
+                    alert(`No se pudo enviar el archivo: ${d.error ?? "error desconocido"}`);
                   }
                 } catch (err) {
                   console.error("send-media error:", err);
+                  alert("No se pudo enviar el archivo: falló la conexión.");
                 }
               }}
               onAsignarme={() => {

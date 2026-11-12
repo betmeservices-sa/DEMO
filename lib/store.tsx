@@ -19,6 +19,7 @@ import type {
   InternalChannel,
   InternalMessage,
   Message,
+  MessageMedia,
   Metric,
   SocialPost,
   SocialStats,
@@ -49,7 +50,7 @@ export interface StoreState {
 }
 
 export type StoreAction =
-  | { type: "SEND_MESSAGE"; conversationId: string; texto: string; staffId: string; waId?: string }
+  | { type: "SEND_MESSAGE"; conversationId: string; texto: string; staffId: string; waId?: string; media?: MessageMedia }
   | { type: "ASSIGN"; conversationId: string; staffId: string | null }
   | {
       type: "HIDRATAR_CONVERSACION_META";
@@ -210,6 +211,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
         staffId: action.staffId,
         texto: action.texto,
         ts,
+        ...(action.media ? { media: action.media } : {}),
       };
       return {
         ...state,

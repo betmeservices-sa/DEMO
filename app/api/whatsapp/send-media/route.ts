@@ -64,10 +64,18 @@ export async function POST(req: Request) {
     "image/webp",
     "image/gif",
     "application/pdf",
+    // Documentos que WhatsApp acepta: órdenes y resultados en Word o Excel.
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "text/plain",
   ]);
   if (!MIME_PERMITIDOS.has(mime)) {
     return NextResponse.json(
-      { ok: false, error: "Tipo de archivo no permitido (solo imagen o PDF)" },
+      { ok: false, error: "Tipo de archivo no permitido (imagen, PDF, Word, Excel, PowerPoint o texto)" },
       { status: 415 },
     );
   }
@@ -149,7 +157,8 @@ export async function POST(req: Request) {
   }
 
   const ts = new Date().toISOString();
-  const textoFallback = esImagen ? "[imagen enviada]" : "[documento enviado]";
+  const textoFallback = esImagen ? "[imagen enviada]" : `[documento: ${filename}]`;
+  const media = { id: mediaId, tipo: esImagen ? "image" : "document", mime, filename };
 
   // 3. Persistir en stores.
   const quien = await quienResponde(req, tenantFromRequest(req));
@@ -161,6 +170,7 @@ export async function POST(req: Request) {
     tenant: tenantFromRequest(req),
     staffId: quien.staffId,
     staffNombre: quien.nombre,
+    media,
   });
 
   await addAdjunto({
@@ -176,5 +186,5 @@ export async function POST(req: Request) {
   // Solo la bandeja manda archivos por acá, siempre una persona: en el lab,
   // mandar los resultados cierra el caso.
   const casosCerrados = await cerrarCasosAlResponder(req, tenantFromRequest(req), to);
-  return NextResponse.json({ ok: true, id: msgId, casosCerrados });
+  return NextResponse.json({ ok: true, id: msgId, media, casosCerrados });
 }

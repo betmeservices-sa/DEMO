@@ -289,7 +289,7 @@ export function Composer({
             <input
               ref={fileRef}
               type="file"
-              accept={aceptar ?? "image/*,application/pdf"}
+              accept={aceptar ?? "image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"}
               className="hidden"
               onChange={handleFile}
             />
