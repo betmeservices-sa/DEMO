@@ -34,7 +34,7 @@ export const PANELES_EXTERNOS: readonly PanelElegible[] = [
   {
     id: "demototal",
     nombre: "Demo Total",
-    corto: "Sistema de gestión · Grupo Altamira · demo aparte",
+    corto: "Sistema de gestión · BetMe · demo aparte",
     url: "https://demo-total.vercel.app",
   },
 ];
