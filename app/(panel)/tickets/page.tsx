@@ -79,11 +79,14 @@ const nombreStaff = (id?: string) => (id ? (staff.find((s) => s.id === id)?.nomb
 /**
  * El chat del caso en la bandeja. Los casos de WhatsApp que abre el agente
  * guardan solo el teléfono, y la bandeja llama a ese chat `wac-<teléfono>`.
- * Null si no hay con qué abrirlo: mejor sin botón que uno que abre la bandeja
+ * Null si no hay con qué abrirlo (o si el caso salió de una llamada): mejor sin botón que uno que abre la bandeja
  * en blanco.
  */
 function chatDelCaso(t: Ticket): string | null {
   if (t.conversacionId?.trim()) return t.conversacionId.trim();
+  // Un caso que abrió Valeria por teléfono no tiene chat: el número es de la
+  // llamada, y abrir la bandeja en ese número la deja en blanco.
+  if (t.origen === "llamada") return null;
   const tel = (t.contactoTelefono ?? "").replace(/\D/g, "");
   return tel.length >= 8 ? `wac-${tel}` : null;
 }
