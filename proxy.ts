@@ -30,6 +30,9 @@ const PUBLICAS = [
   // Los cron de Vercel: no tienen sesión, validan su propio secreto (CRON_SECRET).
   "/api/cron/",
   "/api/meta/callback",
+  // La vuelta del login de Instagram: se defiende con el state firmado. Desde
+  // el celular, Instagram puede volver a un navegador sin la sesión del panel.
+  "/api/meta/ig/callback",
   // Lo llama el sitio de miagentia.com, que no tiene sesion. Se defiende solo:
   // lista cerrada de clientes, tope de tamano y freno por IP.
   "/api/onboarding",
