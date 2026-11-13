@@ -88,6 +88,6 @@ export async function GET(req: Request) {
   } catch (e) {
     const motivo = e instanceof Error ? e.message : "desconocido";
     console.error(`[ig-login] callback falló en ${paso}:`, motivo);
-    return await volver(`meta=error&motivo=${encodeURIComponent(motivo)}`);
+    return await volver(`meta=error&motivo=${encodeURIComponent(`${paso}: ${motivo}`)}`);
   }
 }
