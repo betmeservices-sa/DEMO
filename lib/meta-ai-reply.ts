@@ -17,6 +17,7 @@
 // nota de voz) el chat NO queda huérfano: se apaga la IA en ese chat y se
 // asigna a una persona (reservas o membresías), que lo ve en "Mis chats".
 
+import { agenteDePagina } from "./redes-hospital";
 import { generarRespuesta, type TurnoIA } from "./ai";
 import { getChatAiActiva, setChatOverride } from "./ai-store";
 import { accionEnMensaje } from "./meta-acciones";
@@ -269,6 +270,8 @@ export async function programarRespuestaIAMeta(t: TurnoMeta): Promise<void> {
         sucursal: decision.sucursal,
         pedirSede: decision.pedirSede === true,
         clave,
+        // La página del hospital la contesta la Valeria de redes (experta en todo).
+        agente: agenteDePagina(t.pageId),
       },
     );
 

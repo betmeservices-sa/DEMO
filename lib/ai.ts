@@ -1,3 +1,5 @@
+import { buscarEnBaseDelHospital, TOOL_KB_HOSPITAL, type AgenteIA } from "./redes-hospital";
+import { SYSTEM_PROMPT_REDES_HOSPITAL } from "./consultorio/valeria-redes-guion";
 import Anthropic from "@anthropic-ai/sdk";
 import {
   consultarDisponibilidad,
@@ -598,8 +600,18 @@ export async function ejecutarHerramienta(
     pedirSede?: boolean;
     /** La conversación, para los apartados: "facebook:pagina:persona" o "wa:telefono". */
     clave?: string;
+    agente?: AgenteIA;
   },
 ): Promise<string> {
+  if (contexto?.agente === "redes-hospital") {
+    if (nombre === "kb_buscar") return buscarEnBaseDelHospital(input as { consulta?: unknown; area?: unknown });
+    if (nombre === "crear_ticket") {
+      // El guion de hub espera la frase "cierre" de cuándo le escriben.
+      const r = JSON.parse(await ejecutarHerramienta(nombre, input, acciones, { ...contexto, agente: undefined })) as Record<string, unknown>;
+      if (r.ok && !r.cierre) r.cierre = "Alguien del equipo le escribe por aquí lo antes posible.";
+      return JSON.stringify(r);
+    }
+  }
   if (nombre === "kb_buscar" && contexto?.tenantId === "consultorio") {
     const consulta = (input as { consulta?: unknown }).consulta;
     const respuesta = respuestaDeBusqueda(BASE_LAB, consulta, hoyDeTenant(contexto.tenantId));
@@ -888,6 +900,8 @@ export interface ContextoRespuesta {
   clave?: string;
   /** Texto de la plantilla de CrediQ con la que abrimos este chat, si la hubo. */
   plantillaCrediQ?: string | null;
+  /** Otro agente que el del tenant: las redes del hospital (lib/redes-hospital.ts). */
+  agente?: AgenteIA;
 }
 
 /**
@@ -897,6 +911,11 @@ export interface ContextoRespuesta {
  * prompt real sin gastar API.
  */
 export async function systemDeTurno(contexto?: ContextoRespuesta): Promise<string> {
+  // Las redes del hospital: el guion de la Valeria con base de hub, sin las
+  // promociones ni la llamada del lab (los datos los trae su kb_buscar).
+  if (contexto?.agente === "redes-hospital") return `${SYSTEM_PROMPT_REDES_HOSPITAL}
+
+${contextoTemporal(contexto?.tenantId)}`;
   return `${systemPromptFor(contexto?.tenantId)}${contextoSucursal(
     contexto?.sucursal ?? null,
   )}${contexto?.pedirSede ? contextoPedirSede(contexto?.tenantId) : ""}${await contextoPromociones(contexto?.tenantId)}${contexto?.plantillaCrediQ ? contextoCrediQ(contexto.plantillaCrediQ) : ""}${await contextoDeLlamadaPara(contexto?.tenantId, contexto?.telefono)}\n\n${contextoTemporal(contexto?.tenantId)}`;
@@ -918,7 +937,10 @@ export async function generarRespuesta(
   const system = await systemDeTurno(contexto);
   const tools: Anthropic.Tool[] = [
     toolGuardarContacto(contexto?.tenantId),
-    ...toolsPara(contexto?.tenantId),
+    // En las redes del hospital, kb_buscar es la base de TODO el hospital (hub).
+    ...toolsPara(contexto?.tenantId).map((t) =>
+      contexto?.agente === "redes-hospital" && t.name === "kb_buscar" ? (TOOL_KB_HOSPITAL as Anthropic.Tool) : t,
+    ),
   ];
 
   // Luna o Claude, según el cliente. Con luna el tope sube: razona antes de
