@@ -39,4 +39,12 @@ describe("fotos de redes para la IA", () => {
     );
     expect(filas[0]).toMatchObject({ texto: "[imagen]", imagenUrl: "https://cdn/orden.jpg", direction: "in" });
   });
+
+  it("en Instagram el nombre sale del usuario de la persona", () => {
+    const filas = filasDeConversaciones(
+      [{ updated_time: "2026-11-13T10:00:00Z", participants: { data: [{ id: "p", username: "ana.lopez" }, { id: "ig" }] }, messages: { data: [{ id: "m2", created_time: "2026-11-13T10:00:00Z", from: { id: "p" }, message: "Hola" }] } }],
+      new Set(["ig"]),
+    );
+    expect(filas[0]).toMatchObject({ senderName: "ana.lopez", texto: "Hola", direction: "in" });
+  });
 });

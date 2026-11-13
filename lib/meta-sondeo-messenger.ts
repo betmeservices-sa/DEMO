@@ -49,7 +49,7 @@ export interface MensajeGraph {
 
 export interface ConversacionGraph {
   updated_time?: string;
-  participants?: { data?: { id?: string; name?: string }[] };
+  participants?: { data?: { id?: string; name?: string; username?: string }[] };
   messages?: { data?: MensajeGraph[] };
 }
 
@@ -119,7 +119,7 @@ export function filasDeConversaciones(
       filas.push({
         mid: m.id,
         senderId: otro.id,
-        senderName: otro.name ?? undefined,
+        senderName: otro.name ?? otro.username ?? undefined,
         texto,
         ts: new Date(m.created_time).toISOString(),
         direction: m.from?.id && casa.has(m.from.id) ? "out" : "in",
@@ -141,12 +141,12 @@ export function filasDeConversaciones(
 const g = globalThis as unknown as { __metaSondeoUltimo?: Map<string, number> };
 const ultimaVuelta = (g.__metaSondeoUltimo ??= new Map<string, number>());
 
-async function conversacionesDePagina(cx: MetaConnection): Promise<ConversacionGraph[]> {
+async function conversacionesDePagina(cx: MetaConnection, platform: "messenger" | "instagram" = "messenger"): Promise<ConversacionGraph[]> {
   const campos =
     `participants,updated_time,messages.limit(${MENSAJES_POR_CONVERSACION})` +
     `{id,message,from,created_time,attachments{mime_type,name,image_data},sticker,shares{link,name}}`;
   const url =
-    `${GRAPH}/${cx.pageId}/conversations?platform=messenger&limit=${CONVERSACIONES}` +
+    `${GRAPH}/${cx.pageId}/conversations?platform=${platform}&limit=${CONVERSACIONES}` +
     `&fields=${encodeURIComponent(campos)}&access_token=${encodeURIComponent(cx.pageToken)}`;
   const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(ESPERA_META_MS) });
   const j = (await r.json()) as { data?: ConversacionGraph[]; error?: { message?: string } };
@@ -154,9 +154,9 @@ async function conversacionesDePagina(cx: MetaConnection): Promise<ConversacionG
   return j.data ?? [];
 }
 
-async function sincronizarPagina(cx: MetaConnection, desdeMs: number): Promise<number> {
+async function sincronizarPagina(cx: MetaConnection, desdeMs: number, canal: "facebook" | "instagram" = "facebook"): Promise<number> {
   const casa = new Set([cx.pageId, cx.igId].filter(Boolean) as string[]);
-  const filas = filasDeConversaciones(await conversacionesDePagina(cx), casa, desdeMs);
+  const filas = filasDeConversaciones(await conversacionesDePagina(cx, canal === "instagram" ? "instagram" : "messenger"), casa, desdeMs);
   // Qué es nuevo de verdad: lo que ya estaba (el webhook o el panel lo
   // guardaron antes) no vuelve a disparar nada.
   const yaEstaban = await midsExistentes(cx.tenant, filas.map((f) => f.mid));
@@ -167,7 +167,7 @@ async function sincronizarPagina(cx: MetaConnection, desdeMs: number): Promise<n
     nuevas.map((f) => ({
       mid: f.mid,
       tenant: cx.tenant,
-      canal: "facebook" as const,
+      canal,
       pageId: cx.pageId,
       senderId: f.senderId,
       senderName: f.senderName,
@@ -193,7 +193,7 @@ async function sincronizarPagina(cx: MetaConnection, desdeMs: number): Promise<n
       if (ultimoPorPersona.get(f.senderId)?.mid !== f.mid) continue;
       await programarRespuestaIAMeta({
         tenant: cx.tenant as TenantId,
-        canal: "facebook",
+        canal,
         pageId: cx.pageId,
         senderId: f.senderId,
         mid: f.mid,
@@ -224,9 +224,21 @@ export async function sincronizarMessenger(tenant: string): Promise<void> {
         const antesPagina = ultimaVueltaPorPagina.get(cx.pageId) ?? 0;
         ultimaVueltaPorPagina.set(cx.pageId, ahora);
         const desdeMs = antesPagina ? antesPagina - MARGEN_MS : 0;
-        return sincronizarPagina(cx, desdeMs).catch((e) => {
-          console.error(`[meta-sondeo] ${cx.pageName}:`, e instanceof Error ? e.message : e);
-        });
+        // Instagram por la API de la página: para las cuentas SIN login de
+        // Instagram (esas las sondea meta-sondeo-instagram.ts con su token).
+        // Los DMs de gente sin rol en la app no llegan por webhook (hospital,
+        // app Cegisa, 2026-11-13); por aquí sí.
+        const ig = cx.igId && !cx.igToken
+          ? sincronizarPagina(cx, desdeMs, "instagram").catch((e) => {
+              console.error(`[meta-sondeo] ${cx.pageName} (instagram):`, e instanceof Error ? e.message : e);
+            })
+          : Promise.resolve();
+        return Promise.all([
+          sincronizarPagina(cx, desdeMs).catch((e) => {
+            console.error(`[meta-sondeo] ${cx.pageName}:`, e instanceof Error ? e.message : e);
+          }),
+          ig,
+        ]);
       }),
     );
   } catch (e) {
