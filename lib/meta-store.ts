@@ -192,8 +192,12 @@ export async function guardarLoginIg(
   const sb = getSupabase(tenant);
   if (!sb) return "memoria";
 
-  const existentes = await leer(sb, (q, cols) => q.select(cols).eq("tenant", tenant).eq("ig_id", datos.igId).limit(1));
+  // La conexión que YA tiene esa cuenta de Instagram, sea del cliente que sea:
+  // quien hace el login puede haber entrado al panel con otra cuenta (la de la
+  // agencia), y el Instagram es de la página que ya está conectada.
+  const existentes = await leer(sb, (q, cols) => q.select(cols).eq("ig_id", datos.igId).limit(1));
   const fila = existentes?.[0];
+  if (fila && fila.tenant !== tenant) tenant = fila.tenant;
   const cambios = {
     ig_token: datos.igToken,
     ig_token_vence: datos.igTokenVence,
