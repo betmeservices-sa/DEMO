@@ -118,7 +118,13 @@ export async function GET(req: Request) {
     });
     return await volver(p.toString());
   } catch (e) {
-    const motivo = e instanceof Error ? e.message : "desconocido";
+    const crudo = e instanceof Error ? e.message : "desconocido";
+    // Meta entrega el token, pero con acceso estándar solo deja usarlo a las
+    // cuentas que son "Evaluador de Instagram" de la app (así está Yali). Sin
+    // ese rol, todo GET responde esto (2026-11-13, Instagram del hospital).
+    const motivo = /Unsupported request - method type/i.test(crudo)
+      ? "la cuenta de Instagram todavía no es Evaluador de Instagram de la app MiAgentIA, o no aceptó la invitación (Instagram > Configuración > Apps y sitios web > Invitaciones de evaluador)"
+      : crudo;
     console.error(`[ig-login] callback falló en ${paso}:`, motivo);
     return await volver(`meta=error&motivo=${encodeURIComponent(`${paso}: ${motivo}`)}`);
   }
