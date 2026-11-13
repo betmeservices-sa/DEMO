@@ -153,7 +153,19 @@ export async function tokenLargoIg(corto: string): Promise<{ token: string; venc
     access_token: corto,
   });
   const r = await fetch(`${IG_TOKEN_LARGO}?${p}`, { cache: "no-store" });
-  const j = (await r.json()) as ErrorMeta & { access_token?: string; expires_in?: number };
+  let j = (await r.json()) as ErrorMeta & { access_token?: string; expires_in?: number };
+  // 2026-11-13 (Instagram del hospital): Meta contestó "Unsupported request -
+  // method type: get" a este GET. Se reintenta por POST con los mismos datos.
+  if (!j.access_token) {
+    const r2 = await fetch(IG_TOKEN_LARGO, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: p.toString(),
+      cache: "no-store",
+    });
+    const j2 = (await r2.json().catch(() => ({}))) as ErrorMeta & { access_token?: string; expires_in?: number };
+    if (j2.access_token) j = j2;
+  }
   if (!j.access_token) throw new Error(mensajeDe(j, "No se pudo alargar el token de Instagram."));
   return { token: j.access_token, vence: venceDesde(j.expires_in) };
 }

@@ -85,7 +85,16 @@ export async function GET(req: Request) {
       largo = await tokenLargoIg(corto.token);
     } catch (e1) {
       paso = `canje en hub (el del demo dijo: ${e1 instanceof Error ? e1.message : "falló"})`;
-      largo = await canjeEnHub(corto ? { corto: corto.token } : { code, redirect_uri: redirectUriIg(req.url) });
+      try {
+        largo = await canjeEnHub(corto ? { corto: corto.token } : { code, redirect_uri: redirectUriIg(req.url) });
+      } catch (e2) {
+        // El código ya se canjeó: si lo único que falla es alargar el token,
+        // la cuenta queda conectada con el corto (dura una hora) y el token
+        // largo se saca después con ese mismo token, sin otro login.
+        if (!corto) throw e2;
+        console.error("[ig-login] no se pudo alargar el token; queda el corto:", e2 instanceof Error ? e2.message : e2);
+        largo = { token: corto.token, vence: new Date(Date.now() + 55 * 60_000).toISOString() };
+      }
     }
     paso = "perfil";
     const perfil = await perfilIg(largo.token);
