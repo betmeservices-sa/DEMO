@@ -61,14 +61,16 @@ export const capitanhawkTenant: TenantConfig = {
     wordmark: { icon: "Hotel", titulo: "Capitán Hawk", subtitulo: "Campamento marino" },
   },
   labels: { contacto: "huésped", contactoPlural: "huéspedes" },
+  // "Ver como" lleva a la persona del equipo y su puesto (las mismas de la
+  // semilla), para que en la demostración se entienda quién ve qué.
   roles: {
-    recepcion: "Recepción",
-    atencion: "Atención",
-    marketing: "Mercadeo",
-    gerente_marketing: "Gerencia",
-    medico: "Reservas",
-    jefe: "Jefatura de reservas",
-    admin: "Dirección (todo)",
+    recepcion: "Andrés Molina · Recepción",
+    atencion: "Carlos Rivera · Eventos",
+    marketing: "Paola Henríquez · Redes",
+    gerente_marketing: "Alejandro Ramos · Gerencia",
+    medico: "Daniela Flores · Reservas",
+    jefe: "Sofía Quintanilla · Jefatura",
+    admin: "Ernesto Guzmán · Dirección",
   },
   defaultDepartment: "reservas",
   tags: ["Reservas", "Visita de día", "Grupos y eventos", "Pet friendly", "Pago", "Huésped en casa"],

@@ -5,8 +5,8 @@
 // cumpleaños de 25, los perros grandes, los lentes olvidados. Así "Ver chat"
 // desde el tablero abre la conversación que corresponde.
 //
-// Personas, teléfonos y montos son INVENTADOS (teléfonos 503 9xxx xxxx, serie
-// que no se asigna en El Salvador). La visita de día, el horario y las reglas
+// Personas, teléfonos y montos son INVENTADOS. Los WhatsApp son celulares de
+// El Salvador (+503 7xxx xxxx). La visita de día, el horario y las reglas
 // del lugar salen de lo que publica Capitán Hawk.
 
 import type { TenantSeed } from "../types";
@@ -121,15 +121,15 @@ cliente("h10", "Ray-Ban negros", 425);
 equipo("h10", "s4", "¡Los encontramos! Quedan guardados en recepción a su nombre 🙌", 400);
 
 const contacts: Contact[] = [
-  { id: "c1", nombre: "Karla Villalta", telefono: "50391020311", canal: "whatsapp", correo: "karla.villalta@correo.com", tags: ["Reservas", "Pet friendly", "Pago"] },
+  { id: "c1", nombre: "Karla Villalta", telefono: "50376124031", canal: "whatsapp", correo: "karla.villalta@correo.com", tags: ["Reservas", "Pet friendly", "Pago"] },
   { id: "c2", nombre: "Daniela Rivas", handle: "@dani.rivas", canal: "instagram", tags: ["Visita de día"] },
   { id: "c3", nombre: "Nelson Aguirre", handle: "Nelson Aguirre", canal: "facebook", tags: ["Grupos y eventos"] },
-  { id: "c4", nombre: "Fernando Ayala", telefono: "50391020322", canal: "whatsapp", notas: "Aniversario.", tags: ["Reservas", "Pago"] },
+  { id: "c4", nombre: "Fernando Ayala", telefono: "50378452290", canal: "whatsapp", notas: "Aniversario.", tags: ["Reservas", "Pago"] },
   { id: "c5", nombre: "Sarah Nolan", handle: "@sarah.nolan", canal: "instagram", tags: ["Reservas"] },
-  { id: "c6", nombre: "Wilfredo Chacón", telefono: "50391020333", canal: "whatsapp", tags: ["Huésped en casa"] },
-  { id: "c7", nombre: "Gabriela Menjívar", telefono: "50391020344", canal: "whatsapp", tags: ["Visita de día", "Pet friendly"] },
+  { id: "c6", nombre: "Wilfredo Chacón", telefono: "50371938846", canal: "whatsapp", tags: ["Huésped en casa"] },
+  { id: "c7", nombre: "Gabriela Menjívar", telefono: "50376580713", canal: "whatsapp", tags: ["Visita de día", "Pet friendly"] },
   { id: "c8", nombre: "Ricardo Portillo", handle: "Ricardo Portillo", canal: "facebook", tags: ["Grupos y eventos"] },
-  { id: "c9", nombre: "Fátima Escobar", telefono: "50391020355", canal: "whatsapp", correo: "fatima.escobar@correo.com", tags: ["Grupos y eventos"] },
+  { id: "c9", nombre: "Fátima Escobar", telefono: "50379204467", canal: "whatsapp", correo: "fatima.escobar@correo.com", tags: ["Grupos y eventos"] },
   { id: "c10", nombre: "Mauricio Rosales", handle: "@mau.rosales", canal: "instagram", tags: ["Visita de día"] },
 ];
 
@@ -172,15 +172,17 @@ export const capitanhawkSeed: TenantSeed = {
   staff: [
     { id: ME, nombre: "Alejandro Ramos", rol: "gerente_marketing", departamento: "eventos", iniciales: "AR" },
     { id: "s2", nombre: "Daniela Flores", rol: "medico", departamento: "reservas", iniciales: "DF" },
-    { id: "s3", nombre: "Carlos Rivera", rol: "recepcion", departamento: "eventos", iniciales: "CR" },
+    { id: "s3", nombre: "Carlos Rivera", rol: "atencion", departamento: "eventos", iniciales: "CR" },
     { id: "s4", nombre: "Andrés Molina", rol: "recepcion", departamento: "conserjeria", iniciales: "AM" },
     { id: "s5", nombre: "Sofía Quintanilla", rol: "jefe", departamento: "club", iniciales: "SQ" },
+    { id: "s6", nombre: "Paola Henríquez", rol: "marketing", departamento: "club", iniciales: "PH" },
+    { id: "s7", nombre: "Ernesto Guzmán", rol: "admin", departamento: "reservas", iniciales: "EG" },
   ],
   contacts,
   conversations,
   messages,
   internalChannels: [
-    { id: "ic1", nombre: "general", tipo: "canal", miembros: [ME, "s2", "s3", "s4", "s5"] },
+    { id: "ic1", nombre: "general", tipo: "canal", miembros: [ME, "s2", "s3", "s4", "s5", "s6", "s7"] },
     { id: "ic2", nombre: "reservas", tipo: "canal", miembros: [ME, "s2", "s3"] },
     { id: "ic3", nombre: "operacion", tipo: "canal", miembros: [ME, "s4", "s5"] },
     { id: "dm1", nombre: "Daniela Flores", tipo: "dm", miembros: [ME, "s2"] },

@@ -39,10 +39,10 @@ export const capitanhawkSimulacion: TenantSimulacion = {
     },
   ],
   contactos: [
-    { nombre: "Andrea Cáceres", canal: "whatsapp", telefono: "50391020411", departamento: "reservas" },
+    { nombre: "Andrea Cáceres", canal: "whatsapp", telefono: "50370316582", departamento: "reservas" },
     { nombre: "Kevin Bonilla", canal: "instagram", handle: "@kevin.bonilla", departamento: "club" },
     { nombre: "Valeria Zelaya", canal: "facebook", handle: "Valeria Zelaya", departamento: "reservas" },
-    { nombre: "Óscar Peña", canal: "whatsapp", telefono: "50391020422", departamento: "club" },
-    { nombre: "Diego Cornejo", canal: "whatsapp", telefono: "50391020433", departamento: "eventos" },
+    { nombre: "Óscar Peña", canal: "whatsapp", telefono: "50377841239", departamento: "club" },
+    { nombre: "Diego Cornejo", canal: "whatsapp", telefono: "50372659904", departamento: "eventos" },
   ],
 };

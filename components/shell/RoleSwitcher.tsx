@@ -42,7 +42,12 @@ export function RoleSwitcher({ arriba = true }: { arriba?: boolean }) {
         onChange={(v) => setRol(v as typeof rol)}
         etiquetaAria="Ver la app como otro perfil"
         arriba={arriba}
-        opciones={Object.values(ROLES).map((r) => ({ valor: r.id, etiqueta: r.nombre }))}
+        opciones={Object.values(ROLES).map((r) => {
+          // "Persona · Puesto" (ej. Capitán Hawk): el puesto va en la segunda
+          // línea para que en la barra lateral no se corte el nombre.
+          const [etiqueta, detalle] = r.nombre.split(" · ");
+          return { valor: r.id, etiqueta, detalle };
+        })}
       />
     </div>
   );
