@@ -19,6 +19,20 @@ export const dynamic = "force-dynamic";
 // Todo el flujo termina en /settings con ?meta=... para que la pantalla diga
 // qué pasó. Los errores de Meta se pasan tal cual: "no tenés rol de tester"
 // le dice a la persona qué hacer, y un genérico no.
+async function canjeEnHub(cuerpo: Record<string, string>): Promise<{ token: string; vence: string | null }> {
+  const hub = (process.env.HUB_URL || "https://hub.miagentia.com").replace(/\/$/, "");
+  const secreto = process.env.VAPI_MEMORIA_SECRET || process.env.VAPI_WEBHOOK_SECRET || "";
+  const r = await fetch(`${hub}/api/webhooks/ig-canje`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-vapi-secret": secreto },
+    body: JSON.stringify(cuerpo),
+    signal: AbortSignal.timeout(15_000),
+  });
+  const j = (await r.json().catch(() => ({}))) as { token?: string; vence?: string | null; error?: string };
+  if (!r.ok || !j.token) throw new Error(j.error ?? `hub respondió ${r.status}`);
+  return { token: j.token, vence: j.vence ?? null };
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const state = url.searchParams.get("state");
@@ -49,11 +63,11 @@ export async function GET(req: Request) {
     return await volver(`meta=error&motivo=${encodeURIComponent(motivo)}`);
   }
 
+  // Basta con que el state esté firmado por nosotros. La cookie ya no se exige:
+  // desde el celular, la app de Instagram puede devolver a otro navegador que
+  // no la tiene, y el login se perdía sin decir por qué.
   const v = validarStateIg(state);
-  const cookieState = req.headers.get("cookie")?.match(/(?:^|;\s*)meta_ig_state=([^;]+)/)?.[1];
-  if (!v.ok || !cookieState || decodeURIComponent(cookieState) !== state) {
-    return await volver("meta=error&motivo=state");
-  }
+  if (!v.ok) return await volver("meta=error&motivo=state");
 
   const code = url.searchParams.get("code");
   if (!code) return await volver("meta=error&motivo=sin-codigo");
@@ -61,9 +75,18 @@ export async function GET(req: Request) {
   // En qué paso se cayó: Meta devuelve el mismo error genérico en varios.
   let paso = "codigo";
   try {
-    const corto = await intercambiarCodigoIg(code, redirectUriIg(req.url));
-    paso = "token-largo";
-    const largo = await tokenLargoIg(corto.token);
+    // El canje usa el secreto de Instagram. Si el del demo falla, lo hace hub,
+    // que tiene el bueno (con él se refrescan los tokens de Yali).
+    let largo: { token: string; vence: string | null };
+    let corto: { token: string } | null = null;
+    try {
+      corto = await intercambiarCodigoIg(code, redirectUriIg(req.url));
+      paso = "token-largo";
+      largo = await tokenLargoIg(corto.token);
+    } catch (e1) {
+      paso = `canje en hub (el del demo dijo: ${e1 instanceof Error ? e1.message : "falló"})`;
+      largo = await canjeEnHub(corto ? { corto: corto.token } : { code, redirect_uri: redirectUriIg(req.url) });
+    }
     paso = "perfil";
     const perfil = await perfilIg(largo.token);
     paso = "webhooks";
