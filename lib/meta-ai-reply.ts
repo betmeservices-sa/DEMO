@@ -115,6 +115,15 @@ async function conexionDe(tenant: TenantId, pageId: string): Promise<MetaConnect
   return (await conexionesDe(tenant)).find((c) => c.pageId === pageId) ?? null;
 }
 
+/** Índices de las fotos que la persona mandó después de la última respuesta (máx. 3). */
+export function fotosMetaSinContestar(sesion: Pick<MetaMensaje, "direction" | "texto" | "adjuntoMiniatura">[]): number[] {
+  const out: number[] = [];
+  for (let i = sesion.length - 1; i >= 0 && sesion[i].direction !== "out"; i--) {
+    if (sesion[i].texto.startsWith("[imagen]") && sesion[i].adjuntoMiniatura) out.unshift(i);
+  }
+  return out.slice(-3);
+}
+
 export async function programarRespuestaIAMeta(t: TurnoMeta): Promise<void> {
   // A Yali la contesta hub.miagentia.com (repo yali), que lee este mismo
   // esquema. Cuando los dos contestaban, ganaba este por rápido (5-12 s contra
@@ -218,6 +227,16 @@ export async function programarRespuestaIAMeta(t: TurnoMeta): Promise<void> {
       autor: m.direction === "out" ? "staff" : "cliente",
       texto: m.texto,
     }));
+    // LAS FOTOS SE LEEN, igual que en WhatsApp (regla del usuario: todo agente
+    // ve las imágenes). Antes en Messenger e Instagram al modelo le llegaba
+    // solo "[imagen]". Se bajan las que mandó después de la última respuesta.
+    if (cfg.ai.imagenes === true) {
+      const { descargarUrlParaIA } = await import("./wa-media");
+      for (const i of fotosMetaSinContestar(sesion)) {
+        const img = await descargarUrlParaIA(sesion[i].adjuntoMiniatura!);
+        if (img) historial[i].imagenes = [{ base64: img.base64, mime: img.mime }];
+      }
+    }
 
     const respuesta = await generarRespuesta(
       historial,

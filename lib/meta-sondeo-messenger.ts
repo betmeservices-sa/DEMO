@@ -42,7 +42,7 @@ export interface MensajeGraph {
   message?: string;
   created_time?: string;
   from?: { id?: string; name?: string };
-  attachments?: { data?: { mime_type?: string; name?: string }[] };
+  attachments?: { data?: { mime_type?: string; name?: string; image_data?: { url?: string; preview_url?: string } }[] };
   sticker?: string;
   shares?: { data?: { link?: string; name?: string }[] };
 }
@@ -60,6 +60,8 @@ export interface FilaSondeo {
   texto: string;
   ts: string;
   direction: "in" | "out";
+  /** La foto, si el mensaje es una imagen: para verla en el panel y para que la IA la lea. */
+  imagenUrl?: string;
 }
 
 /**
@@ -121,6 +123,7 @@ export function filasDeConversaciones(
         texto,
         ts: new Date(m.created_time).toISOString(),
         direction: m.from?.id && casa.has(m.from.id) ? "out" : "in",
+        imagenUrl: texto === "[imagen]" ? m.attachments?.data?.[0]?.image_data?.url : undefined,
       });
     }
   }
@@ -141,7 +144,7 @@ const ultimaVuelta = (g.__metaSondeoUltimo ??= new Map<string, number>());
 async function conversacionesDePagina(cx: MetaConnection): Promise<ConversacionGraph[]> {
   const campos =
     `participants,updated_time,messages.limit(${MENSAJES_POR_CONVERSACION})` +
-    `{id,message,from,created_time,attachments{mime_type,name},sticker,shares{link,name}}`;
+    `{id,message,from,created_time,attachments{mime_type,name,image_data},sticker,shares{link,name}}`;
   const url =
     `${GRAPH}/${cx.pageId}/conversations?platform=messenger&limit=${CONVERSACIONES}` +
     `&fields=${encodeURIComponent(campos)}&access_token=${encodeURIComponent(cx.pageToken)}`;
@@ -172,6 +175,7 @@ async function sincronizarPagina(cx: MetaConnection, desdeMs: number): Promise<n
       ts: f.ts,
       direction: f.direction,
       tema: f.direction === "in" ? temaDe(f.texto) : undefined,
+      adjuntoMiniatura: f.imagenUrl,
       // Salio de la pagina sin pasar por el panel: alguien del equipo desde
       // la app de Facebook o Business Suite.
       staffNombre: f.direction === "out" ? "Equipo" : undefined,

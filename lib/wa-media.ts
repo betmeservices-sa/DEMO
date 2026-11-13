@@ -101,6 +101,34 @@ export interface ImagenParaIA {
  * una foto y contestaba "no puedo leer los exámenes de la imagen". El panel sí
  * las mostraba porque su proxy ya pasaba el tenant. Mismo arreglo que hub.
  */
+/**
+ * Lo mismo que descargarImagenParaIA, pero desde una URL (las fotos de
+ * Messenger e Instagram vienen como enlace firmado de Meta, no como media id).
+ */
+export async function descargarUrlParaIA(url: string): Promise<ImagenParaIA | null> {
+  try {
+    const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
+    if (!r.ok) {
+      console.error("IA imagen (url):", r.status);
+      return null;
+    }
+    const mime = (r.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    if (!esMimeSoportado(mime)) {
+      console.error("IA imagen (url): formato no soportado", mime);
+      return null;
+    }
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.byteLength > MAX_BYTES_IMAGEN_IA) {
+      console.error("IA imagen (url): pesa demasiado", buf.byteLength);
+      return null;
+    }
+    return { base64: buf.toString("base64"), mime, bytes: buf.byteLength };
+  } catch (e) {
+    console.error("IA imagen (url): fallo la descarga", e);
+    return null;
+  }
+}
+
 export async function descargarImagenParaIA(id: string, tenant?: string): Promise<ImagenParaIA | null> {
   try {
     const r = await abrirMediaWa(id, null, tenant);
