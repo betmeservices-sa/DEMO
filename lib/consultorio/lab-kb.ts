@@ -211,7 +211,10 @@ export function puntaje(termino: string, consulta: string): number {
     if (consulta.length <= 4 && contienePalabra(termino, consulta)) return 0.8;
     return 0;
   }
-  return Math.max(similitudEnTexto(termino, consulta), similitudEnTexto(consulta, termino));
+  // Lo exacto le gana a lo parecido: los trigramas no ven las palabras de dos
+  // letras, y "latex ra" calzaba igual de perfecto con "latex le" (2026-11-13:
+  // el látex RA salía detrás del látex L.E.).
+  return Math.min(0.99, Math.max(similitudEnTexto(termino, consulta), similitudEnTexto(consulta, termino)));
 }
 
 // ── Lo que ve el modelo ─────────────────────────────────────────────────────
