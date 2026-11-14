@@ -125,6 +125,51 @@ export interface CambioConversacionMeta {
   ultimoMidAtendido?: string;
 }
 
+/**
+ * Toma el turno de contestar el mensaje `mid`. Devuelve true solo a UNO de
+ * los que lo intenten a la vez.
+ *
+ * POR QUÉ (2026-11-13, Facebook del hospital): Valeria contestaba dos y tres
+ * veces el mismo mensaje, a unos 20 s una de otra. El sondeo de Messenger
+ * corre en cada instancia que tiene el panel abierto; dos lo veían nuevo a la
+ * vez y cada una armaba su respuesta. `ultimoMidAtendido` se anotaba DESPUÉS
+ * de enviar, así que ninguna veía la de la otra. Ahora se reclama ANTES de
+ * redactar con un UPDATE condicional: Postgres serializa los dos UPDATE sobre
+ * la misma fila y el segundo ya no cumple la condición.
+ */
+export async function reclamarTurnoMeta(tenant: string, clave: string, mid: string): Promise<boolean> {
+  const p = partesDeClave(clave);
+  if (!p) return false;
+  const sb = getSupabase(tenant);
+  if (!sb) {
+    const prev = mem.get(clave) ?? vacia(tenant, clave);
+    if (prev.ultimoMidAtendido === mid) return false;
+    mem.set(clave, { ...prev, ultimoMidAtendido: mid });
+    return true;
+  }
+  try {
+    // Que la fila exista (sin pisar nada si ya estaba).
+    await sb
+      .from("meta_conversaciones")
+      .upsert(
+        { clave, tenant, canal: p.canal, page_id: p.pageId, sender_id: p.senderId, updated_at: new Date().toISOString() },
+        { onConflict: "clave", ignoreDuplicates: true },
+      );
+    const { data, error } = await sb
+      .from("meta_conversaciones")
+      .update({ ultimo_mid_atendido: mid, updated_at: new Date().toISOString() })
+      .eq("clave", clave)
+      .or(`ultimo_mid_atendido.is.null,ultimo_mid_atendido.neq."${mid.replace(/"/g, "")}"`)
+      .select("clave");
+    if (error) throw new Error(error.message);
+    return (data ?? []).length === 1;
+  } catch (e) {
+    // Sin base no se deja a nadie sin respuesta: se contesta como antes.
+    console.error("[meta-conversaciones] reclamar turno:", e instanceof Error ? e.message : e);
+    return true;
+  }
+}
+
 /** Upsert parcial: solo toca los campos que vienen. */
 export async function upsertConversacionMeta(
   tenant: string,

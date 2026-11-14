@@ -21,7 +21,7 @@ import { agenteDePagina } from "./redes-hospital";
 import { generarRespuesta, type TurnoIA } from "./ai";
 import { getChatAiActiva, setChatOverride } from "./ai-store";
 import { accionEnMensaje } from "./meta-acciones";
-import { claveMeta, getConversacionMeta, upsertConversacionMeta } from "./meta-conversaciones";
+import { claveMeta, getConversacionMeta, reclamarTurnoMeta, upsertConversacionMeta } from "./meta-conversaciones";
 import { enviarYGuardarMeta, IA_STAFF_ID } from "./meta-enviar";
 import { mensajesAnteriores, type MetaCanal, type MetaMensaje } from "./meta-messages-store";
 import { conexionesDe, type MetaConnection } from "./meta-store";
@@ -134,6 +134,14 @@ export async function programarRespuestaIAMeta(t: TurnoMeta): Promise<void> {
   const cfg = TENANTS[t.tenant];
   if (!cfg) return;
   const clave = claveMeta(t.canal, t.pageId, t.senderId);
+  // Si el turno se tomó pero la respuesta no salió, se suelta: el mensaje
+  // sigue sin contestar y el próximo turno lo vuelve a intentar.
+  let reclamado: { previo: string | null } | null = null;
+  const soltarTurno = async () => {
+    if (!reclamado) return;
+    await upsertConversacionMeta(t.tenant, clave, { ultimoMidAtendido: reclamado.previo ?? "" }).catch(() => {});
+    reclamado = null;
+  };
 
   try {
     // Activa si: override del chat (si existe) o, si no, el interruptor global.
@@ -179,6 +187,10 @@ export async function programarRespuestaIAMeta(t: TurnoMeta): Promise<void> {
     const estado = await getConversacionMeta(t.tenant, clave);
     // Ya se contestó leyendo este mismo mensaje: nada que agregar.
     if (estado.ultimoMidAtendido === t.mid) return;
+    // Y si otro turno (otra instancia del sondeo, el webhook) va por el mismo
+    // mensaje, contesta uno solo. Ver reclamarTurnoMeta.
+    if (!(await reclamarTurnoMeta(t.tenant, clave, t.mid))) return;
+    reclamado = { previo: estado.ultimoMidAtendido };
     const decision = decidirTurno({
       sucursales: cfg.sucursales,
       limite: cfg.ai.limiteMensajes,
@@ -281,6 +293,7 @@ export async function programarRespuestaIAMeta(t: TurnoMeta): Promise<void> {
     // Solo si de verdad salió: si Meta rechazó el envío, el mensaje sigue
     // sin contestar y el próximo turno lo vuelve a intentar.
     if (mid) await upsertConversacionMeta(t.tenant, clave, { ultimoMidAtendido: t.mid }).catch(() => {});
+    else await soltarTurno();
 
     // El consumo se registra AUNQUE falle el envío: los tokens ya se gastaron.
     await registrarConsumo({
@@ -296,5 +309,6 @@ export async function programarRespuestaIAMeta(t: TurnoMeta): Promise<void> {
     });
   } catch (e) {
     console.error("[meta-ia] error:", e);
+    await soltarTurno();
   }
 }

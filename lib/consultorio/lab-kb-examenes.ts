@@ -616,7 +616,7 @@ export const EXAMENES_LAB: ExamenKb[] = [
     id: "lab-hemograma",
     tipo: "examen",
     nombre: "Hemograma completo",
-    sinonimos: ["hemograma", "hemograma completo", "hemograma con plaquetas", "hemograma y plaquetas", "hemograma mas plaquetas", "homograma", "hemograna", "hemoglobina con plaquetas", "biometria hematica", "biometria hematica completa", "bhc", "hemo", "recuento de plaquetas", "plaquetas", "conteo sanguineo"],
+    sinonimos: ["hemograma", "hemograma completo", "hemograma con plaquetas", "hemograma y plaquetas", "hemograma mas plaquetas", "homograma", "hemograna", "hemoglobina con plaquetas", "biometria hematica", "biometria hematica completa", "bhc", "hemo", "conteo sanguineo"],
     estado: "vigente",
     precio: 9.75,
     precioAseguradora: 7.77,

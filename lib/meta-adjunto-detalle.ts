@@ -6,6 +6,7 @@
 // la publicación/historia (y a veces su título), o el archivo con su mime.
 
 import type { MetaConnection } from "./meta-store";
+import { marcaBotonSinEnlace } from "./meta-texto-mensaje";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 const ESPERA_MS = 8_000;
@@ -35,6 +36,7 @@ export function marcaDesdeDetalle(d: {
     }
     return [`[compartió un enlace] ${(share.name ?? "").trim()}`.trim(), share.link].join("\n");
   }
+  if (share && !d.attachments?.data?.length) return marcaBotonSinEnlace(share.name);
   const adj = d.attachments?.data?.[0];
   if (adj) {
     const mime = adj.mime_type ?? "";

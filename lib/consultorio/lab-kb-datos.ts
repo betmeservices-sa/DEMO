@@ -29,7 +29,8 @@ const UNIR: Record<string, string> = {
   "lab-duo-dengue": "lab-xl-duo-dengue-antigeno-anticuerpos",
 };
 // Filas del Excel que repiten un examen que ya tiene su precio en la base.
-const REPETIDOS = new Set(["lab-xl-06005"]);
+// lab-xl-07005: el CA 15-3, que ya es lab-ca153 con el precio de esa misma fila.
+const REPETIDOS = new Set(["lab-xl-06005", "lab-xl-07005"]);
 
 function precioDe(id: string): PrecioExcel | undefined {
   if (PRECIOS_EXCEL[id]) return PRECIOS_EXCEL[id];

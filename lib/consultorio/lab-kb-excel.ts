@@ -22,10 +22,10 @@ export interface PrecioExcel {
 
 export const PRECIOS_EXCEL: Record<string, PrecioExcel> = {
   "lab-hemograma": {
-    "precio": 6,
-    "precioAseguradora": 5.73,
+    "precio": 9.75,
+    "precioAseguradora": 7.77,
     "resultado": "Unas 3 horas.",
-    "excel": "01004 - RECUENTO DE PLAQUETAS"
+    "excel": "01001 - HEMOGRAMA (Recuento de plaquetas)"
   },
   "lab-frotis": {
     "precio": 24.1,
@@ -261,10 +261,10 @@ export const PRECIOS_EXCEL: Record<string, PrecioExcel> = {
     "excel": "MONOTEST(MONONUCLEOSIS)  AC.HETEROFILO"
   },
   "lab-latex-ra": {
-    "precio": 12.1,
-    "precioAseguradora": 11.45,
+    "precio": 11.4,
+    "precioAseguradora": 10.84,
     "resultado": "Unas 3 horas.",
-    "excel": "05006 - PRUEBA DE LATEX L.E."
+    "excel": "05005 - PRUEBA DE ARTRITIS REUMATOIDEA.LATEX RA"
   },
   "lab-pcr": {
     "precio": 13.5,
@@ -401,10 +401,10 @@ export const PRECIOS_EXCEL: Record<string, PrecioExcel> = {
     "excel": "08005 - CA-125 OVARIO"
   },
   "lab-ca153": {
-    "precio": 87.7,
+    "precio": 87.72,
     "precioAseguradora": 83.33,
     "resultado": "Unas 3 horas.",
-    "excel": "08006 - CA- 15-3 SENO"
+    "excel": "07005 - CA- 15-3 MAMA"
   },
   "lab-fta": {
     "precio": 58.5,
@@ -706,19 +706,20 @@ export const PRECIOS_EXCEL: Record<string, PrecioExcel> = {
 
 export const EXAMENES_EXCEL: ExamenKb[] = [
   {
-    "id": "lab-xl-01001",
+    "id": "lab-xl-01004",
     "tipo": "examen",
-    "nombre": "Hemograma",
+    "nombre": "Recuento de plaquetas",
     "sinonimos": [
-      "hemograma recuento plaquetas",
-      "hemograma"
+      "recuento de plaquetas",
+      "plaquetas",
+      "conteo de plaquetas"
     ],
     "estado": "vigente",
-    "precio": 9.75,
-    "precioAseguradora": 7.77,
+    "precio": 6,
+    "precioAseguradora": 5.73,
     "preparacion": "No requiere preparación previa.",
     "resultado": "Unas 3 horas.",
-    "fuente": "precios - IA Valeria (Excel del lab, 2026-11-12): 01001 - HEMOGRAMA (Recuento de plaquetas)"
+    "fuente": "precios - IA Valeria (Excel del lab, 2026-11-12): 01004 - RECUENTO DE PLAQUETAS"
   },
   {
     "id": "lab-xl-01002",
@@ -1172,18 +1173,20 @@ export const EXAMENES_EXCEL: ExamenKb[] = [
     "fuente": "precios - IA Valeria (Excel del lab, 2026-11-12): 05004 - ANTI-ESTREPTOLISINA \"O\" (A.S.T.O.)"
   },
   {
-    "id": "lab-xl-05005",
+    "id": "lab-xl-05006",
     "tipo": "examen",
-    "nombre": "Prueba De Artritis Reumatoidea.latex Ra",
+    "nombre": "Prueba de látex L.E.",
     "sinonimos": [
-      "artritis reumatoidea latex ra"
+      "latex le",
+      "prueba de latex le",
+      "latex l e"
     ],
     "estado": "vigente",
-    "precio": 11.4,
-    "precioAseguradora": 10.84,
+    "precio": 12.1,
+    "precioAseguradora": 11.45,
     "preparacion": "No requiere preparación previa.",
     "resultado": "Unas 3 horas.",
-    "fuente": "precios - IA Valeria (Excel del lab, 2026-11-12): 05005 - PRUEBA DE ARTRITIS REUMATOIDEA.LATEX RA"
+    "fuente": "precios - IA Valeria (Excel del lab, 2026-11-12): 05006 - PRUEBA DE LATEX L.E."
   },
   {
     "id": "lab-xl-05011",

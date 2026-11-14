@@ -25,6 +25,7 @@ import { TENANTS } from "./tenants";
 import type { TenantId } from "./tenants/types";
 import { conexionesDe, type MetaConnection } from "./meta-store";
 import { esRespuestaAComentario } from "./respuesta-a-comentario";
+import { MARCA_ENLACE, marcaBotonSinEnlace } from "./meta-texto-mensaje";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 const CADA_MS = 30_000;
@@ -83,9 +84,12 @@ export function textoDeMensajeGraph(m: MensajeGraph): string | null {
   }
   const share = m.shares?.data?.[0];
   if (share) {
+    // Sin enlace: el botón del saludo automático de la página, no un link.
+    if (!share.link) return marcaBotonSinEnlace(share.name);
     // Una historia o publicación nuestra que contestó y ya venció.
-    if (/facebook.com|fb.com|instagram.com/.test(share.link ?? "")) return `[respondió a una historia que ya no está disponible] ${share.name ?? ""}`.trim();
-    return "[compartió un enlace]";
+    if (/facebook.com|fb.com|instagram.com/.test(share.link)) return `[respondió a una historia que ya no está disponible] ${share.name ?? ""}`.trim();
+    // El enlace va en su propia línea: la burbuja lo muestra y se puede abrir.
+    return [`${MARCA_ENLACE} ${(share.name ?? "").trim()}`.trim(), share.link].join("\n");
   }
   return null;
 }

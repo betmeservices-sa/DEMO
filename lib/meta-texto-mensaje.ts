@@ -17,6 +17,18 @@ export interface MensajeMeta {
 
 export const MARCA_REEL = "[compartió un reel]";
 export const MARCA_PUBLICACION = "[compartió una publicación]";
+export const MARCA_ENLACE = "[compartió un enlace]";
+
+/**
+ * Lo "compartido" que Meta manda sin enlace: el botón del saludo automático de
+ * bienvenida de la página (p. ej. "Enviar mensaje"). Lo pone Meta, no el
+ * equipo; antes salía "[compartió un enlace]" y parecía que alguien había
+ * mandado un link (2026-11-13, Facebook del hospital).
+ */
+export function marcaBotonSinEnlace(nombre: string | undefined): string {
+  const n = (nombre ?? "").trim();
+  return n ? `[saludo automático de Meta: botón "${n}"]` : "[saludo automático de Meta]";
+}
 
 // Nombres en español para lo que Meta manda en inglés. "[ig_reel]" a secas en
 // la bandeja no le dice nada a quien atiende.
@@ -107,6 +119,7 @@ export function compartidoDeTexto(texto: string): {
   const marcas: [string, string][] = [
     [MARCA_REEL, "Compartió un reel"],
     [MARCA_PUBLICACION, "Compartió una publicación"],
+    [MARCA_ENLACE, "Compartió un enlace"],
   ];
   for (const [marca, rotulo] of marcas) {
     if (!texto.startsWith(marca)) continue;
